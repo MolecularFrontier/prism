@@ -6,7 +6,7 @@
 
     <groupId>tech.molecules</groupId>
     <artifactId>prism</artifactId>
-    <version>0.1.1</version>
+    <version>0.1.2</version>
     <name>prism</name>
     <description>PRISM protocol stack for integrated scientific measurements</description>
     <url>https://github.com/MolecularFrontier/prism</url>
