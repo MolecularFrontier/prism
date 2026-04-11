@@ -90,7 +90,7 @@
                     <publishingServerId>central</publishingServerId>
                     <deploymentName>prism-${project.version}</deploymentName>
                     <autoPublish>true</autoPublish>
-                    <waitUntil>published</waitUntil>
+                    <waitUntil>uploaded</waitUntil>
                 </configuration>
             </plugin>
             <plugin>
