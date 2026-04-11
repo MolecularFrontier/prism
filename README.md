@@ -33,3 +33,11 @@ Notes
 - Core module POM: [`prism-core/pom.xml`](/home/lithom/dev_chem/prism/prism-core/pom.xml)
 - Protocol notes: [`docs/PRISM_PROTOCOL.md`](/home/lithom/dev_chem/prism/docs/PRISM_PROTOCOL.md)
 - TSV bundle notes: [`docs/PRISM_TSV_BUNDLE.md`](/home/lithom/dev_chem/prism/docs/PRISM_TSV_BUNDLE.md)
+
+Releases
+--------
+
+- Publishing is handled by GitHub Actions via the Sonatype Central Portal Maven flow.
+- Release builds are signed with GPG and publish on tag pushes matching `v*` or `*.*.*`.
+- Manual publishing is also available through the `Release` workflow via `workflow_dispatch`.
+- Because tag `0.1.0` existed before the workflow was added, the first actual Central release can be triggered either by a manual workflow run or by creating and pushing a new release tag.
