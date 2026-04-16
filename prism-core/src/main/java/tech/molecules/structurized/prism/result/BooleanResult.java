@@ -24,6 +24,10 @@ public final class BooleanResult extends AbstractEndpointResult {
         return value;
     }
 
+    public boolean getValue() {
+        return value;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
