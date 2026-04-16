@@ -5,6 +5,7 @@ import tech.molecules.structurized.prism.model.EndpointDefinition;
 import tech.molecules.structurized.prism.result.CategoricalResult;
 import tech.molecules.structurized.prism.result.EndpointResult;
 import tech.molecules.structurized.prism.result.NumericResult;
+import tech.molecules.structurized.prism.result.PrismNumericDatapoint;
 import tech.molecules.structurized.prism.result.NumericState;
 import tech.molecules.structurized.prism.result.OptionalNumericResult;
 import tech.molecules.structurized.prism.result.OptionalNumericState;
@@ -56,6 +57,8 @@ public final class EndpointResultValidator {
 
     private static void validateNumeric(NumericResult result) {
         Objects.requireNonNull(result.getRawValues(), "rawValues must not be null");
+        Objects.requireNonNull(result.getDatapoints(), "datapoints must not be null");
+        validateDatapoints(result.getDatapoints());
         if (result.getState() == NumericState.VALUE && result.getMean() == null) {
             throw new IllegalArgumentException("numeric result in VALUE state must provide mean");
         }
@@ -67,12 +70,21 @@ public final class EndpointResultValidator {
 
     private static void validateOptionalNumeric(OptionalNumericResult result) {
         Objects.requireNonNull(result.getRawValues(), "rawValues must not be null");
+        Objects.requireNonNull(result.getDatapoints(), "datapoints must not be null");
+        validateDatapoints(result.getDatapoints());
         if (result.getState() == OptionalNumericState.VALUE && result.getMean() == null) {
             throw new IllegalArgumentException("optional numeric result in VALUE state must provide mean");
         }
         if (result.getState() != OptionalNumericState.VALUE
                 && (result.getMean() != null || result.getLower() != null || result.getUpper() != null)) {
             throw new IllegalArgumentException("optional numeric result without VALUE state must not provide mean/lower/upper");
+        }
+    }
+
+    private static void validateDatapoints(Iterable<PrismNumericDatapoint> datapoints) {
+        for (PrismNumericDatapoint datapoint : datapoints) {
+            Objects.requireNonNull(datapoint, "datapoints must not contain null elements");
+            Objects.requireNonNull(datapoint.getMetadata(), "datapoint metadata must not be null");
         }
     }
 }

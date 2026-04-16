@@ -15,6 +15,7 @@ public final class NumericResult extends AbstractEndpointResult {
     private final Double lower;
     private final Double upper;
     private final List<Double> rawValues;
+    private final List<PrismNumericDatapoint> datapoints;
 
     private NumericResult(Builder builder) {
         super(builder);
@@ -31,6 +32,7 @@ public final class NumericResult extends AbstractEndpointResult {
         this.lower = builder.lower;
         this.upper = builder.upper;
         this.rawValues = List.copyOf(new ArrayList<>(builder.rawValues));
+        this.datapoints = List.copyOf(new ArrayList<>(builder.datapoints));
     }
 
     @Override
@@ -58,6 +60,10 @@ public final class NumericResult extends AbstractEndpointResult {
         return rawValues;
     }
 
+    public List<PrismNumericDatapoint> getDatapoints() {
+        return datapoints;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -75,12 +81,13 @@ public final class NumericResult extends AbstractEndpointResult {
                 && Objects.equals(mean, that.mean)
                 && Objects.equals(lower, that.lower)
                 && Objects.equals(upper, that.upper)
-                && Objects.equals(rawValues, that.rawValues);
+                && Objects.equals(rawValues, that.rawValues)
+                && Objects.equals(datapoints, that.datapoints);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getN(), getRawValueIds(), getFirstMeasurement(), getLastMeasurement(), getDetails(), state, mean, lower, upper, rawValues);
+        return Objects.hash(getN(), getRawValueIds(), getFirstMeasurement(), getLastMeasurement(), getDetails(), state, mean, lower, upper, rawValues, datapoints);
     }
 
     @Override
@@ -92,6 +99,7 @@ public final class NumericResult extends AbstractEndpointResult {
                 ", lower=" + lower +
                 ", upper=" + upper +
                 ", rawValues=" + rawValues +
+                ", datapoints=" + datapoints +
                 ", rawValueIds=" + getRawValueIds() +
                 ", firstMeasurement='" + getFirstMeasurement() + '\'' +
                 ", lastMeasurement='" + getLastMeasurement() + '\'' +
@@ -105,6 +113,7 @@ public final class NumericResult extends AbstractEndpointResult {
         private Double lower;
         private Double upper;
         private List<Double> rawValues = List.of();
+        private List<PrismNumericDatapoint> datapoints = List.of();
 
         private Builder() {}
 
@@ -138,6 +147,19 @@ public final class NumericResult extends AbstractEndpointResult {
             List<Double> next = new ArrayList<>(this.rawValues);
             next.add(rawValue);
             this.rawValues = List.copyOf(next);
+            return this;
+        }
+
+        public Builder datapoints(List<PrismNumericDatapoint> datapoints) {
+            this.datapoints = datapoints == null ? List.of() : List.copyOf(datapoints);
+            return this;
+        }
+
+        public Builder addDatapoint(PrismNumericDatapoint datapoint) {
+            Objects.requireNonNull(datapoint, "datapoint must not be null");
+            List<PrismNumericDatapoint> next = new ArrayList<>(this.datapoints);
+            next.add(datapoint);
+            this.datapoints = List.copyOf(next);
             return this;
         }
 
