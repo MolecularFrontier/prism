@@ -101,10 +101,11 @@ public final class PrismTsvDatasetLoader {
     }
 
     private static EndpointDefinition parseEndpointDefinition(Row row) {
+        String endpointId = required(row, "endpoint_id");
         EndpointDefinition.Builder builder = EndpointDefinition.builder()
-                .id(required(row, "endpoint_id"))
-                .name(required(row, "name"))
-                .path(required(row, "path"))
+                .id(endpointId)
+                .name(optionalOrDefault(row, "name", endpointId))
+                .path(optionalOrDefault(row, "path", endpointId))
                 .datatype(parseEnum(required(row, "datatype"), EndpointDataType.class, row, "datatype"))
                 .endpointType(parseEnum(required(row, "endpoint_type"), EndpointType.class, row, "endpoint_type"))
                 .evaluationMode(parseEnum(required(row, "evaluation_mode"), EvaluationMode.class, row, "evaluation_mode"))
@@ -366,15 +367,10 @@ public final class PrismTsvDatasetLoader {
                 continue;
             }
 
-            String[] values = splitTsv(line);
-            if (values.length != header.length) {
-                throw new IllegalArgumentException("invalid TSV row in " + path.getFileName() + " line " + (i + 1)
-                        + ": expected " + header.length + " columns from header line " + headerLineNumber
-                        + " but found " + values.length);
-            }
+            String[] values = normalizeRowValues(splitTsv(line), header, path, i + 1, headerLineNumber);
             LinkedHashMap<String, String> cells = new LinkedHashMap<>();
             for (int c = 0; c < header.length; c++) {
-                cells.put(header[c].trim(), values[c]);
+                cells.put(header[c].trim(), PrismTsvEscaper.unescapeCell(values[c]));
             }
             rows.add(new Row(path.getFileName().toString(), i + 1, Map.copyOf(cells)));
         }
@@ -383,6 +379,20 @@ public final class PrismTsvDatasetLoader {
             throw new IllegalArgumentException("TSV file has no header: " + path);
         }
         return List.copyOf(rows);
+    }
+
+    private static String[] normalizeRowValues(String[] values, String[] header, Path path, int lineNumber, int headerLineNumber) {
+        if (values.length > header.length) {
+            throw new IllegalArgumentException("invalid TSV row in " + path.getFileName() + " line " + lineNumber
+                    + ": expected " + header.length + " columns from header line " + headerLineNumber
+                    + " but found " + values.length);
+        }
+        if (values.length == header.length) {
+            return values;
+        }
+        String[] padded = Arrays.copyOf(values, header.length);
+        Arrays.fill(padded, values.length, header.length, "");
+        return padded;
     }
 
     private static String[] splitTsv(String line) {
@@ -402,6 +412,11 @@ public final class PrismTsvDatasetLoader {
             return null;
         }
         return normalize(row.cells().get(column));
+    }
+
+    private static String optionalOrDefault(Row row, String column, String defaultValue) {
+        String value = optional(row, column);
+        return value == null ? defaultValue : value;
     }
 
     private static String normalize(String value) {

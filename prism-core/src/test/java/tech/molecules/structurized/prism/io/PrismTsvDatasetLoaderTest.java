@@ -9,6 +9,7 @@ import tech.molecules.structurized.prism.query.EndpointValueRecord;
 import tech.molecules.structurized.prism.result.CategoricalResult;
 import tech.molecules.structurized.prism.result.NumericResult;
 import tech.molecules.structurized.prism.result.NumericState;
+import tech.molecules.structurized.prism.result.TextResult;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,6 +18,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PrismTsvDatasetLoaderTest {
@@ -77,6 +79,89 @@ class PrismTsvDatasetLoaderTest {
                 .addEndpointId("ic50")
                 .build()).getFirst().getResult();
         assertEquals(NumericState.NOT_MEASURED, notMeasured.getState());
+    }
+
+    @Test
+    void loaderPadsMissingTrailingEmptyCells(@TempDir Path tempDir) throws IOException {
+        Files.writeString(tempDir.resolve(PrismTsvDatasetLoader.ENDPOINTS_FILE_NAME), """
+                endpoint_id\tname\tpath\tdatatype\tendpoint_type\tevaluation_mode\tunit\tscale\tdomain_lower_bound\tdomain_upper_bound\tcategories\tdescription
+                ic50\tIC50\tassay/ic50\tNUMERIC\tMEASURED\tIMMEDIATE\tnM\tLOG\t0.001\t10000\t
+                """);
+
+        Files.writeString(tempDir.resolve(PrismTsvDatasetLoader.SUBJECTS_FILE_NAME), """
+                subject_id\tsmiles
+                cmp-1\tCCO
+                """);
+
+        Files.writeString(tempDir.resolve(PrismTsvDatasetLoader.VALUES_FILE_NAME), """
+                subject_id\tendpoint_id\tmean\traw_value_ids\tdetails
+                cmp-1\tic50\t7.1\tr1
+                """);
+
+        InMemoryPrismDataset dataset = PrismTsvDatasetLoader.load(tempDir);
+
+        assertNull(dataset.findEndpointDefinition("ic50").orElseThrow().getDescription());
+        NumericResult numeric = (NumericResult) dataset.endpointProvider().fetchEndpointValues(EndpointFetchRequest.builder()
+                .addSubjectId("cmp-1")
+                .addEndpointId("ic50")
+                .build()).getFirst().getResult();
+        assertEquals(7.1, numeric.getMean());
+        assertEquals(List.of("r1"), numeric.getRawValueIds());
+        assertTrue(numeric.getDetails().isEmpty());
+    }
+
+    @Test
+    void loaderUsesEndpointIdAsFallbackNameAndPath(@TempDir Path tempDir) throws IOException {
+        Files.writeString(tempDir.resolve(PrismTsvDatasetLoader.ENDPOINTS_FILE_NAME), """
+                endpoint_id\tname\tpath\tdatatype\tendpoint_type\tevaluation_mode
+                ic50\t\t\tNUMERIC\tMEASURED\tIMMEDIATE
+                """);
+
+        Files.writeString(tempDir.resolve(PrismTsvDatasetLoader.SUBJECTS_FILE_NAME), """
+                subject_id
+                cmp-1
+                """);
+
+        Files.writeString(tempDir.resolve(PrismTsvDatasetLoader.VALUES_FILE_NAME), """
+                subject_id\tendpoint_id\tmean
+                cmp-1\tic50\t7.1
+                """);
+
+        InMemoryPrismDataset dataset = PrismTsvDatasetLoader.load(tempDir);
+
+        assertEquals("ic50", dataset.findEndpointDefinition("ic50").orElseThrow().getName());
+        assertEquals("ic50", dataset.findEndpointDefinition("ic50").orElseThrow().getPath());
+    }
+
+    @Test
+    void loaderUnescapesLineOrientedTsvCells(@TempDir Path tempDir) throws IOException {
+        String description = "Line one\nLine two\tTabbed\\Backslash";
+        String textValue = "First line\nSecond line";
+
+        Files.writeString(tempDir.resolve(PrismTsvDatasetLoader.ENDPOINTS_FILE_NAME), """
+                endpoint_id\tname\tpath\tdatatype\tendpoint_type\tevaluation_mode\tdescription
+                note\tNote\ttext/note\tTEXT\tMEASURED\tIMMEDIATE\t%s
+                """.formatted(PrismTsvEscaper.escapeCell(description)));
+
+        Files.writeString(tempDir.resolve(PrismTsvDatasetLoader.SUBJECTS_FILE_NAME), """
+                subject_id\tcomment
+                cmp-1\t%s
+                """.formatted(PrismTsvEscaper.escapeCell("Subject\tcomment")));
+
+        Files.writeString(tempDir.resolve(PrismTsvDatasetLoader.VALUES_FILE_NAME), """
+                subject_id\tendpoint_id\ttext\tdetails
+                cmp-1\tnote\t%s\tsource=notebook
+                """.formatted(PrismTsvEscaper.escapeCell(textValue)));
+
+        InMemoryPrismDataset dataset = PrismTsvDatasetLoader.load(tempDir);
+
+        assertEquals(description, dataset.findEndpointDefinition("note").orElseThrow().getDescription());
+        assertEquals("Subject\tcomment", dataset.findSubjectRecord("cmp-1").orElseThrow().getMetadata().get("comment"));
+        TextResult result = (TextResult) dataset.endpointProvider().fetchEndpointValues(EndpointFetchRequest.builder()
+                .addSubjectId("cmp-1")
+                .addEndpointId("note")
+                .build()).getFirst().getResult();
+        assertEquals(textValue, result.getText());
     }
 
     @Test
