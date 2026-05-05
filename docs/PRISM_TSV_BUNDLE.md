@@ -26,6 +26,22 @@ Optional:
 - `subject_sets.prism.tsv`
 - `subject_set_memberships.prism.tsv`
 
+TSV row shape
+-------------
+
+Rows should normally contain the same number of tab-separated cells as the header. Exporters should preserve explicit empty cells with tabs, especially for optional columns at the end of a row.
+
+For robustness, the loader tolerates rows that omit trailing empty cells and pads them as empty values. Rows with more cells than the header are rejected because their column alignment is ambiguous.
+
+PRISM TSV v1 deliberately keeps parsing line-oriented and does not use CSV-style quoted multiline records. Exporters must not emit literal tabs or newlines inside cell values. Instead, use [`PrismTsvEscaper.java`](/home/lithom/dev_chem/prism/prism-core/src/main/java/tech/molecules/structurized/prism/io/PrismTsvEscaper.java) or the same escaping rules:
+
+- `\` is written as `\\`
+- tab is written as `\t`
+- newline is written as `\n`
+- carriage return is written as `\r`
+
+The loader decodes these escape sequences automatically. Fields with PRISM-specific separators such as `categories`, `raw_value_ids`, `raw_values`, and `details` should still avoid unescaped use of their reserved separators unless the exporter and importer are extended together.
+
 Why a bundle instead of one flat file
 -------------------------------------
 
@@ -70,6 +86,8 @@ Required columns:
 - `datatype`
 - `endpoint_type`
 - `evaluation_mode`
+
+For pragmatic imports, the TSV loader accepts an empty or missing `name` and `path` and uses `endpoint_id` as the fallback value. Exporters should still populate both fields when meaningful display names and catalog paths are available.
 
 Optional columns:
 
