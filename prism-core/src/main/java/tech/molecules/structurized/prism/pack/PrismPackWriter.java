@@ -1,0 +1,359 @@
+package tech.molecules.structurized.prism.pack;
+
+import tech.molecules.structurized.prism.io.PrismTsvEscaper;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+/**
+ * Writer for PrismPack v0.1 directory and ZIP packages.
+ */
+public final class PrismPackWriter {
+    public static final String MANIFEST_PATH = "prism-pack.json";
+    public static final String DATAFRAME_PATH = "data/dataframe.tsv";
+    public static final String SCHEMA_PATH = "schema/dataframe.schema.json";
+    public static final String MOLECULES_PATH = "semantics/molecules.json";
+    public static final String ENDPOINTS_PATH = "semantics/endpoints.json";
+    public static final String TABLE_VIEW_PATH = "views/table-view.json";
+    public static final String VISUALIZATIONS_PATH = "views/visualizations.json";
+    public static final String ATTACHMENTS_PATH = "attachments/attachments.json";
+    public static final String PROVENANCE_PATH = "provenance/provenance.json";
+
+    private PrismPackWriter() {
+    }
+
+    public static void write(Path path, PrismPack pack) throws IOException {
+        if (Files.isDirectory(path)) {
+            writeDirectory(path, pack);
+        } else {
+            writeZip(path, pack);
+        }
+    }
+
+    public static void writeDirectory(Path directory, PrismPack pack) throws IOException {
+        Objects.requireNonNull(directory, "directory");
+        Objects.requireNonNull(pack, "pack");
+        Files.createDirectories(directory);
+        writeFile(directory, MANIFEST_PATH, PrismPackJson.stringify(manifestMap(pack)));
+        writeFile(directory, dataframePath(pack), dataframeTsv(pack.dataFrame()));
+        writeFile(directory, schemaPath(pack), PrismPackJson.stringify(schemaMap(pack.schema())));
+        if (pack.molecules() != null) {
+            writeFile(directory, moleculesPath(pack), PrismPackJson.stringify(moleculesMap(pack.molecules())));
+        }
+        if (pack.endpoints() != null) {
+            writeFile(directory, endpointsPath(pack), PrismPackJson.stringify(endpointsMap(pack.endpoints())));
+        }
+        if (pack.tableView() != null) {
+            writeFile(directory, tableViewPath(pack), PrismPackJson.stringify(tableViewMap(pack.tableView())));
+        }
+        if (pack.visualizations() != null) {
+            writeFile(directory, visualizationsPath(pack), PrismPackJson.stringify(visualizationsMap(pack.visualizations())));
+        }
+        if (pack.attachments() != null && !pack.attachments().attachments().isEmpty()) {
+            writeFile(directory, attachmentsPath(pack), PrismPackJson.stringify(attachmentsMap(pack.attachments())));
+        }
+        if (pack.provenance() != null && !pack.provenance().isEmpty()) {
+            writeFile(directory, provenancePath(pack), PrismPackJson.stringify(pack.provenance()));
+        }
+    }
+
+    public static void writeZip(Path zipPath, PrismPack pack) throws IOException {
+        Objects.requireNonNull(zipPath, "zipPath");
+        Objects.requireNonNull(pack, "pack");
+        Path parent = zipPath.getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
+        try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(zipPath))) {
+            writeEntry(out, MANIFEST_PATH, PrismPackJson.stringify(manifestMap(pack)));
+            writeEntry(out, dataframePath(pack), dataframeTsv(pack.dataFrame()));
+            writeEntry(out, schemaPath(pack), PrismPackJson.stringify(schemaMap(pack.schema())));
+            if (pack.molecules() != null) {
+                writeEntry(out, moleculesPath(pack), PrismPackJson.stringify(moleculesMap(pack.molecules())));
+            }
+            if (pack.endpoints() != null) {
+                writeEntry(out, endpointsPath(pack), PrismPackJson.stringify(endpointsMap(pack.endpoints())));
+            }
+            if (pack.tableView() != null) {
+                writeEntry(out, tableViewPath(pack), PrismPackJson.stringify(tableViewMap(pack.tableView())));
+            }
+            if (pack.visualizations() != null) {
+                writeEntry(out, visualizationsPath(pack), PrismPackJson.stringify(visualizationsMap(pack.visualizations())));
+            }
+            if (pack.attachments() != null && !pack.attachments().attachments().isEmpty()) {
+                writeEntry(out, attachmentsPath(pack), PrismPackJson.stringify(attachmentsMap(pack.attachments())));
+            }
+            if (pack.provenance() != null && !pack.provenance().isEmpty()) {
+                writeEntry(out, provenancePath(pack), PrismPackJson.stringify(pack.provenance()));
+            }
+        }
+    }
+
+    private static void writeFile(Path directory, String relativePath, String content) throws IOException {
+        Path file = directory.resolve(relativePath);
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, content, StandardCharsets.UTF_8);
+    }
+
+    private static void writeEntry(ZipOutputStream out, String path, String content) throws IOException {
+        out.putNextEntry(new ZipEntry(path));
+        out.write(content.getBytes(StandardCharsets.UTF_8));
+        out.closeEntry();
+    }
+
+    private static String dataframePath(PrismPack pack) {
+        return valueOrDefault(pack.manifest().dataframe().path(), DATAFRAME_PATH);
+    }
+
+    private static String schemaPath(PrismPack pack) {
+        return valueOrDefault(pack.manifest().dataframe().schema(), SCHEMA_PATH);
+    }
+
+    private static String moleculesPath(PrismPack pack) {
+        return valueOrDefault(pack.manifest().moleculesPath(), MOLECULES_PATH);
+    }
+
+    private static String endpointsPath(PrismPack pack) {
+        return valueOrDefault(pack.manifest().endpointsPath(), ENDPOINTS_PATH);
+    }
+
+    private static String tableViewPath(PrismPack pack) {
+        return valueOrDefault(pack.manifest().tableViewPath(), TABLE_VIEW_PATH);
+    }
+
+    private static String visualizationsPath(PrismPack pack) {
+        return valueOrDefault(pack.manifest().visualizationsPath(), VISUALIZATIONS_PATH);
+    }
+
+    private static String attachmentsPath(PrismPack pack) {
+        return valueOrDefault(pack.manifest().attachmentsPath(), ATTACHMENTS_PATH);
+    }
+
+    private static String provenancePath(PrismPack pack) {
+        return valueOrDefault(pack.manifest().provenancePath(), PROVENANCE_PATH);
+    }
+
+    private static String valueOrDefault(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private static String dataframeTsv(PrismPack.DataFrame dataframe) {
+        Objects.requireNonNull(dataframe, "dataframe");
+        StringBuilder builder = new StringBuilder();
+        appendTsvRow(builder, dataframe.headers());
+        for (List<String> row : dataframe.rows()) {
+            if (row.size() != dataframe.headers().size()) {
+                throw new PrismPackException("dataframe row has " + row.size()
+                        + " cells but header has " + dataframe.headers().size());
+            }
+            appendTsvRow(builder, row);
+        }
+        return builder.toString();
+    }
+
+    private static void appendTsvRow(StringBuilder builder, List<String> cells) {
+        for (int i = 0; i < cells.size(); i++) {
+            if (i > 0) {
+                builder.append('\t');
+            }
+            builder.append(PrismTsvEscaper.escapeCell(cells.get(i)));
+        }
+        builder.append('\n');
+    }
+
+    private static Map<String, Object> manifestMap(PrismPack pack) {
+        PrismPack.Manifest manifest = Objects.requireNonNull(pack.manifest(), "manifest");
+        LinkedHashMap<String, Object> map = copy(manifest.raw());
+        putIfNotNull(map, "prismPackVersion", manifest.prismPackVersion());
+        putIfNotNull(map, "id", manifest.id());
+        putIfNotNull(map, "title", manifest.title());
+        putIfNotNull(map, "description", manifest.description());
+        putIfNotNull(map, "createdAt", manifest.createdAt());
+        putIfNotNull(map, "createdBy", manifest.createdBy());
+        map.put("dataframe", dataframeRefMap(manifest.dataframe()));
+        if (pack.molecules() != null) {
+            map.put("molecules", moleculesPath(pack));
+        }
+        if (pack.endpoints() != null) {
+            map.put("endpoints", endpointsPath(pack));
+        }
+        if (pack.tableView() != null) {
+            map.put("tableView", tableViewPath(pack));
+        }
+        if (pack.visualizations() != null) {
+            map.put("visualizations", visualizationsPath(pack));
+        }
+        if (pack.attachments() != null && !pack.attachments().attachments().isEmpty()) {
+            map.put("attachments", attachmentsPath(pack));
+        }
+        if (pack.provenance() != null && !pack.provenance().isEmpty()) {
+            map.put("provenance", provenancePath(pack));
+        }
+        return map;
+    }
+
+    private static Map<String, Object> dataframeRefMap(PrismPack.DataframeRef ref) {
+        Objects.requireNonNull(ref, "dataframe ref");
+        LinkedHashMap<String, Object> map = copy(ref.raw());
+        putIfNotNull(map, "id", ref.id());
+        map.put("path", valueOrDefault(ref.path(), DATAFRAME_PATH));
+        map.put("schema", valueOrDefault(ref.schema(), SCHEMA_PATH));
+        putIfNotNull(map, "rowType", ref.rowType());
+        return map;
+    }
+
+    private static Map<String, Object> schemaMap(PrismPack.DataFrameSchema schema) {
+        Objects.requireNonNull(schema, "schema");
+        LinkedHashMap<String, Object> map = copy(schema.raw());
+        map.put("columns", schema.columns().stream().map(PrismPackWriter::columnMap).toList());
+        return map;
+    }
+
+    private static Map<String, Object> columnMap(PrismPack.Column column) {
+        LinkedHashMap<String, Object> map = copy(column.raw());
+        putIfNotNull(map, "name", column.name());
+        putIfNotNull(map, "type", column.type());
+        putIfNotNull(map, "semanticType", column.semanticType());
+        putIfNotNull(map, "displayName", column.displayName());
+        putIfNotNull(map, "role", column.role());
+        putIfNotNull(map, "unit", column.unit());
+        putIfNotNull(map, "endpointId", column.endpointId());
+        putIfNotNull(map, "direction", column.direction());
+        putIfNotNull(map, "structureFormat", column.structureFormat());
+        return map;
+    }
+
+    private static Map<String, Object> moleculesMap(PrismPack.MoleculeMetadata molecules) {
+        LinkedHashMap<String, Object> map = copy(molecules.raw());
+        putIfNotNull(map, "primaryStructureColumn", molecules.primaryStructureColumn());
+        putIfNotNull(map, "structureFormat", molecules.structureFormat());
+        putIfNotNull(map, "compoundIdColumn", molecules.compoundIdColumn());
+        return map;
+    }
+
+    private static Map<String, Object> endpointsMap(PrismPack.EndpointMetadata metadata) {
+        LinkedHashMap<String, Object> map = copy(metadata.raw());
+        map.put("endpoints", metadata.endpoints().stream().map(PrismPackWriter::endpointMap).toList());
+        return map;
+    }
+
+    private static Map<String, Object> endpointMap(PrismPack.Endpoint endpoint) {
+        LinkedHashMap<String, Object> map = copy(endpoint.raw());
+        putIfNotNull(map, "id", endpoint.id());
+        putIfNotNull(map, "column", endpoint.column());
+        putIfNotNull(map, "displayName", endpoint.displayName());
+        putIfNotNull(map, "unit", endpoint.unit());
+        putIfNotNull(map, "direction", endpoint.direction());
+        putIfNotNull(map, "assay", endpoint.assay());
+        putIfNotNull(map, "protocol", endpoint.protocol());
+        return map;
+    }
+
+    private static Map<String, Object> tableViewMap(PrismPack.TableView tableView) {
+        LinkedHashMap<String, Object> map = copy(tableView.raw());
+        putIfNotNull(map, "id", tableView.id());
+        putIfNotNull(map, "title", tableView.title());
+        map.put("columns", tableView.columns());
+        map.put("frozenColumns", tableView.frozenColumns());
+        map.put("hiddenColumns", tableView.hiddenColumns());
+        map.put("sort", tableView.sort().stream().map(PrismPackWriter::sortMap).toList());
+        map.put("filters", tableView.filters().stream().map(PrismPackWriter::filterMap).toList());
+        map.put("colorRules", tableView.colorRules().stream().map(PrismPackWriter::colorRuleMap).toList());
+        return map;
+    }
+
+    private static Map<String, Object> sortMap(PrismPack.Sort sort) {
+        LinkedHashMap<String, Object> map = copy(sort.raw());
+        putIfNotNull(map, "column", sort.column());
+        putIfNotNull(map, "direction", sort.direction());
+        return map;
+    }
+
+    private static Map<String, Object> filterMap(PrismPack.Filter filter) {
+        LinkedHashMap<String, Object> map = copy(filter.raw());
+        putIfNotNull(map, "column", filter.column());
+        putIfNotNull(map, "type", filter.type());
+        return map;
+    }
+
+    private static Map<String, Object> colorRuleMap(PrismPack.ColorRule colorRule) {
+        LinkedHashMap<String, Object> map = copy(colorRule.raw());
+        putIfNotNull(map, "column", colorRule.column());
+        putIfNotNull(map, "type", colorRule.type());
+        putIfNotNull(map, "direction", colorRule.direction());
+        return map;
+    }
+
+    private static Map<String, Object> visualizationsMap(PrismPack.VisualizationSet set) {
+        LinkedHashMap<String, Object> map = copy(set.raw());
+        map.put("visualizations", set.visualizations().stream().map(PrismPackWriter::visualizationMap).toList());
+        return map;
+    }
+
+    private static Map<String, Object> visualizationMap(PrismPack.Visualization visualization) {
+        LinkedHashMap<String, Object> map = copy(visualization.raw());
+        putIfNotNull(map, "id", visualization.id());
+        putIfNotNull(map, "type", visualization.type());
+        putIfNotNull(map, "title", visualization.title());
+        putIfNotNull(map, "x", visualization.x());
+        putIfNotNull(map, "y", visualization.y());
+        putIfNotNull(map, "colorBy", visualization.colorBy());
+        putIfNotNull(map, "sizeBy", visualization.sizeBy());
+        return map;
+    }
+
+    private static Map<String, Object> attachmentsMap(PrismPack.AttachmentSet set) {
+        LinkedHashMap<String, Object> map = copy(set.raw());
+        map.put("attachments", set.attachments().stream().map(PrismPackWriter::attachmentMap).toList());
+        return map;
+    }
+
+    private static Map<String, Object> attachmentMap(PrismPack.Attachment attachment) {
+        LinkedHashMap<String, Object> map = copy(attachment.raw());
+        putIfNotNull(map, "id", attachment.id());
+        if (attachment.target() != null) {
+            map.put("target", attachmentTargetMap(attachment.target()));
+        }
+        putIfNotNull(map, "name", attachment.name());
+        putIfNotNull(map, "mimeType", attachment.mimeType());
+        if (attachment.content() != null) {
+            map.put("content", attachmentContentMap(attachment.content()));
+        }
+        return map;
+    }
+
+    private static Map<String, Object> attachmentTargetMap(PrismPack.AttachmentTarget target) {
+        LinkedHashMap<String, Object> map = copy(target.raw());
+        putIfNotNull(map, "type", target.type());
+        putIfNotNull(map, "rowKeyColumn", target.rowKeyColumn());
+        putIfNotNull(map, "rowKey", target.rowKey());
+        putIfNotNull(map, "column", target.column());
+        return map;
+    }
+
+    private static Map<String, Object> attachmentContentMap(PrismPack.AttachmentContent content) {
+        LinkedHashMap<String, Object> map = copy(content.raw());
+        putIfNotNull(map, "type", content.type());
+        putIfNotNull(map, "text", content.text());
+        putIfNotNull(map, "path", content.path());
+        return map;
+    }
+
+    private static LinkedHashMap<String, Object> copy(Map<String, Object> raw) {
+        return raw == null ? new LinkedHashMap<>() : new LinkedHashMap<>(raw);
+    }
+
+    private static void putIfNotNull(Map<String, Object> map, String key, Object value) {
+        if (value != null) {
+            map.put(key, value);
+        }
+    }
+}

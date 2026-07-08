@@ -1,0 +1,486 @@
+package tech.molecules.structurized.prism.pack;
+
+import tech.molecules.structurized.prism.io.PrismTsvEscaper;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
+/**
+ * Reader for PrismPack v0.1 directory and ZIP packages.
+ */
+public final class PrismPackReader {
+    private static final String MANIFEST_PATH = "prism-pack.json";
+    private static final String DEFAULT_SCHEMA_PATH = "schema/dataframe.schema.json";
+
+    private PrismPackReader() {}
+
+    public static PrismPack read(Path path) throws IOException {
+        if (Files.isDirectory(path)) {
+            return read(new DirectorySource(path));
+        }
+        return read(new ZipSource(path));
+    }
+
+    private static PrismPack read(Source source) throws IOException {
+        ArrayList<String> warnings = new ArrayList<>();
+        Map<String, Object> manifestJson = readJsonObject(source, MANIFEST_PATH, true);
+        PrismPack.Manifest manifest = parseManifest(manifestJson);
+
+        PrismPack.DataframeRef dataframeRef = manifest.dataframe();
+        String dataframePath = require(dataframeRef.path(), "manifest dataframe.path is required");
+        String schemaPath = dataframeRef.schema() == null ? DEFAULT_SCHEMA_PATH : dataframeRef.schema();
+
+        PrismPack.DataFrame dataframe = readDataFrame(source.readRequired(dataframePath), dataframePath);
+        PrismPack.DataFrameSchema schema = parseSchema(readJsonObject(source, schemaPath, true));
+        validateDataframe(dataframe, schema, warnings);
+
+        PrismPack.MoleculeMetadata molecules = manifest.moleculesPath() == null
+                ? null
+                : parseMolecules(readJsonObject(source, manifest.moleculesPath(), false));
+        PrismPack.EndpointMetadata endpoints = manifest.endpointsPath() == null
+                ? null
+                : parseEndpoints(readJsonObject(source, manifest.endpointsPath(), false));
+        PrismPack.TableView tableView = manifest.tableViewPath() == null
+                ? null
+                : parseTableView(readJsonObject(source, manifest.tableViewPath(), false));
+        PrismPack.VisualizationSet visualizations = manifest.visualizationsPath() == null
+                ? null
+                : parseVisualizations(readJsonObject(source, manifest.visualizationsPath(), false));
+        PrismPack.AttachmentSet attachments = manifest.attachmentsPath() == null
+                ? null
+                : parseAttachments(readJsonObject(source, manifest.attachmentsPath(), false));
+        Map<String, Object> provenance = manifest.provenancePath() == null
+                ? Map.of()
+                : readJsonObject(source, manifest.provenancePath(), false);
+
+        validateReferences(dataframe, molecules, endpoints, tableView, visualizations, attachments, warnings);
+        return new PrismPack(manifest, dataframe, schema, molecules, endpoints, tableView, visualizations, attachments, provenance, warnings);
+    }
+
+    private static PrismPack.Manifest parseManifest(Map<String, Object> json) {
+        Map<String, Object> dataframe = object(json.get("dataframe"));
+        PrismPack.DataframeRef dataframeRef = new PrismPack.DataframeRef(
+                string(dataframe.get("id")),
+                string(dataframe.get("path")),
+                string(dataframe.get("schema")),
+                string(dataframe.get("rowType")),
+                dataframe);
+        return new PrismPack.Manifest(
+                string(json.get("prismPackVersion")),
+                string(json.get("id")),
+                string(json.get("title")),
+                string(json.get("description")),
+                string(json.get("createdAt")),
+                string(json.get("createdBy")),
+                dataframeRef,
+                string(json.get("molecules")),
+                string(json.get("endpoints")),
+                string(json.get("tableView")),
+                string(json.get("visualizations")),
+                string(json.get("attachments")),
+                string(json.get("provenance")),
+                json);
+    }
+
+    private static PrismPack.DataFrameSchema parseSchema(Map<String, Object> json) {
+        ArrayList<PrismPack.Column> columns = new ArrayList<>();
+        for (Map<String, Object> column : objectList(json.get("columns"))) {
+            columns.add(new PrismPack.Column(
+                    string(column.get("name")),
+                    string(column.get("type")),
+                    string(column.get("semanticType")),
+                    string(column.get("displayName")),
+                    string(column.get("role")),
+                    string(column.get("unit")),
+                    string(column.get("endpointId")),
+                    string(column.get("direction")),
+                    string(column.get("structureFormat")),
+                    column));
+        }
+        return new PrismPack.DataFrameSchema(columns, json);
+    }
+
+    private static PrismPack.MoleculeMetadata parseMolecules(Map<String, Object> json) {
+        if (json.isEmpty()) {
+            return null;
+        }
+        return new PrismPack.MoleculeMetadata(
+                string(json.get("primaryStructureColumn")),
+                string(json.get("structureFormat")),
+                string(json.get("compoundIdColumn")),
+                json);
+    }
+
+    private static PrismPack.EndpointMetadata parseEndpoints(Map<String, Object> json) {
+        if (json.isEmpty()) {
+            return null;
+        }
+        ArrayList<PrismPack.Endpoint> endpoints = new ArrayList<>();
+        for (Map<String, Object> endpoint : objectList(json.get("endpoints"))) {
+            endpoints.add(new PrismPack.Endpoint(
+                    string(endpoint.get("id")),
+                    string(endpoint.get("column")),
+                    string(endpoint.get("displayName")),
+                    string(endpoint.get("unit")),
+                    string(endpoint.get("direction")),
+                    string(endpoint.get("assay")),
+                    string(endpoint.get("protocol")),
+                    endpoint));
+        }
+        return new PrismPack.EndpointMetadata(endpoints, json);
+    }
+
+    private static PrismPack.TableView parseTableView(Map<String, Object> json) {
+        if (json.isEmpty()) {
+            return null;
+        }
+        ArrayList<PrismPack.Sort> sort = new ArrayList<>();
+        for (Map<String, Object> item : objectList(json.get("sort"))) {
+            sort.add(new PrismPack.Sort(string(item.get("column")), string(item.get("direction")), item));
+        }
+        ArrayList<PrismPack.Filter> filters = new ArrayList<>();
+        for (Map<String, Object> item : objectList(json.get("filters"))) {
+            filters.add(new PrismPack.Filter(string(item.get("column")), string(item.get("type")), item));
+        }
+        ArrayList<PrismPack.ColorRule> colorRules = new ArrayList<>();
+        for (Map<String, Object> item : objectList(json.get("colorRules"))) {
+            colorRules.add(new PrismPack.ColorRule(
+                    string(item.get("column")),
+                    string(item.get("type")),
+                    string(item.get("direction")),
+                    item));
+        }
+        return new PrismPack.TableView(
+                string(json.get("id")),
+                string(json.get("title")),
+                stringList(json.get("columns")),
+                stringList(json.get("frozenColumns")),
+                stringList(json.get("hiddenColumns")),
+                sort,
+                filters,
+                colorRules,
+                json);
+    }
+
+    private static PrismPack.VisualizationSet parseVisualizations(Map<String, Object> json) {
+        if (json.isEmpty()) {
+            return null;
+        }
+        ArrayList<PrismPack.Visualization> visualizations = new ArrayList<>();
+        for (Map<String, Object> item : objectList(json.get("visualizations"))) {
+            visualizations.add(new PrismPack.Visualization(
+                    string(item.get("id")),
+                    string(item.get("type")),
+                    string(item.get("title")),
+                    string(item.get("x")),
+                    string(item.get("y")),
+                    string(item.get("colorBy")),
+                    string(item.get("sizeBy")),
+                    item));
+        }
+        return new PrismPack.VisualizationSet(visualizations, json);
+    }
+
+    private static PrismPack.AttachmentSet parseAttachments(Map<String, Object> json) {
+        if (json.isEmpty()) {
+            return null;
+        }
+        ArrayList<PrismPack.Attachment> attachments = new ArrayList<>();
+        for (Map<String, Object> item : objectList(json.get("attachments"))) {
+            Map<String, Object> target = object(item.get("target"));
+            Map<String, Object> content = object(item.get("content"));
+            attachments.add(new PrismPack.Attachment(
+                    string(item.get("id")),
+                    new PrismPack.AttachmentTarget(
+                            string(target.get("type")),
+                            string(target.get("rowKeyColumn")),
+                            string(target.get("rowKey")),
+                            string(target.get("column")),
+                            target),
+                    string(item.get("name")),
+                    string(item.get("mimeType")),
+                    new PrismPack.AttachmentContent(
+                            string(content.get("type")),
+                            string(content.get("text")),
+                            string(content.get("path")),
+                            content),
+                    item));
+        }
+        return new PrismPack.AttachmentSet(attachments, json);
+    }
+
+    private static PrismPack.DataFrame readDataFrame(String tsv, String path) {
+        String normalized = tsv.replace("\r\n", "\n").replace('\r', '\n');
+        String[] lines = normalized.split("\n", -1);
+        int lineCount = lines.length;
+        while (lineCount > 0 && lines[lineCount - 1].isEmpty()) {
+            lineCount--;
+        }
+        if (lineCount == 0) {
+            throw new PrismPackException(path + " is empty");
+        }
+
+        List<String> headers = parseTsvLine(lines[0]);
+        if (headers.isEmpty()) {
+            throw new PrismPackException(path + " has no columns");
+        }
+        Set<String> seen = new HashSet<>();
+        for (String header : headers) {
+            if (header == null || header.isBlank()) {
+                throw new PrismPackException(path + " contains an empty column name");
+            }
+            if (!seen.add(header)) {
+                throw new PrismPackException(path + " contains duplicate column '" + header + "'");
+            }
+        }
+
+        ArrayList<List<String>> rows = new ArrayList<>();
+        for (int i = 1; i < lineCount; i++) {
+            List<String> row = parseTsvLine(lines[i]);
+            if (row.size() > headers.size()) {
+                throw new PrismPackException(path + " line " + (i + 1) + " has more cells than the header");
+            }
+            ArrayList<String> padded = new ArrayList<>(row);
+            while (padded.size() < headers.size()) {
+                padded.add("");
+            }
+            rows.add(padded);
+        }
+        return new PrismPack.DataFrame(headers, rows);
+    }
+
+    private static List<String> parseTsvLine(String line) {
+        String[] cells = line.split("\t", -1);
+        ArrayList<String> values = new ArrayList<>(cells.length);
+        for (String cell : cells) {
+            values.add(PrismTsvEscaper.unescapeCell(cell));
+        }
+        return values;
+    }
+
+    private static void validateDataframe(PrismPack.DataFrame dataframe, PrismPack.DataFrameSchema schema, List<String> warnings) {
+        Set<String> dataframeColumns = new HashSet<>(dataframe.headers());
+        Set<String> schemaColumns = new HashSet<>();
+        for (PrismPack.Column column : schema.columns()) {
+            if (column.name() == null || column.name().isBlank()) {
+                warnings.add("schema contains a column without a name");
+                continue;
+            }
+            if (!schemaColumns.add(column.name())) {
+                warnings.add("schema contains duplicate column '" + column.name() + "'");
+            }
+            if (!dataframeColumns.contains(column.name())) {
+                warnings.add("schema column '" + column.name() + "' is not present in the dataframe");
+            }
+        }
+        for (String column : dataframe.headers()) {
+            if (!schemaColumns.contains(column)) {
+                warnings.add("dataframe column '" + column + "' has no schema metadata");
+            }
+        }
+    }
+
+    private static void validateReferences(PrismPack.DataFrame dataframe,
+                                           PrismPack.MoleculeMetadata molecules,
+                                           PrismPack.EndpointMetadata endpoints,
+                                           PrismPack.TableView tableView,
+                                           PrismPack.VisualizationSet visualizations,
+                                           PrismPack.AttachmentSet attachments,
+                                           List<String> warnings) {
+        if (molecules != null) {
+            warnIfMissing(dataframe, molecules.primaryStructureColumn(), "molecules.primaryStructureColumn", warnings);
+            warnIfMissing(dataframe, molecules.compoundIdColumn(), "molecules.compoundIdColumn", warnings);
+        }
+        if (endpoints != null) {
+            for (PrismPack.Endpoint endpoint : endpoints.endpoints()) {
+                warnIfMissing(dataframe, endpoint.column(), "endpoint '" + endpoint.id() + "'", warnings);
+            }
+        }
+        if (tableView != null) {
+            for (String column : tableView.columns()) {
+                warnIfMissing(dataframe, column, "tableView.columns", warnings);
+            }
+            for (String column : tableView.hiddenColumns()) {
+                warnIfMissing(dataframe, column, "tableView.hiddenColumns", warnings);
+            }
+            for (PrismPack.Sort sort : tableView.sort()) {
+                warnIfMissing(dataframe, sort.column(), "tableView.sort", warnings);
+            }
+            for (PrismPack.Filter filter : tableView.filters()) {
+                warnIfMissing(dataframe, filter.column(), "tableView.filters", warnings);
+            }
+            for (PrismPack.ColorRule colorRule : tableView.colorRules()) {
+                warnIfMissing(dataframe, colorRule.column(), "tableView.colorRules", warnings);
+            }
+        }
+        if (visualizations != null) {
+            for (PrismPack.Visualization visualization : visualizations.visualizations()) {
+                warnIfMissing(dataframe, visualization.x(), "visualization '" + visualization.id() + "' x", warnings);
+                warnIfMissing(dataframe, visualization.y(), "visualization '" + visualization.id() + "' y", warnings);
+                warnIfMissing(dataframe, visualization.colorBy(), "visualization '" + visualization.id() + "' colorBy", warnings);
+                warnIfMissing(dataframe, visualization.sizeBy(), "visualization '" + visualization.id() + "' sizeBy", warnings);
+            }
+        }
+        if (attachments != null) {
+            for (PrismPack.Attachment attachment : attachments.attachments()) {
+                if (attachment.target() != null && "cell".equals(attachment.target().type())) {
+                    warnIfMissing(dataframe, attachment.target().rowKeyColumn(), "attachment '" + attachment.id() + "' rowKeyColumn", warnings);
+                    warnIfMissing(dataframe, attachment.target().column(), "attachment '" + attachment.id() + "' column", warnings);
+                }
+            }
+        }
+    }
+
+    private static void warnIfMissing(PrismPack.DataFrame dataframe, String column, String context, List<String> warnings) {
+        if (column != null && dataframe.columnIndex(column) == -1) {
+            warnings.add(context + " references unknown column '" + column + "'");
+        }
+    }
+
+    private static Map<String, Object> readJsonObject(Source source, String path, boolean required) throws IOException {
+        String content = required ? source.readRequired(path) : source.readOptional(path);
+        if (content == null) {
+            return Map.of();
+        }
+        Object parsed;
+        try {
+            parsed = PrismPackJson.parse(content);
+        }
+        catch (PrismPackException e) {
+            throw new PrismPackException("invalid JSON in " + path + ": " + e.getMessage(), e);
+        }
+        if (!(parsed instanceof Map<?, ?> map)) {
+            throw new PrismPackException(path + " must contain a JSON object");
+        }
+        return castObject(map);
+    }
+
+    private static String require(String value, String message) {
+        if (value == null || value.isBlank()) {
+            throw new PrismPackException(message);
+        }
+        return value;
+    }
+
+    private static String string(Object value) {
+        return value == null ? null : String.valueOf(value);
+    }
+
+    private static Map<String, Object> object(Object value) {
+        if (value == null) {
+            return Map.of();
+        }
+        if (!(value instanceof Map<?, ?> map)) {
+            return Map.of();
+        }
+        return castObject(map);
+    }
+
+    private static List<Map<String, Object>> objectList(Object value) {
+        if (!(value instanceof List<?> list)) {
+            return List.of();
+        }
+        ArrayList<Map<String, Object>> objects = new ArrayList<>();
+        for (Object item : list) {
+            if (item instanceof Map<?, ?> map) {
+                objects.add(castObject(map));
+            }
+        }
+        return objects;
+    }
+
+    private static List<String> stringList(Object value) {
+        if (!(value instanceof List<?> list)) {
+            return List.of();
+        }
+        ArrayList<String> strings = new ArrayList<>();
+        for (Object item : list) {
+            if (item != null) {
+                strings.add(String.valueOf(item));
+            }
+        }
+        return strings;
+    }
+
+    private static Map<String, Object> castObject(Map<?, ?> map) {
+        LinkedHashMap<String, Object> result = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            result.put(String.valueOf(entry.getKey()), entry.getValue());
+        }
+        return result;
+    }
+
+    private interface Source {
+        String readRequired(String path) throws IOException;
+
+        String readOptional(String path) throws IOException;
+    }
+
+    private record DirectorySource(Path root) implements Source {
+        @Override
+        public String readRequired(String path) throws IOException {
+            String content = readOptional(path);
+            if (content == null) {
+                throw new PrismPackException("missing required PrismPack file: " + path);
+            }
+            return content;
+        }
+
+        @Override
+        public String readOptional(String path) throws IOException {
+            Path resolved = root.resolve(normalize(path)).normalize();
+            if (!resolved.startsWith(root.normalize()) || !Files.exists(resolved)) {
+                return null;
+            }
+            return Files.readString(resolved, StandardCharsets.UTF_8);
+        }
+    }
+
+    private record ZipSource(Path path) implements Source {
+        @Override
+        public String readRequired(String entryPath) throws IOException {
+            String content = readOptional(entryPath);
+            if (content == null) {
+                throw new PrismPackException("missing required PrismPack file: " + entryPath);
+            }
+            return content;
+        }
+
+        @Override
+        public String readOptional(String entryPath) throws IOException {
+            String normalized = normalize(entryPath);
+            try (ZipFile zipFile = new ZipFile(path.toFile())) {
+                ZipEntry entry = zipFile.getEntry(normalized);
+                if (entry == null) {
+                    entry = findEntryWithSingleRoot(zipFile, normalized);
+                }
+                if (entry == null) {
+                    return null;
+                }
+                return new String(zipFile.getInputStream(entry).readAllBytes(), StandardCharsets.UTF_8);
+            }
+        }
+
+        private ZipEntry findEntryWithSingleRoot(ZipFile zipFile, String normalized) {
+            return zipFile.stream()
+                    .filter(entry -> !entry.isDirectory())
+                    .filter(entry -> normalize(entry.getName()).endsWith("/" + normalized))
+                    .findFirst()
+                    .orElse(null);
+        }
+    }
+
+    private static String normalize(String path) {
+        return path.replace('\\', '/').replaceAll("^/+", "");
+    }
+}

@@ -35,6 +35,8 @@
 
     <modules>
         <module>prism-core</module>
+        <module>prism-engine</module>
+        <module>prismlite-swing</module>
     </modules>
 
     <properties>
