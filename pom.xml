@@ -36,6 +36,7 @@
     <modules>
         <module>prism-core</module>
         <module>prism-engine</module>
+        <module>prism-engine-ocl</module>
         <module>prismlite-swing</module>
     </modules>
 
@@ -44,6 +45,7 @@
         <maven.compiler.release>23</maven.compiler.release>
         <maven.compiler.parameters>true</maven.compiler.parameters>
         <junit.jupiter.version>5.10.2</junit.jupiter.version>
+        <openchemlib.version>2026.1.1</openchemlib.version>
     </properties>
 
     <build>

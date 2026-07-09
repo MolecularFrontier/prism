@@ -48,6 +48,22 @@ class PrismSessionTest {
     }
 
     @Test
+    void textPatternFilterSupportsSubstringAndRegexModes() throws Exception {
+        PrismSession session = exampleSession();
+
+        session.addFilter(new TextPatternFilter("compound_id", "cmpd-00[12]", TextPatternMode.REGEX, true, false));
+
+        assertEquals(2, session.visibleRowCount());
+        assertEquals("CMPD-001", session.table().formattedValueAt(session.physicalRowAtVisibleIndex(0), "compound_id"));
+        assertEquals("CMPD-002", session.table().formattedValueAt(session.physicalRowAtVisibleIndex(1), "compound_id"));
+
+        session.setFilters(List.of(new TextPatternFilter("comment", "interesting", TextPatternMode.SUBSTRING, true, false)));
+
+        assertEquals(1, session.visibleRowCount());
+        assertEquals("CMPD-001", session.table().formattedValueAt(session.physicalRowAtVisibleIndex(0), "compound_id"));
+    }
+
+    @Test
     void missingFilterFindsEmptyCells() throws Exception {
         PrismSession session = exampleSession();
 

@@ -13,13 +13,17 @@ import java.util.List;
 import java.util.Objects;
 
 public final class PrismSession {
+    private final PrismTable baseTable;
+    private final ComputedValueRegistry computedValues;
     private final PrismTable table;
     private final PrismViewState viewState;
     private BitSet activeRows;
     private int[] visibleRows;
 
-    private PrismSession(PrismTable table, PrismViewState viewState) {
-        this.table = Objects.requireNonNull(table, "table");
+    private PrismSession(PrismTable baseTable, PrismViewState viewState) {
+        this.baseTable = Objects.requireNonNull(baseTable, "baseTable");
+        this.computedValues = new ComputedValueRegistry(baseTable);
+        this.table = new RuntimePrismTable(baseTable, computedValues);
         this.viewState = Objects.requireNonNull(viewState, "viewState");
         recompute();
     }
@@ -37,8 +41,16 @@ public final class PrismSession {
         return new PrismSession(table, PrismViewState.defaultFor(table));
     }
 
+    public PrismTable baseTable() {
+        return baseTable;
+    }
+
     public PrismTable table() {
         return table;
+    }
+
+    public ComputedValueRegistry computedValues() {
+        return computedValues;
     }
 
     public PrismViewState viewState() {
@@ -92,6 +104,29 @@ public final class PrismSession {
         viewState.setVisibleColumns(columnIds);
     }
 
+    public void registerComputedValue(ComputedValueDefinition<?> definition) {
+        registerComputedValue(definition, false);
+    }
+
+    public void registerComputedValue(ComputedValueDefinition<?> definition, boolean visible) {
+        computedValues.register(definition);
+        if (visible && !viewState.visibleColumns().contains(definition.id())) {
+            ArrayList<String> columns = new ArrayList<>(viewState.visibleColumns());
+            columns.add(definition.id());
+            viewState.setVisibleColumns(columns);
+        }
+        recompute();
+    }
+
+    public void replaceComputedValue(ComputedValueDefinition<?> definition) {
+        computedValues.replace(definition);
+        recompute();
+    }
+
+    public void precomputeValue(String computedValueId) {
+        computedValues.precompute(computedValueId);
+    }
+
     public void addFilter(PrismFilter filter) {
         viewState.addFilter(Objects.requireNonNull(filter, "filter"));
         recompute();
@@ -124,7 +159,7 @@ public final class PrismSession {
     public void recompute() {
         BitSet rows = new BitSet(table.rowCount());
         rows.set(0, table.rowCount());
-        PrismEvaluationContext context = new PrismEvaluationContext(viewState);
+        PrismEvaluationContext context = new PrismEvaluationContext(viewState, computedValues);
         for (PrismFilter filter : viewState.activeFilters()) {
             BitSet filterRows = filter.evaluate(table, context);
             rows.and(filterRows);

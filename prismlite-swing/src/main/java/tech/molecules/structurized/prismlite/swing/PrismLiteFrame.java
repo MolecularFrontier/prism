@@ -22,7 +22,13 @@ public final class PrismLiteFrame extends JFrame {
     private final JLabel statusLabel;
 
     public PrismLiteFrame(PrismSession session, Path sourcePath) {
+        this(session, sourcePath, PrismLiteSwingExtensions.load());
+    }
+
+    PrismLiteFrame(PrismSession session, Path sourcePath, List<PrismLiteSwingExtension> extensions) {
         super(titleFor(sourcePath));
+        List<PrismLiteSwingExtension> loadedExtensions = List.copyOf(extensions);
+        loadedExtensions.forEach(extension -> extension.configureSession(session));
         this.tableModel = new PrismLiteTableModel(session);
         this.statusLabel = new JLabel();
         JTable table = new JTable(tableModel);
@@ -45,13 +51,25 @@ public final class PrismLiteFrame extends JFrame {
             }
         });
 
+        JPanel sidePanel = new JPanel(new BorderLayout());
+        sidePanel.add(new PrismLiteFilterPanel(session, this::refresh), BorderLayout.CENTER);
+
         JPanel root = new JPanel(new BorderLayout());
         root.add(new JScrollPane(table), BorderLayout.CENTER);
+        root.add(sidePanel, BorderLayout.WEST);
         root.add(statusLabel, BorderLayout.SOUTH);
         setContentPane(root);
-        setSize(960, 640);
+        setSize(1120, 680);
         setLocationByPlatform(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        loadedExtensions.forEach(extension -> extension.configureSwing(new PrismLiteSwingContext(
+                session,
+                this,
+                table,
+                tableModel,
+                sidePanel,
+                this::refresh
+        )));
         updateStatus();
     }
 
@@ -66,8 +84,7 @@ public final class PrismLiteFrame extends JFrame {
             nextDirection = SortDirection.DESCENDING;
         }
         session.sortBy(columnId, nextDirection);
-        tableModel.refresh();
-        updateStatus();
+        refresh();
     }
 
     private void syncSelection(JTable table) {
@@ -78,6 +95,11 @@ public final class PrismLiteFrame extends JFrame {
                 session.viewState().selectionModel().setSelected(session.physicalRowAtVisibleIndex(selectedRow), true);
             }
         }
+    }
+
+    private void refresh() {
+        tableModel.refresh();
+        updateStatus();
     }
 
     private void updateStatus() {
