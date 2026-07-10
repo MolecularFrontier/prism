@@ -8,6 +8,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
@@ -52,7 +53,12 @@ public final class PrismLiteFrame extends JFrame {
         });
 
         JPanel sidePanel = new JPanel(new BorderLayout());
-        sidePanel.add(new PrismLiteFilterPanel(session, this::refresh), BorderLayout.CENTER);
+        PrismLiteRowSetPanel rowSetPanel = new PrismLiteRowSetPanel(session, this::refresh);
+        JTabbedPane sideTabs = new JTabbedPane();
+        sideTabs.addTab("Filters", new PrismLiteFilterPanel(session, this::refresh));
+        sideTabs.addTab("Row Sets", rowSetPanel);
+        sideTabs.addTab("Operations", new PrismLiteOperationPanel(session, rowSetPanel, this::refresh));
+        sidePanel.add(sideTabs, BorderLayout.CENTER);
 
         JPanel root = new JPanel(new BorderLayout());
         root.add(new JScrollPane(table), BorderLayout.CENTER);

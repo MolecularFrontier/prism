@@ -7,10 +7,14 @@ import java.util.Optional;
 final class RuntimePrismTable implements PrismTable {
     private final PrismTable baseTable;
     private final ComputedValueRegistry computedValues;
+    private final MaterializedColumnRegistry materializedColumns;
 
-    RuntimePrismTable(PrismTable baseTable, ComputedValueRegistry computedValues) {
+    RuntimePrismTable(PrismTable baseTable,
+                      ComputedValueRegistry computedValues,
+                      MaterializedColumnRegistry materializedColumns) {
         this.baseTable = baseTable;
         this.computedValues = computedValues;
+        this.materializedColumns = materializedColumns;
     }
 
     @Override
@@ -23,6 +27,9 @@ final class RuntimePrismTable implements PrismTable {
         ArrayList<PrismColumn> columns = new ArrayList<>(baseTable.columns());
         for (ComputedValueDefinition<?> definition : computedValues.definitions()) {
             columns.add(computedValues.asColumn(definition.id()));
+        }
+        for (MaterializedColumnData column : materializedColumns.columns()) {
+            columns.add(materializedColumns.asColumn(column.schema().id()));
         }
         return List.copyOf(columns);
     }
@@ -38,7 +45,12 @@ final class RuntimePrismTable implements PrismTable {
         if (baseColumn.isPresent()) {
             return baseColumn;
         }
-        return computedValues.findDefinition(columnId).map(definition -> computedValues.asColumn(definition.id()));
+        Optional<PrismColumn> computedColumn = computedValues.findDefinition(columnId)
+                .map(definition -> computedValues.asColumn(definition.id()));
+        if (computedColumn.isPresent()) {
+            return computedColumn;
+        }
+        return materializedColumns.find(columnId).map(column -> materializedColumns.asColumn(column.schema().id()));
     }
 
     @Override
@@ -50,6 +62,12 @@ final class RuntimePrismTable implements PrismTable {
         int index = baseTable.columns().size();
         for (ComputedValueDefinition<?> definition : computedValues.definitions()) {
             if (definition.id().equals(columnId)) {
+                return index;
+            }
+            index++;
+        }
+        for (MaterializedColumnData column : materializedColumns.columns()) {
+            if (column.schema().id().equals(columnId)) {
                 return index;
             }
             index++;

@@ -8,22 +8,34 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.OptionalInt;
 
 public final class PrismSession {
     private final PrismTable baseTable;
+    private final RowIdIndex rowIdIndex;
     private final ComputedValueRegistry computedValues;
+    private final MaterializedColumnRegistry materializedColumns;
+    private final PrismOperationRegistry operationRegistry;
     private final PrismTable table;
     private final PrismViewState viewState;
+    private final Map<String, PrismRowSet> rowSets = new LinkedHashMap<>();
     private BitSet activeRows;
     private int[] visibleRows;
 
     private PrismSession(PrismTable baseTable, PrismViewState viewState) {
         this.baseTable = Objects.requireNonNull(baseTable, "baseTable");
+        this.rowIdIndex = RowIdIndex.forTable(baseTable);
         this.computedValues = new ComputedValueRegistry(baseTable);
-        this.table = new RuntimePrismTable(baseTable, computedValues);
+        this.materializedColumns = new MaterializedColumnRegistry(baseTable.rowCount());
+        this.operationRegistry = new PrismOperationRegistry();
+        this.table = new RuntimePrismTable(baseTable, computedValues, materializedColumns);
         this.viewState = Objects.requireNonNull(viewState, "viewState");
         recompute();
     }
@@ -49,8 +61,24 @@ public final class PrismSession {
         return table;
     }
 
+    public RowIdIndex rowIdIndex() {
+        return rowIdIndex;
+    }
+
+    public String rowIdForPhysicalRow(int physicalRow) {
+        return rowIdIndex.rowId(physicalRow);
+    }
+
+    public OptionalInt physicalRowForRowId(String rowId) {
+        return rowIdIndex.physicalRow(rowId);
+    }
+
     public ComputedValueRegistry computedValues() {
         return computedValues;
+    }
+
+    public PrismOperationRegistry operationRegistry() {
+        return operationRegistry;
     }
 
     public PrismViewState viewState() {
@@ -95,6 +123,151 @@ public final class PrismSession {
 
     public int[] visiblePhysicalRows() {
         return visibleRows.clone();
+    }
+
+    public List<PrismRowSet> rowSets() {
+        return List.copyOf(rowSets.values());
+    }
+
+    public PrismRowSet rowSet(String rowSetId) {
+        PrismRowSet rowSet = rowSets.get(rowSetId);
+        if (rowSet == null) {
+            throw new IllegalArgumentException("unknown row set '" + rowSetId + "'");
+        }
+        return rowSet;
+    }
+
+    public void addRowSet(PrismRowSet rowSet) {
+        applyOperationResult(PrismOperationResult.builder().addRowSet(rowSet).build());
+    }
+
+    public void addMaterializedColumn(MaterializedColumnData column, boolean visible) {
+        applyOperationResult(PrismOperationResult.builder().addColumn(column).build(), visible);
+    }
+
+    public PrismOperationResult runOperation(String operationId, Map<String, Object> parameters) {
+        PrismOperationResult result = operationRegistry.run(operationId, snapshot(), parameters);
+        applyOperationResult(result);
+        return result;
+    }
+
+    public PrismSessionSnapshot snapshot() {
+        return new PrismSessionSnapshot(table, computedValues, rowIdIndex);
+    }
+
+    public void applyOperationResult(PrismOperationResult result) {
+        applyOperationResult(result, true);
+    }
+
+    private void applyOperationResult(PrismOperationResult result, boolean makeColumnsVisible) {
+        Objects.requireNonNull(result, "result");
+        List<MaterializedColumnData> columns = materializeColumns(result);
+        validateOperationResult(columns, result.addedRowSets());
+
+        for (MaterializedColumnData column : columns) {
+            materializedColumns.add(column);
+        }
+        for (PrismRowSet rowSet : result.addedRowSets()) {
+            rowSets.put(rowSet.id(), rowSet);
+        }
+        if (makeColumnsVisible && !columns.isEmpty()) {
+            ArrayList<String> visible = new ArrayList<>(viewState.visibleColumns());
+            for (MaterializedColumnData column : columns) {
+                if (!visible.contains(column.schema().id())) {
+                    visible.add(column.schema().id());
+                }
+            }
+            viewState.setVisibleColumns(visible);
+        }
+        recompute();
+    }
+
+    private List<MaterializedColumnData> materializeColumns(PrismOperationResult result) {
+        ArrayList<MaterializedColumnData> columns = new ArrayList<>(result.addedColumns());
+        for (RowIdMaterializedColumnData column : result.addedColumnsByRowId()) {
+            for (String rowId : column.valuesByRowId().keySet()) {
+                if (physicalRowForRowId(rowId).isEmpty()) {
+                    throw new PrismOperationException(
+                            "UNKNOWN_ROW_ID",
+                            "column '" + column.schema().id() + "' references unknown row ID '" + rowId + "'",
+                            null,
+                            Map.of("columnId", column.schema().id(), "rowId", rowId)
+                    );
+                }
+            }
+            ArrayList<Object> values = new ArrayList<>(rowIdIndex.rowCount());
+            for (int row = 0; row < rowIdIndex.rowCount(); row++) {
+                values.add(column.valuesByRowId().get(rowIdIndex.rowId(row)));
+            }
+            columns.add(new MaterializedColumnData(column.schema(), values, column.provenance()));
+        }
+        return List.copyOf(columns);
+    }
+
+    private void validateOperationResult(Collection<MaterializedColumnData> columns, Collection<PrismRowSet> newRowSets) {
+        HashSet<String> newColumnIds = new HashSet<>();
+        for (MaterializedColumnData column : columns) {
+            validateMaterializedColumn(column);
+            String columnId = column.schema().id();
+            if (!newColumnIds.add(columnId)) {
+                throw new PrismOperationException("DUPLICATE_COLUMN", "operation result contains duplicate column '" + columnId + "'");
+            }
+            if (table.findColumn(columnId).isPresent()) {
+                throw new PrismOperationException("COLUMN_EXISTS", "column already exists: " + columnId);
+            }
+        }
+
+        HashSet<String> newRowSetIds = new HashSet<>();
+        for (PrismRowSet rowSet : newRowSets) {
+            if (!newRowSetIds.add(rowSet.id())) {
+                throw new PrismOperationException("DUPLICATE_ROW_SET", "operation result contains duplicate row set '" + rowSet.id() + "'");
+            }
+            if (rowSets.containsKey(rowSet.id())) {
+                throw new PrismOperationException("ROW_SET_EXISTS", "row set already exists: " + rowSet.id());
+            }
+            for (String rowId : rowSet.rowIds()) {
+                if (physicalRowForRowId(rowId).isEmpty()) {
+                    throw new PrismOperationException(
+                            "UNKNOWN_ROW_ID",
+                            "row set '" + rowSet.id() + "' references unknown row ID '" + rowId + "'",
+                            null,
+                            Map.of("rowSetId", rowSet.id(), "rowId", rowId)
+                    );
+                }
+            }
+        }
+    }
+
+    private void validateMaterializedColumn(MaterializedColumnData column) {
+        if (column.values().size() != rowIdIndex.rowCount()) {
+            throw new PrismOperationException(
+                    "INVALID_COLUMN_VALUES",
+                    "materialized column '" + column.schema().id() + "' has " + column.values().size()
+                            + " values for " + rowIdIndex.rowCount() + " rows"
+            );
+        }
+        for (Object value : column.values()) {
+            if (value != null && !isCompatibleColumnValue(column.schema().type(), value)) {
+                throw new PrismOperationException(
+                        "INVALID_COLUMN_VALUE",
+                        "materialized column '" + column.schema().id() + "' contains value incompatible with " + column.schema().type(),
+                        null,
+                        Map.of("columnId", column.schema().id(), "valueType", value.getClass().getName())
+                );
+            }
+        }
+    }
+
+    private static boolean isCompatibleColumnValue(PrismColumnType type, Object value) {
+        return switch (type) {
+            case NUMERIC, INTEGER -> value instanceof Number;
+            case BOOLEAN -> value instanceof Boolean;
+            case TEXT, CATEGORICAL, MOLECULE -> true;
+        };
+    }
+
+    public void filterToRowSet(String rowSetId) {
+        setFilters(List.of(new RowSetFilter(rowSet(rowSetId))));
     }
 
     public void setVisibleColumns(List<String> columnIds) {
@@ -159,7 +332,7 @@ public final class PrismSession {
     public void recompute() {
         BitSet rows = new BitSet(table.rowCount());
         rows.set(0, table.rowCount());
-        PrismEvaluationContext context = new PrismEvaluationContext(viewState, computedValues);
+        PrismEvaluationContext context = new PrismEvaluationContext(viewState, computedValues, rowIdIndex);
         for (PrismFilter filter : viewState.activeFilters()) {
             BitSet filterRows = filter.evaluate(table, context);
             rows.and(filterRows);

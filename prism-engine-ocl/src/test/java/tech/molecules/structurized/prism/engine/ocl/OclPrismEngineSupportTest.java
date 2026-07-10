@@ -4,15 +4,19 @@ import com.actelion.research.chem.SmilesParser;
 import com.actelion.research.chem.StereoMolecule;
 import org.junit.jupiter.api.Test;
 import tech.molecules.structurized.prism.engine.CachePolicy;
+import tech.molecules.structurized.prism.engine.PrismOperationDescriptor;
+import tech.molecules.structurized.prism.engine.PrismOperationException;
 import tech.molecules.structurized.prism.engine.PrismSession;
 import tech.molecules.structurized.prism.pack.PrismPack;
 import tech.molecules.structurized.prism.pack.PrismPackWriter;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OclPrismEngineSupportTest {
@@ -66,6 +70,46 @@ class OclPrismEngineSupportTest {
         session.recompute();
 
         assertEquals(cacheSize, session.computedValues().cache().size());
+    }
+
+    @Test
+    void substructureOperationCreatesNamedRowSet() {
+        PrismSession session = PrismSession.from(smilesPack());
+        OclPrismEngineSupport.registerCapabilities(session);
+
+        PrismOperationDescriptor descriptor = session.operationRegistry().operation(OclCreateSubstructureRowSetOperation.ID).descriptor();
+        assertEquals("Create substructure row set", descriptor.name());
+
+        session.runOperation(OclCreateSubstructureRowSetOperation.ID, Map.of(
+                "structureColumn", "smiles",
+                "query", "c1ccccc1",
+                "queryFormat", "SMILES",
+                "stereoMode", "IGNORE_STEREO",
+                "rowSetName", "Phenyl Matches"
+        ));
+
+        assertEquals(1, session.rowSets().size());
+        assertEquals("Phenyl Matches", session.rowSet("ocl:substructure:phenyl-matches").name());
+        assertEquals(Set.of("CMPD-001", "CMPD-002"), session.rowSet("ocl:substructure:phenyl-matches").rowIds());
+    }
+
+    @Test
+    void substructureOperationReportsInvalidQueryAsParameterFailure() {
+        PrismSession session = PrismSession.from(smilesPack());
+        OclPrismEngineSupport.registerCapabilities(session);
+
+        PrismOperationException exception = assertThrows(PrismOperationException.class, () ->
+                session.runOperation(OclCreateSubstructureRowSetOperation.ID, Map.of(
+                        "structureColumn", "smiles",
+                        "query", "not a smiles",
+                        "queryFormat", "SMILES",
+                        "stereoMode", "IGNORE_STEREO",
+                        "rowSetName", "Bad Query"
+                )));
+
+        assertEquals("INVALID_PARAMETER", exception.errorCode());
+        assertEquals("query", exception.parameterName());
+        assertEquals(0, session.rowSets().size());
     }
 
     @Test
