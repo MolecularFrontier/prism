@@ -15,8 +15,10 @@ import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 public final class PrismLiteFrame extends JFrame {
     private final PrismLiteTableModel tableModel;
@@ -122,6 +124,35 @@ public final class PrismLiteFrame extends JFrame {
     }
 
     public static void show(PrismSession session, Path sourcePath) {
-        SwingUtilities.invokeLater(() -> new PrismLiteFrame(session, sourcePath).setVisible(true));
+        open(session, sourcePath);
+    }
+
+    public static PrismLiteFrame open(PrismSession session, Path sourcePath) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            PrismLiteFrame frame = new PrismLiteFrame(session, sourcePath);
+            frame.setVisible(true);
+            return frame;
+        }
+        AtomicReference<PrismLiteFrame> frame = new AtomicReference<>();
+        try {
+            SwingUtilities.invokeAndWait(() -> {
+                PrismLiteFrame created = new PrismLiteFrame(session, sourcePath);
+                created.setVisible(true);
+                frame.set(created);
+            });
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while opening PrismLite frame", exception);
+        } catch (InvocationTargetException exception) {
+            Throwable cause = exception.getCause();
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            if (cause instanceof Error error) {
+                throw error;
+            }
+            throw new IllegalStateException("Failed to open PrismLite frame", cause);
+        }
+        return frame.get();
     }
 }
