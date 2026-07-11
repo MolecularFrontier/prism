@@ -1,7 +1,9 @@
 package tech.molecules.structurized.prismlite.swing;
 
+import tech.molecules.structurized.prism.engine.PrismFilter;
 import tech.molecules.structurized.prism.engine.PrismRowSet;
 import tech.molecules.structurized.prism.engine.PrismSession;
+import tech.molecules.structurized.prism.engine.RowSetFilter;
 
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
@@ -12,6 +14,7 @@ import javax.swing.JScrollPane;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.FlowLayout;
+import java.util.ArrayList;
 import java.util.Objects;
 
 public final class PrismLiteRowSetPanel extends JPanel {
@@ -31,7 +34,7 @@ public final class PrismLiteRowSetPanel extends JPanel {
         filter.addActionListener(event -> filterSelectedRowSet());
         JButton clear = new JButton("Clear");
         clear.addActionListener(event -> {
-            session.clearFilters();
+            clearRowSetFilters();
             refresh.run();
         });
         JButton reload = new JButton("Refresh");
@@ -65,8 +68,25 @@ public final class PrismLiteRowSetPanel extends JPanel {
         if (rowSet == null) {
             return;
         }
-        session.filterToRowSet(rowSet.id());
+        ArrayList<PrismFilter> filters = new ArrayList<>();
+        for (PrismFilter filter : session.viewState().activeFilters()) {
+            if (!(filter instanceof RowSetFilter)) {
+                filters.add(filter);
+            }
+        }
+        filters.add(new RowSetFilter(rowSet));
+        session.setFilters(filters);
         refresh.run();
+    }
+
+    private void clearRowSetFilters() {
+        ArrayList<PrismFilter> filters = new ArrayList<>();
+        for (PrismFilter filter : session.viewState().activeFilters()) {
+            if (!(filter instanceof RowSetFilter)) {
+                filters.add(filter);
+            }
+        }
+        session.setFilters(filters);
     }
 
     private static final class RowSetRenderer extends DefaultListCellRenderer {

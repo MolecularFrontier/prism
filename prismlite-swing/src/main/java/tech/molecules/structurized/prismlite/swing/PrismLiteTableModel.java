@@ -58,4 +58,8 @@ public final class PrismLiteTableModel extends AbstractTableModel {
     public void refresh() {
         fireTableDataChanged();
     }
+
+    public void refreshStructure() {
+        fireTableStructureChanged();
+    }
 }
