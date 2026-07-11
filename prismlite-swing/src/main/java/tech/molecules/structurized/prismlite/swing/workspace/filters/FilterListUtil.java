@@ -16,8 +16,9 @@ public final class FilterListUtil {
 
     public static PrismFilter activeColumnFilter(List<PrismFilter> filters, String columnId) {
         for (PrismFilter filter : filters) {
-            if (isGuiColumnFilter(filter, columnId)) {
-                return filter;
+            PrismFilter unwrapped = unwrap(filter);
+            if (isGuiColumnFilter(unwrapped, columnId)) {
+                return unwrapped;
             }
         }
         return null;
@@ -66,6 +67,22 @@ public final class FilterListUtil {
 
     public static boolean isGuiColumnFilter(PrismFilter filter, String columnId) {
         Objects.requireNonNull(columnId, "columnId");
-        return filter instanceof ColumnFilter columnFilter && columnFilter.columnId().equals(columnId);
+        PrismFilter unwrapped = unwrap(filter);
+        return unwrapped instanceof ColumnFilter columnFilter && columnFilter.columnId().equals(columnId);
+    }
+
+    public static PrismFilter unwrap(PrismFilter filter) {
+        return filter instanceof InvertedPrismFilter inverted ? inverted.delegate() : filter;
+    }
+
+    public static boolean isInverted(PrismFilter filter) {
+        return filter instanceof InvertedPrismFilter;
+    }
+
+    public static PrismFilter effectiveFilter(FilterDraftState state) {
+        if (state == null || !state.enabled() || state.filter() == null) {
+            return null;
+        }
+        return state.inverted() ? new InvertedPrismFilter(state.filter()) : state.filter();
     }
 }

@@ -16,7 +16,7 @@ public final class PrismLiteApplication {
     }
 
     private static Path defaultExamplePath() {
-        Path fromModuleDirectory = Path.of("..", "examples", "example.prismpack");
+        Path fromModuleDirectory = Path.of( "examples", "moonshot-medchem.prismpack");
         if (fromModuleDirectory.toFile().exists()) {
             return fromModuleDirectory;
         }

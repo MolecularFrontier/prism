@@ -1,0 +1,72 @@
+{
+  "id": "moonshot-medchem-full",
+  "title": "Moonshot medchem full view",
+  "columns": [
+    "compound_id",
+    "smiles",
+    "series",
+    "mpro_fluorescence_pIC50",
+    "mpro_fluorescence_IC50_uM",
+    "mpro_rapidfire_pIC50",
+    "mpro_rapidfire_IC50_uM",
+    "trypsin_IC50_uM",
+    "trypsin_mpro_selectivity_ratio",
+    "acrylamide",
+    "chloroacetamide",
+    "canonical_postera_id",
+    "fragalysis_id"
+  ],
+  "frozenColumns": [
+    "compound_id",
+    "smiles"
+  ],
+  "hiddenColumns": [
+    "canonical_postera_id",
+    "fragalysis_id"
+  ],
+  "sort": [
+    {
+      "column": "mpro_fluorescence_pIC50",
+      "direction": "desc"
+    }
+  ],
+  "filters": [
+    {
+      "column": "series",
+      "type": "category"
+    },
+    {
+      "column": "mpro_fluorescence_pIC50",
+      "type": "range"
+    },
+    {
+      "column": "mpro_rapidfire_pIC50",
+      "type": "range"
+    },
+    {
+      "column": "trypsin_IC50_uM",
+      "type": "range"
+    },
+    {
+      "column": "trypsin_mpro_selectivity_ratio",
+      "type": "range"
+    }
+  ],
+  "colorRules": [
+    {
+      "column": "mpro_fluorescence_pIC50",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "mpro_rapidfire_pIC50",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "trypsin_mpro_selectivity_ratio",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    }
+  ]
+}

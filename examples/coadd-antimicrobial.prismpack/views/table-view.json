@@ -1,0 +1,125 @@
+{
+  "id": "coadd-antimicrobial-full",
+  "title": "CO-ADD antimicrobial overview",
+  "columns": [
+    "compound_id",
+    "smiles",
+    "library",
+    "coadd_cc50_ma_007_ug_ml",
+    "coadd_mic_gn_034_ug_ml",
+    "coadd_mic_gn_042_ug_ml",
+    "coadd_mic_gp_020_ug_ml",
+    "coadd_mic_gn_001_ug_ml",
+    "coadd_mic_gn_003_ug_ml",
+    "coadd_mic_fg_001_ug_ml",
+    "coadd_mic_fg_002_ug_ml",
+    "coadd_hc10_ha_150_ug_ml",
+    "compound_code",
+    "compound_name",
+    "coadd_project_id"
+  ],
+  "frozenColumns": [
+    "compound_id",
+    "smiles"
+  ],
+  "hiddenColumns": [
+    "compound_code",
+    "compound_name",
+    "coadd_project_id"
+  ],
+  "sort": [
+    {
+      "column": "coadd_mic_gn_001_ug_ml",
+      "direction": "asc"
+    }
+  ],
+  "filters": [
+    {
+      "column": "library",
+      "type": "category"
+    },
+    {
+      "column": "coadd_cc50_ma_007_ug_ml",
+      "type": "range"
+    },
+    {
+      "column": "coadd_mic_gn_034_ug_ml",
+      "type": "range"
+    },
+    {
+      "column": "coadd_mic_gn_042_ug_ml",
+      "type": "range"
+    },
+    {
+      "column": "coadd_mic_gp_020_ug_ml",
+      "type": "range"
+    },
+    {
+      "column": "coadd_mic_gn_001_ug_ml",
+      "type": "range"
+    },
+    {
+      "column": "coadd_mic_gn_003_ug_ml",
+      "type": "range"
+    },
+    {
+      "column": "coadd_mic_fg_001_ug_ml",
+      "type": "range"
+    },
+    {
+      "column": "coadd_mic_fg_002_ug_ml",
+      "type": "range"
+    },
+    {
+      "column": "coadd_hc10_ha_150_ug_ml",
+      "type": "range"
+    }
+  ],
+  "colorRules": [
+    {
+      "column": "coadd_cc50_ma_007_ug_ml",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "coadd_mic_gn_034_ug_ml",
+      "type": "continuous",
+      "direction": "lower_is_better"
+    },
+    {
+      "column": "coadd_mic_gn_042_ug_ml",
+      "type": "continuous",
+      "direction": "lower_is_better"
+    },
+    {
+      "column": "coadd_mic_gp_020_ug_ml",
+      "type": "continuous",
+      "direction": "lower_is_better"
+    },
+    {
+      "column": "coadd_mic_gn_001_ug_ml",
+      "type": "continuous",
+      "direction": "lower_is_better"
+    },
+    {
+      "column": "coadd_mic_gn_003_ug_ml",
+      "type": "continuous",
+      "direction": "lower_is_better"
+    },
+    {
+      "column": "coadd_mic_fg_001_ug_ml",
+      "type": "continuous",
+      "direction": "lower_is_better"
+    },
+    {
+      "column": "coadd_mic_fg_002_ug_ml",
+      "type": "continuous",
+      "direction": "lower_is_better"
+    },
+    {
+      "column": "coadd_hc10_ha_150_ug_ml",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    }
+  ]
+}

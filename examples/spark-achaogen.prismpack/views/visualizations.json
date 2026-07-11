@@ -1,0 +1,31 @@
+{
+  "visualizations": [
+    {
+      "id": "lpxc-vs-pae",
+      "type": "scatter",
+      "title": "LpxC potency vs P. aeruginosa activity",
+      "x": "spark_achaogen_lpxc_pic50",
+      "y": "spark_achaogen_primary_mic_pseudomonas_aeruginosa_pmic",
+      "colorBy": "series",
+      "sizeBy": "spark_achaogen_protein_binding_human_fraction_free_pct"
+    },
+    {
+      "id": "pae-vs-ecoli",
+      "type": "scatter",
+      "title": "P. aeruginosa vs E. coli pMIC",
+      "x": "spark_achaogen_primary_mic_pseudomonas_aeruginosa_pmic",
+      "y": "spark_achaogen_primary_mic_escherichia_coli_pmic",
+      "colorBy": "series",
+      "sizeBy": "spark_achaogen_cytotox_ic50_um"
+    },
+    {
+      "id": "protein-binding-vs-exposure",
+      "type": "scatter",
+      "title": "Human fraction free vs rat AUC",
+      "x": "spark_achaogen_protein_binding_human_fraction_free_pct",
+      "y": "spark_achaogen_pk_rat_iv_auc_0_t_hr_ug_ml",
+      "colorBy": "series",
+      "sizeBy": "spark_achaogen_lpxc_pic50"
+    }
+  ]
+}

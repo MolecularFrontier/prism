@@ -1,6 +1,13 @@
 package tech.molecules.structurized.prismlite.swing;
 
+import tech.molecules.structurized.prism.engine.CachePolicy;
+import tech.molecules.structurized.prism.engine.PrismColumn;
+import tech.molecules.structurized.prism.engine.PrismColumnType;
 import tech.molecules.structurized.prism.engine.PrismSession;
+import tech.molecules.structurized.prism.engine.ocl.OclCreateSubstructureRowSetOperation;
+import tech.molecules.structurized.prism.engine.ocl.OclPrismEngineSupport;
+import tech.molecules.structurized.prism.engine.ocl.OclStructureFormat;
+import tech.molecules.structurized.prismlite.swing.workspace.chem.StructureCoordinateResolver;
 import tech.molecules.structurized.prismlite.swing.workspace.PrismLiteWorkspacePanel;
 
 import javax.swing.JFrame;
@@ -19,6 +26,7 @@ public final class PrismLiteFrame extends JFrame {
 
     PrismLiteFrame(PrismSession session, Path sourcePath, List<PrismLiteSwingExtension> extensions) {
         super(titleFor(sourcePath));
+        configureChemistry(session);
         List<PrismLiteSwingExtension> loadedExtensions = List.copyOf(extensions);
         loadedExtensions.forEach(extension -> extension.configureSession(session));
         this.workspace = new PrismLiteWorkspacePanel(session);
@@ -35,6 +43,32 @@ public final class PrismLiteFrame extends JFrame {
                 workspace::refreshWorkspace
         )));
         workspace.refreshWorkspace();
+    }
+
+    private static void configureChemistry(PrismSession session) {
+        for (PrismColumn column : session.baseTable().columns()) {
+            if (column.type() != PrismColumnType.MOLECULE) {
+                continue;
+            }
+            try {
+                String coordinatesColumnId = StructureCoordinateResolver.coordinateColumnId(session.baseTable(), column);
+                OclPrismEngineSupport.registerStructureColumn(
+                        session,
+                        column.id(),
+                        OclStructureFormat.fromMetadata(column.schema().structureFormat()),
+                        coordinatesColumnId,
+                        CachePolicy.LAZY);
+            } catch (IllegalArgumentException ignored) {
+                // A plugin or caller may already have registered the same OCL computed values.
+            }
+        }
+        try {
+            if (!session.operationRegistry().operationIds().contains(OclCreateSubstructureRowSetOperation.ID)) {
+                session.operationRegistry().register(new OclCreateSubstructureRowSetOperation());
+            }
+        } catch (IllegalArgumentException ignored) {
+            // A plugin or caller may already have registered the same OCL operation.
+        }
     }
 
     private static String titleFor(Path sourcePath) {

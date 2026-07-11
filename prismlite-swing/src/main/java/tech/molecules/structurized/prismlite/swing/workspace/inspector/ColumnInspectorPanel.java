@@ -18,6 +18,7 @@ import tech.molecules.structurized.prismlite.swing.workspace.analysis.ColumnSumm
 import tech.molecules.structurized.prismlite.swing.workspace.analysis.ColumnSummaryService;
 import tech.molecules.structurized.prismlite.swing.workspace.analysis.HistogramStrip;
 import tech.molecules.structurized.prismlite.swing.workspace.analysis.NumericColumnSummary;
+import tech.molecules.structurized.prismlite.swing.workspace.filters.FilterDraftState;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -49,17 +50,20 @@ public final class ColumnInspectorPanel extends JPanel {
     private final PrismLiteWorkspaceModel model;
     private final PrismLiteWorkspaceController controller;
     private final ColumnSummaryService summaries;
-    private final Runnable refreshWorkspace;
+    private final Runnable refreshData;
+    private final Runnable refreshStructure;
 
     public ColumnInspectorPanel(PrismLiteWorkspaceModel model,
                                 PrismLiteWorkspaceController controller,
                                 ColumnSummaryService summaries,
-                                Runnable refreshWorkspace) {
+                                Runnable refreshData,
+                                Runnable refreshStructure) {
         super(new BorderLayout());
         this.model = Objects.requireNonNull(model, "model");
         this.controller = Objects.requireNonNull(controller, "controller");
         this.summaries = Objects.requireNonNull(summaries, "summaries");
-        this.refreshWorkspace = refreshWorkspace == null ? () -> { } : refreshWorkspace;
+        this.refreshData = refreshData == null ? () -> { } : refreshData;
+        this.refreshStructure = refreshStructure == null ? () -> { } : refreshStructure;
         refresh();
     }
 
@@ -284,12 +288,12 @@ public final class ColumnInspectorPanel extends JPanel {
         JButton visible = new JButton(model.isVisible(column.id()) ? "Hide" : "Show");
         visible.addActionListener(event -> {
             model.setColumnVisible(column.id(), !model.isVisible(column.id()));
-            refreshWorkspace.run();
+            refreshStructure.run();
         });
         JButton pin = new JButton(model.isPinned(column.id()) ? "Unpin" : "Pin");
         pin.addActionListener(event -> {
             model.setPinned(column.id(), !model.isPinned(column.id()));
-            refreshWorkspace.run();
+            refreshData.run();
         });
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         row.add(visible);
@@ -315,16 +319,25 @@ public final class ColumnInspectorPanel extends JPanel {
 
     private JPanel buttons(String columnId) {
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        FilterDraftState state = model.draftFilterState(columnId);
+        JCheckBox enabled = new JCheckBox("on", state == null || state.enabled());
+        enabled.setEnabled(state != null && state.filter() != null);
+        enabled.addActionListener(event -> model.setDraftFilterEnabled(columnId, enabled.isSelected()));
+        JCheckBox inverted = new JCheckBox("not", state != null && state.inverted());
+        inverted.setEnabled(state != null && state.filter() != null);
+        inverted.addActionListener(event -> model.setDraftFilterInverted(columnId, inverted.isSelected()));
         JButton revert = new JButton("Revert");
         revert.addActionListener(event -> {
             model.discardDraft(columnId);
-            refreshWorkspace.run();
+            refreshData.run();
         });
         JButton apply = new JButton("Apply");
         apply.addActionListener(event -> {
             model.applyDraft(columnId);
-            refreshWorkspace.run();
+            refreshData.run();
         });
+        buttons.add(enabled);
+        buttons.add(inverted);
         buttons.add(revert);
         buttons.add(apply);
         return buttons;

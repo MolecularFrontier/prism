@@ -1,0 +1,28 @@
+{
+  "visualizations": [
+    {
+      "id": "pactivity-vs-nm",
+      "type": "scatter",
+      "title": "pKi vs Ki nM",
+      "x": "activity_nm",
+      "y": "p_activity",
+      "colorBy": "activity_cliff",
+      "shapeBy": "split"
+    },
+    {
+      "id": "benchmark-y-vs-pactivity",
+      "type": "scatter",
+      "title": "MoleculeACE y vs pActivity",
+      "x": "moleculeace_y",
+      "y": "p_activity",
+      "colorBy": "split"
+    },
+    {
+      "id": "potency-distribution",
+      "type": "histogram",
+      "title": "pKi distribution",
+      "x": "p_activity",
+      "colorBy": "activity_cliff"
+    }
+  ]
+}

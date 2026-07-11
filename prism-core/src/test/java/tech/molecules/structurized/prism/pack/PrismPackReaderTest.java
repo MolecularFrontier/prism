@@ -30,6 +30,74 @@ class PrismPackReaderTest {
     }
 
     @Test
+    void readsMoonshotMedchemExampleDirectory() throws IOException {
+        Path example = Path.of("..", "examples", "moonshot-medchem.prismpack");
+
+        PrismPack pack = PrismPackReader.read(example);
+
+        assertEquals("0.1", pack.manifest().prismPackVersion());
+        assertEquals("COVID Moonshot Medchem Full View", pack.manifest().title());
+        assertEquals(13, pack.dataFrame().headers().size());
+        assertEquals(2062, pack.dataFrame().rows().size());
+        assertEquals("smiles", pack.molecules().primaryStructureColumn());
+        assertEquals(6, pack.endpoints().endpoints().size());
+        assertEquals(3, pack.visualizations().visualizations().size());
+        assertEquals("mpro_fluorescence_pIC50", pack.tableView().sort().getFirst().column());
+        assertTrue(pack.warnings().isEmpty());
+    }
+
+    @Test
+    void readsCoaddAntimicrobialExampleDirectory() throws IOException {
+        Path example = Path.of("..", "examples", "coadd-antimicrobial.prismpack");
+
+        PrismPack pack = PrismPackReader.read(example);
+
+        assertEquals("0.1", pack.manifest().prismPackVersion());
+        assertEquals("CO-ADD Antimicrobial Overview", pack.manifest().title());
+        assertEquals(52, pack.dataFrame().headers().size());
+        assertEquals(4803, pack.dataFrame().rows().size());
+        assertEquals("smiles", pack.molecules().primaryStructureColumn());
+        assertEquals(46, pack.endpoints().endpoints().size());
+        assertEquals(3, pack.visualizations().visualizations().size());
+        assertEquals("coadd_mic_gn_001_ug_ml", pack.tableView().sort().getFirst().column());
+        assertTrue(pack.warnings().isEmpty());
+    }
+
+    @Test
+    void readsSparkAchaogenExampleDirectory() throws IOException {
+        Path example = Path.of("..", "examples", "spark-achaogen.prismpack");
+
+        PrismPack pack = PrismPackReader.read(example);
+
+        assertEquals("0.1", pack.manifest().prismPackVersion());
+        assertEquals("SPARK Achaogen LpxC Overview", pack.manifest().title());
+        assertEquals(65, pack.dataFrame().headers().size());
+        assertEquals(1873, pack.dataFrame().rows().size());
+        assertEquals("smiles", pack.molecules().primaryStructureColumn());
+        assertEquals(59, pack.endpoints().endpoints().size());
+        assertEquals(3, pack.visualizations().visualizations().size());
+        assertEquals("spark_achaogen_lpxc_pic50", pack.tableView().sort().getFirst().column());
+        assertTrue(pack.warnings().isEmpty());
+    }
+
+    @Test
+    void readsMoleculeAceExampleDirectory() throws IOException {
+        Path example = Path.of("..", "examples", "moleculeace-chembl2034-ki.prismpack");
+
+        PrismPack pack = PrismPackReader.read(example);
+
+        assertEquals("0.1", pack.manifest().prismPackVersion());
+        assertEquals("MoleculeACE GR Ki", pack.manifest().title());
+        assertEquals(11, pack.dataFrame().headers().size());
+        assertEquals(750, pack.dataFrame().rows().size());
+        assertEquals("smiles", pack.molecules().primaryStructureColumn());
+        assertEquals(3, pack.endpoints().endpoints().size());
+        assertEquals(3, pack.visualizations().visualizations().size());
+        assertEquals("p_activity", pack.tableView().sort().getFirst().column());
+        assertTrue(pack.warnings().isEmpty());
+    }
+
+    @Test
     void readsPackageWithRootDirectoryFromZip(@TempDir Path tempDir) throws IOException {
         Path source = Path.of("..", "examples", "example.prismpack");
         Path zip = tempDir.resolve("example.prismpack");

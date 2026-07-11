@@ -1,0 +1,535 @@
+{
+  "endpoints": [
+    {
+      "id": "spark.achaogen.lpxc.pic50",
+      "column": "spark_achaogen_lpxc_pic50",
+      "displayName": "LpxC pIC50",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Activity/LpxC/Biochemical",
+      "protocol": "Curated SPARK Achaogen LpxC biochemical pIC50."
+    },
+    {
+      "id": "spark.achaogen.lpxc.ic50_um",
+      "column": "spark_achaogen_lpxc_ic50_um",
+      "displayName": "LpxC IC50",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Activity/LpxC/Biochemical",
+      "protocol": "Curated SPARK Achaogen LpxC biochemical IC50 in uM."
+    },
+    {
+      "id": "spark.achaogen.primary_mic.pseudomonas_aeruginosa.pmic",
+      "column": "spark_achaogen_primary_mic_pseudomonas_aeruginosa_pmic",
+      "displayName": "Primary panel pMIC - Pseudomonas aeruginosa",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/Primary Panel/Pseudomonas aeruginosa",
+      "protocol": "Median primary-panel pMIC across available Pseudomonas aeruginosa strains."
+    },
+    {
+      "id": "spark.achaogen.primary_mic.pseudomonas_aeruginosa.mic_um",
+      "column": "spark_achaogen_primary_mic_pseudomonas_aeruginosa_mic_um",
+      "displayName": "Primary panel MIC - Pseudomonas aeruginosa",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/Primary Panel/Pseudomonas aeruginosa",
+      "protocol": "Median primary-panel MIC across available Pseudomonas aeruginosa strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.primary_mic.escherichia_coli.pmic",
+      "column": "spark_achaogen_primary_mic_escherichia_coli_pmic",
+      "displayName": "Primary panel pMIC - Escherichia coli",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/Primary Panel/Escherichia coli",
+      "protocol": "Median primary-panel pMIC across available Escherichia coli strains."
+    },
+    {
+      "id": "spark.achaogen.primary_mic.escherichia_coli.mic_um",
+      "column": "spark_achaogen_primary_mic_escherichia_coli_mic_um",
+      "displayName": "Primary panel MIC - Escherichia coli",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/Primary Panel/Escherichia coli",
+      "protocol": "Median primary-panel MIC across available Escherichia coli strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.primary_mic.klebsiella_pneumoniae.pmic",
+      "column": "spark_achaogen_primary_mic_klebsiella_pneumoniae_pmic",
+      "displayName": "Primary panel pMIC - Klebsiella pneumoniae",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/Primary Panel/Klebsiella pneumoniae",
+      "protocol": "Median primary-panel pMIC across available Klebsiella pneumoniae strains."
+    },
+    {
+      "id": "spark.achaogen.primary_mic.klebsiella_pneumoniae.mic_um",
+      "column": "spark_achaogen_primary_mic_klebsiella_pneumoniae_mic_um",
+      "displayName": "Primary panel MIC - Klebsiella pneumoniae",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/Primary Panel/Klebsiella pneumoniae",
+      "protocol": "Median primary-panel MIC across available Klebsiella pneumoniae strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.primary_mic.staphylococcus_aureus.pmic",
+      "column": "spark_achaogen_primary_mic_staphylococcus_aureus_pmic",
+      "displayName": "Primary panel pMIC - Staphylococcus aureus",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/Primary Panel/Staphylococcus aureus",
+      "protocol": "Median primary-panel pMIC across available Staphylococcus aureus strains."
+    },
+    {
+      "id": "spark.achaogen.primary_mic.staphylococcus_aureus.mic_um",
+      "column": "spark_achaogen_primary_mic_staphylococcus_aureus_mic_um",
+      "displayName": "Primary panel MIC - Staphylococcus aureus",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/Primary Panel/Staphylococcus aureus",
+      "protocol": "Median primary-panel MIC across available Staphylococcus aureus strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.primary_mic.acinetobacter_baumannii.pmic",
+      "column": "spark_achaogen_primary_mic_acinetobacter_baumannii_pmic",
+      "displayName": "Primary panel pMIC - Acinetobacter baumannii",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/Primary Panel/Acinetobacter baumannii",
+      "protocol": "Median primary-panel pMIC across available Acinetobacter baumannii strains."
+    },
+    {
+      "id": "spark.achaogen.primary_mic.acinetobacter_baumannii.mic_um",
+      "column": "spark_achaogen_primary_mic_acinetobacter_baumannii_mic_um",
+      "displayName": "Primary panel MIC - Acinetobacter baumannii",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/Primary Panel/Acinetobacter baumannii",
+      "protocol": "Median primary-panel MIC across available Acinetobacter baumannii strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.primary_mic.yersinia_enterocolitica.pmic",
+      "column": "spark_achaogen_primary_mic_yersinia_enterocolitica_pmic",
+      "displayName": "Primary panel pMIC - Yersinia enterocolitica",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/Primary Panel/Yersinia enterocolitica",
+      "protocol": "Median primary-panel pMIC across available Yersinia enterocolitica strains."
+    },
+    {
+      "id": "spark.achaogen.primary_mic.yersinia_enterocolitica.mic_um",
+      "column": "spark_achaogen_primary_mic_yersinia_enterocolitica_mic_um",
+      "displayName": "Primary panel MIC - Yersinia enterocolitica",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/Primary Panel/Yersinia enterocolitica",
+      "protocol": "Median primary-panel MIC across available Yersinia enterocolitica strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.primary_mic.burkholderia_thailandensis.pmic",
+      "column": "spark_achaogen_primary_mic_burkholderia_thailandensis_pmic",
+      "displayName": "Primary panel pMIC - Burkholderia thailandensis",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/Primary Panel/Burkholderia thailandensis",
+      "protocol": "Median primary-panel pMIC across available Burkholderia thailandensis strains."
+    },
+    {
+      "id": "spark.achaogen.primary_mic.burkholderia_thailandensis.mic_um",
+      "column": "spark_achaogen_primary_mic_burkholderia_thailandensis_mic_um",
+      "displayName": "Primary panel MIC - Burkholderia thailandensis",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/Primary Panel/Burkholderia thailandensis",
+      "protocol": "Median primary-panel MIC across available Burkholderia thailandensis strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.acinetobacter_baumannii.pmic",
+      "column": "spark_achaogen_lpxc_mic_acinetobacter_baumannii_pmic",
+      "displayName": "LpxC panel pMIC - Acinetobacter baumannii",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/LpxC Panel/Acinetobacter baumannii",
+      "protocol": "Median LpxC-program pMIC across available Acinetobacter baumannii strains."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.acinetobacter_baumannii.mic_um",
+      "column": "spark_achaogen_lpxc_mic_acinetobacter_baumannii_mic_um",
+      "displayName": "LpxC panel MIC - Acinetobacter baumannii",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/LpxC Panel/Acinetobacter baumannii",
+      "protocol": "Median LpxC-program MIC across available Acinetobacter baumannii strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.escherichia_coli.pmic",
+      "column": "spark_achaogen_lpxc_mic_escherichia_coli_pmic",
+      "displayName": "LpxC panel pMIC - Escherichia coli",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/LpxC Panel/Escherichia coli",
+      "protocol": "Median LpxC-program pMIC across available Escherichia coli strains."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.escherichia_coli.mic_um",
+      "column": "spark_achaogen_lpxc_mic_escherichia_coli_mic_um",
+      "displayName": "LpxC panel MIC - Escherichia coli",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/LpxC Panel/Escherichia coli",
+      "protocol": "Median LpxC-program MIC across available Escherichia coli strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.burkholderia_cepacia.pmic",
+      "column": "spark_achaogen_lpxc_mic_burkholderia_cepacia_pmic",
+      "displayName": "LpxC panel pMIC - Burkholderia cepacia",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/LpxC Panel/Burkholderia cepacia",
+      "protocol": "Median LpxC-program pMIC across available Burkholderia cepacia strains."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.burkholderia_cepacia.mic_um",
+      "column": "spark_achaogen_lpxc_mic_burkholderia_cepacia_mic_um",
+      "displayName": "LpxC panel MIC - Burkholderia cepacia",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/LpxC Panel/Burkholderia cepacia",
+      "protocol": "Median LpxC-program MIC across available Burkholderia cepacia strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.pseudomonas_aeruginosa.pmic",
+      "column": "spark_achaogen_lpxc_mic_pseudomonas_aeruginosa_pmic",
+      "displayName": "LpxC panel pMIC - Pseudomonas aeruginosa",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/LpxC Panel/Pseudomonas aeruginosa",
+      "protocol": "Median LpxC-program pMIC across available Pseudomonas aeruginosa strains."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.pseudomonas_aeruginosa.mic_um",
+      "column": "spark_achaogen_lpxc_mic_pseudomonas_aeruginosa_mic_um",
+      "displayName": "LpxC panel MIC - Pseudomonas aeruginosa",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/LpxC Panel/Pseudomonas aeruginosa",
+      "protocol": "Median LpxC-program MIC across available Pseudomonas aeruginosa strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.klebsiella_pneumoniae.pmic",
+      "column": "spark_achaogen_lpxc_mic_klebsiella_pneumoniae_pmic",
+      "displayName": "LpxC panel pMIC - Klebsiella pneumoniae",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/LpxC Panel/Klebsiella pneumoniae",
+      "protocol": "Median LpxC-program pMIC across available Klebsiella pneumoniae strains."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.klebsiella_pneumoniae.mic_um",
+      "column": "spark_achaogen_lpxc_mic_klebsiella_pneumoniae_mic_um",
+      "displayName": "LpxC panel MIC - Klebsiella pneumoniae",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/LpxC Panel/Klebsiella pneumoniae",
+      "protocol": "Median LpxC-program MIC across available Klebsiella pneumoniae strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.klebsiella_oxytoca.pmic",
+      "column": "spark_achaogen_lpxc_mic_klebsiella_oxytoca_pmic",
+      "displayName": "LpxC panel pMIC - Klebsiella oxytoca",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/LpxC Panel/Klebsiella oxytoca",
+      "protocol": "Median LpxC-program pMIC across available Klebsiella oxytoca strains."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.klebsiella_oxytoca.mic_um",
+      "column": "spark_achaogen_lpxc_mic_klebsiella_oxytoca_mic_um",
+      "displayName": "LpxC panel MIC - Klebsiella oxytoca",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/LpxC Panel/Klebsiella oxytoca",
+      "protocol": "Median LpxC-program MIC across available Klebsiella oxytoca strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.achromobacter_spp.pmic",
+      "column": "spark_achaogen_lpxc_mic_achromobacter_spp_pmic",
+      "displayName": "LpxC panel pMIC - Achromobacter spp.",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/LpxC Panel/Achromobacter spp.",
+      "protocol": "Median LpxC-program pMIC across available Achromobacter spp. strains."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.achromobacter_spp.mic_um",
+      "column": "spark_achaogen_lpxc_mic_achromobacter_spp_mic_um",
+      "displayName": "LpxC panel MIC - Achromobacter spp.",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/LpxC Panel/Achromobacter spp.",
+      "protocol": "Median LpxC-program MIC across available Achromobacter spp. strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.achromobacter_xylosoxidans.pmic",
+      "column": "spark_achaogen_lpxc_mic_achromobacter_xylosoxidans_pmic",
+      "displayName": "LpxC panel pMIC - Achromobacter xylosoxidans",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/LpxC Panel/Achromobacter xylosoxidans",
+      "protocol": "Median LpxC-program pMIC across available Achromobacter xylosoxidans strains."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.achromobacter_xylosoxidans.mic_um",
+      "column": "spark_achaogen_lpxc_mic_achromobacter_xylosoxidans_mic_um",
+      "displayName": "LpxC panel MIC - Achromobacter xylosoxidans",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/LpxC Panel/Achromobacter xylosoxidans",
+      "protocol": "Median LpxC-program MIC across available Achromobacter xylosoxidans strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.ralstonia_mannitolytica.pmic",
+      "column": "spark_achaogen_lpxc_mic_ralstonia_mannitolytica_pmic",
+      "displayName": "LpxC panel pMIC - Ralstonia mannitolytica",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/LpxC Panel/Ralstonia mannitolytica",
+      "protocol": "Median LpxC-program pMIC across available Ralstonia mannitolytica strains."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.ralstonia_mannitolytica.mic_um",
+      "column": "spark_achaogen_lpxc_mic_ralstonia_mannitolytica_mic_um",
+      "displayName": "LpxC panel MIC - Ralstonia mannitolytica",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/LpxC Panel/Ralstonia mannitolytica",
+      "protocol": "Median LpxC-program MIC across available Ralstonia mannitolytica strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.stenotrophomonas_spp.pmic",
+      "column": "spark_achaogen_lpxc_mic_stenotrophomonas_spp_pmic",
+      "displayName": "LpxC panel pMIC - Stenotrophomonas spp.",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/LpxC Panel/Stenotrophomonas spp.",
+      "protocol": "Median LpxC-program pMIC across available Stenotrophomonas spp. strains."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.stenotrophomonas_spp.mic_um",
+      "column": "spark_achaogen_lpxc_mic_stenotrophomonas_spp_mic_um",
+      "displayName": "LpxC panel MIC - Stenotrophomonas spp.",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/LpxC Panel/Stenotrophomonas spp.",
+      "protocol": "Median LpxC-program MIC across available Stenotrophomonas spp. strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.stenotrophomonas_maltophilia.pmic",
+      "column": "spark_achaogen_lpxc_mic_stenotrophomonas_maltophilia_pmic",
+      "displayName": "LpxC panel pMIC - Stenotrophomonas maltophilia",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Microbiology/LpxC Panel/Stenotrophomonas maltophilia",
+      "protocol": "Median LpxC-program pMIC across available Stenotrophomonas maltophilia strains."
+    },
+    {
+      "id": "spark.achaogen.lpxc_mic.stenotrophomonas_maltophilia.mic_um",
+      "column": "spark_achaogen_lpxc_mic_stenotrophomonas_maltophilia_mic_um",
+      "displayName": "LpxC panel MIC - Stenotrophomonas maltophilia",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/LpxC Panel/Stenotrophomonas maltophilia",
+      "protocol": "Median LpxC-program MIC across available Stenotrophomonas maltophilia strains, in uM."
+    },
+    {
+      "id": "spark.achaogen.protein_binding.human_fraction_free_pct",
+      "column": "spark_achaogen_protein_binding_human_fraction_free_pct",
+      "displayName": "Human plasma fraction free",
+      "unit": "%",
+      "direction": "higher_is_better",
+      "assay": "ADME/Protein Binding/Human",
+      "protocol": "Human plasma fraction free."
+    },
+    {
+      "id": "spark.achaogen.protein_binding.rat_fraction_free_pct",
+      "column": "spark_achaogen_protein_binding_rat_fraction_free_pct",
+      "displayName": "Rat plasma fraction free",
+      "unit": "%",
+      "direction": "higher_is_better",
+      "assay": "ADME/Protein Binding/Rat",
+      "protocol": "Rat plasma fraction free."
+    },
+    {
+      "id": "spark.achaogen.protein_binding.mouse_fraction_free_pct",
+      "column": "spark_achaogen_protein_binding_mouse_fraction_free_pct",
+      "displayName": "Mouse plasma fraction free",
+      "unit": "%",
+      "direction": "higher_is_better",
+      "assay": "ADME/Protein Binding/Mouse",
+      "protocol": "Mouse plasma fraction free."
+    },
+    {
+      "id": "spark.achaogen.protein_binding.dog_fraction_free_pct",
+      "column": "spark_achaogen_protein_binding_dog_fraction_free_pct",
+      "displayName": "Dog plasma fraction free",
+      "unit": "%",
+      "direction": "higher_is_better",
+      "assay": "ADME/Protein Binding/Dog",
+      "protocol": "Dog plasma fraction free."
+    },
+    {
+      "id": "spark.achaogen.protein_binding.nhp_fraction_free_pct",
+      "column": "spark_achaogen_protein_binding_nhp_fraction_free_pct",
+      "displayName": "NHP plasma fraction free",
+      "unit": "%",
+      "direction": "higher_is_better",
+      "assay": "ADME/Protein Binding/NHP",
+      "protocol": "Cynomolgus monkey plasma fraction free."
+    },
+    {
+      "id": "spark.achaogen.cytotox.ic50_um",
+      "column": "spark_achaogen_cytotox_ic50_um",
+      "displayName": "Cytotoxicity IC50",
+      "unit": "uM",
+      "direction": "higher_is_better",
+      "assay": "Safety/Cytotoxicity",
+      "protocol": "Achaogen cytotoxicity IC50 in uM."
+    },
+    {
+      "id": "spark.achaogen.cytotox.r_squared",
+      "column": "spark_achaogen_cytotox_r_squared",
+      "displayName": "Cytotoxicity fit R-squared",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Safety/Cytotoxicity",
+      "protocol": "Achaogen cytotoxicity curve-fit R-squared."
+    },
+    {
+      "id": "spark.achaogen.mic_population.mic50_ug_ml",
+      "column": "spark_achaogen_mic_population_mic50_ug_ml",
+      "displayName": "Population MIC50",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/P. aeruginosa Population Panel",
+      "protocol": "Achaogen P. aeruginosa population panel MIC50 in ug/mL."
+    },
+    {
+      "id": "spark.achaogen.mic_population.mic90_ug_ml",
+      "column": "spark_achaogen_mic_population_mic90_ug_ml",
+      "displayName": "Population MIC90",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/P. aeruginosa Population Panel",
+      "protocol": "Achaogen P. aeruginosa population panel MIC90 in ug/mL."
+    },
+    {
+      "id": "spark.achaogen.mic_population.min_mic_ug_ml",
+      "column": "spark_achaogen_mic_population_min_mic_ug_ml",
+      "displayName": "Population Min MIC",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/P. aeruginosa Population Panel",
+      "protocol": "Achaogen P. aeruginosa population panel Min MIC in ug/mL."
+    },
+    {
+      "id": "spark.achaogen.mic_population.max_mic_ug_ml",
+      "column": "spark_achaogen_mic_population_max_mic_ug_ml",
+      "displayName": "Population Max MIC",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/P. aeruginosa Population Panel",
+      "protocol": "Achaogen P. aeruginosa population panel Max MIC in ug/mL."
+    },
+    {
+      "id": "spark.achaogen.pae_clinical_isolate.mic5_ug_ml",
+      "column": "spark_achaogen_pae_clinical_isolate_mic5_ug_ml",
+      "displayName": "P. aeruginosa clinical isolate MIC5",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "Microbiology/P. aeruginosa Clinical Isolates",
+      "protocol": "Achaogen P. aeruginosa five-clinical-isolate MIC summary."
+    },
+    {
+      "id": "spark.achaogen.pk.rat_iv_auc_0_inf_hr_ug_ml",
+      "column": "spark_achaogen_pk_rat_iv_auc_0_inf_hr_ug_ml",
+      "displayName": "Rat IV AUC 0-inf",
+      "unit": "hr*ug/mL",
+      "direction": "higher_is_better",
+      "assay": "PK/Rat/IV",
+      "protocol": "Achaogen rat IV PK AUC 0-inf."
+    },
+    {
+      "id": "spark.achaogen.pk.rat_iv_auc_0_t_hr_ug_ml",
+      "column": "spark_achaogen_pk_rat_iv_auc_0_t_hr_ug_ml",
+      "displayName": "Rat IV AUC 0-t",
+      "unit": "hr*ug/mL",
+      "direction": "higher_is_better",
+      "assay": "PK/Rat/IV",
+      "protocol": "Achaogen rat IV PK AUC 0-t."
+    },
+    {
+      "id": "spark.achaogen.pk.rat_iv_cmax_ug_ml",
+      "column": "spark_achaogen_pk_rat_iv_cmax_ug_ml",
+      "displayName": "Rat IV Cmax",
+      "unit": "ug/mL",
+      "direction": "higher_is_better",
+      "assay": "PK/Rat/IV",
+      "protocol": "Achaogen rat IV PK Cmax."
+    },
+    {
+      "id": "spark.achaogen.pk.rat_iv_c0_ug_ml",
+      "column": "spark_achaogen_pk_rat_iv_c0_ug_ml",
+      "displayName": "Rat IV C0",
+      "unit": "ug/mL",
+      "direction": "higher_is_better",
+      "assay": "PK/Rat/IV",
+      "protocol": "Achaogen rat IV PK C0."
+    },
+    {
+      "id": "spark.achaogen.pk.rat_iv_cl_l_hr_kg",
+      "column": "spark_achaogen_pk_rat_iv_cl_l_hr_kg",
+      "displayName": "Rat IV CL",
+      "unit": "L/hr/kg",
+      "direction": "lower_is_better",
+      "assay": "PK/Rat/IV",
+      "protocol": "Achaogen rat IV PK CL."
+    },
+    {
+      "id": "spark.achaogen.pk.rat_iv_vss_l_kg",
+      "column": "spark_achaogen_pk_rat_iv_vss_l_kg",
+      "displayName": "Rat IV Vss",
+      "unit": "L/kg",
+      "direction": "lower_is_better",
+      "assay": "PK/Rat/IV",
+      "protocol": "Achaogen rat IV PK Vss."
+    },
+    {
+      "id": "spark.achaogen.pk.rat_iv_free_auc_0_t_hr_ug_ml",
+      "column": "spark_achaogen_pk_rat_iv_free_auc_0_t_hr_ug_ml",
+      "displayName": "Rat IV Mean free AUC 0-t",
+      "unit": "hr*ug/mL",
+      "direction": "higher_is_better",
+      "assay": "PK/Rat/IV",
+      "protocol": "Achaogen rat IV PK Mean free AUC 0-t."
+    },
+    {
+      "id": "spark.achaogen.pk.rat_iv_free_cmax_ug_ml",
+      "column": "spark_achaogen_pk_rat_iv_free_cmax_ug_ml",
+      "displayName": "Rat IV Mean free Cmax",
+      "unit": "ug/mL",
+      "direction": "higher_is_better",
+      "assay": "PK/Rat/IV",
+      "protocol": "Achaogen rat IV PK Mean free Cmax."
+    },
+    {
+      "id": "spark.achaogen.pk.rat_iv_free_cl_l_hr_kg",
+      "column": "spark_achaogen_pk_rat_iv_free_cl_l_hr_kg",
+      "displayName": "Rat IV Mean free CL",
+      "unit": "L/hr/kg",
+      "direction": "lower_is_better",
+      "assay": "PK/Rat/IV",
+      "protocol": "Achaogen rat IV PK Mean free CL."
+    }
+  ]
+}

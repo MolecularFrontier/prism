@@ -1,0 +1,19 @@
+{
+  "sources": [
+    {
+      "type": "public_csv",
+      "name": "PostEra COVID Moonshot activity export",
+      "url": "https://covid.postera.ai/covid/activity_data.csv"
+    }
+  ],
+  "steps": [
+    {
+      "type": "data_preparation",
+      "name": "Generated wide demo PrismPack from public activity export"
+    },
+    {
+      "type": "derivation",
+      "name": "Computed pIC50 as 6 - log10(IC50_uM) and selectivity as trypsin_IC50 / fluorescence_Mpro_IC50"
+    }
+  ]
+}

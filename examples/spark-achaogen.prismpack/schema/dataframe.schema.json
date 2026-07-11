@@ -1,0 +1,574 @@
+{
+  "columns": [
+    {
+      "name": "compound_id",
+      "type": "string",
+      "semanticType": "compound_id",
+      "displayName": "SPARK Compound",
+      "role": "identifier"
+    },
+    {
+      "name": "smiles",
+      "type": "string",
+      "semanticType": "chemical_structure",
+      "structureFormat": "smiles",
+      "displayName": "Structure",
+      "role": "primary_structure"
+    },
+    {
+      "name": "series",
+      "type": "string",
+      "semanticType": "category",
+      "displayName": "Series"
+    },
+    {
+      "name": "batch_id",
+      "type": "string",
+      "semanticType": "batch_id",
+      "displayName": "Batch ID"
+    },
+    {
+      "name": "source_id",
+      "type": "string",
+      "semanticType": "external_id",
+      "displayName": "Source ID"
+    },
+    {
+      "name": "synonyms",
+      "type": "string",
+      "semanticType": "name",
+      "displayName": "Synonyms"
+    },
+    {
+      "name": "spark_achaogen_lpxc_pic50",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC pIC50",
+      "unit": "",
+      "endpointId": "spark.achaogen.lpxc.pic50",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_ic50_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC IC50",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.lpxc.ic50_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_primary_mic_pseudomonas_aeruginosa_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Primary panel pMIC - Pseudomonas aeruginosa",
+      "unit": "",
+      "endpointId": "spark.achaogen.primary_mic.pseudomonas_aeruginosa.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_primary_mic_pseudomonas_aeruginosa_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Primary panel MIC - Pseudomonas aeruginosa",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.primary_mic.pseudomonas_aeruginosa.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_primary_mic_escherichia_coli_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Primary panel pMIC - Escherichia coli",
+      "unit": "",
+      "endpointId": "spark.achaogen.primary_mic.escherichia_coli.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_primary_mic_escherichia_coli_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Primary panel MIC - Escherichia coli",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.primary_mic.escherichia_coli.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_primary_mic_klebsiella_pneumoniae_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Primary panel pMIC - Klebsiella pneumoniae",
+      "unit": "",
+      "endpointId": "spark.achaogen.primary_mic.klebsiella_pneumoniae.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_primary_mic_klebsiella_pneumoniae_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Primary panel MIC - Klebsiella pneumoniae",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.primary_mic.klebsiella_pneumoniae.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_primary_mic_staphylococcus_aureus_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Primary panel pMIC - Staphylococcus aureus",
+      "unit": "",
+      "endpointId": "spark.achaogen.primary_mic.staphylococcus_aureus.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_primary_mic_staphylococcus_aureus_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Primary panel MIC - Staphylococcus aureus",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.primary_mic.staphylococcus_aureus.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_primary_mic_acinetobacter_baumannii_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Primary panel pMIC - Acinetobacter baumannii",
+      "unit": "",
+      "endpointId": "spark.achaogen.primary_mic.acinetobacter_baumannii.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_primary_mic_acinetobacter_baumannii_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Primary panel MIC - Acinetobacter baumannii",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.primary_mic.acinetobacter_baumannii.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_primary_mic_yersinia_enterocolitica_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Primary panel pMIC - Yersinia enterocolitica",
+      "unit": "",
+      "endpointId": "spark.achaogen.primary_mic.yersinia_enterocolitica.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_primary_mic_yersinia_enterocolitica_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Primary panel MIC - Yersinia enterocolitica",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.primary_mic.yersinia_enterocolitica.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_primary_mic_burkholderia_thailandensis_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Primary panel pMIC - Burkholderia thailandensis",
+      "unit": "",
+      "endpointId": "spark.achaogen.primary_mic.burkholderia_thailandensis.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_primary_mic_burkholderia_thailandensis_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Primary panel MIC - Burkholderia thailandensis",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.primary_mic.burkholderia_thailandensis.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_acinetobacter_baumannii_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel pMIC - Acinetobacter baumannii",
+      "unit": "",
+      "endpointId": "spark.achaogen.lpxc_mic.acinetobacter_baumannii.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_acinetobacter_baumannii_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel MIC - Acinetobacter baumannii",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.lpxc_mic.acinetobacter_baumannii.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_escherichia_coli_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel pMIC - Escherichia coli",
+      "unit": "",
+      "endpointId": "spark.achaogen.lpxc_mic.escherichia_coli.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_escherichia_coli_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel MIC - Escherichia coli",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.lpxc_mic.escherichia_coli.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_burkholderia_cepacia_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel pMIC - Burkholderia cepacia",
+      "unit": "",
+      "endpointId": "spark.achaogen.lpxc_mic.burkholderia_cepacia.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_burkholderia_cepacia_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel MIC - Burkholderia cepacia",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.lpxc_mic.burkholderia_cepacia.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_pseudomonas_aeruginosa_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel pMIC - Pseudomonas aeruginosa",
+      "unit": "",
+      "endpointId": "spark.achaogen.lpxc_mic.pseudomonas_aeruginosa.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_pseudomonas_aeruginosa_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel MIC - Pseudomonas aeruginosa",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.lpxc_mic.pseudomonas_aeruginosa.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_klebsiella_pneumoniae_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel pMIC - Klebsiella pneumoniae",
+      "unit": "",
+      "endpointId": "spark.achaogen.lpxc_mic.klebsiella_pneumoniae.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_klebsiella_pneumoniae_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel MIC - Klebsiella pneumoniae",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.lpxc_mic.klebsiella_pneumoniae.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_klebsiella_oxytoca_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel pMIC - Klebsiella oxytoca",
+      "unit": "",
+      "endpointId": "spark.achaogen.lpxc_mic.klebsiella_oxytoca.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_klebsiella_oxytoca_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel MIC - Klebsiella oxytoca",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.lpxc_mic.klebsiella_oxytoca.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_achromobacter_spp_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel pMIC - Achromobacter spp.",
+      "unit": "",
+      "endpointId": "spark.achaogen.lpxc_mic.achromobacter_spp.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_achromobacter_spp_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel MIC - Achromobacter spp.",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.lpxc_mic.achromobacter_spp.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_achromobacter_xylosoxidans_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel pMIC - Achromobacter xylosoxidans",
+      "unit": "",
+      "endpointId": "spark.achaogen.lpxc_mic.achromobacter_xylosoxidans.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_achromobacter_xylosoxidans_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel MIC - Achromobacter xylosoxidans",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.lpxc_mic.achromobacter_xylosoxidans.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_ralstonia_mannitolytica_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel pMIC - Ralstonia mannitolytica",
+      "unit": "",
+      "endpointId": "spark.achaogen.lpxc_mic.ralstonia_mannitolytica.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_ralstonia_mannitolytica_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel MIC - Ralstonia mannitolytica",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.lpxc_mic.ralstonia_mannitolytica.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_stenotrophomonas_spp_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel pMIC - Stenotrophomonas spp.",
+      "unit": "",
+      "endpointId": "spark.achaogen.lpxc_mic.stenotrophomonas_spp.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_stenotrophomonas_spp_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel MIC - Stenotrophomonas spp.",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.lpxc_mic.stenotrophomonas_spp.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_stenotrophomonas_maltophilia_pmic",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel pMIC - Stenotrophomonas maltophilia",
+      "unit": "",
+      "endpointId": "spark.achaogen.lpxc_mic.stenotrophomonas_maltophilia.pmic",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_lpxc_mic_stenotrophomonas_maltophilia_mic_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "LpxC panel MIC - Stenotrophomonas maltophilia",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.lpxc_mic.stenotrophomonas_maltophilia.mic_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_protein_binding_human_fraction_free_pct",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Human plasma fraction free",
+      "unit": "%",
+      "endpointId": "spark.achaogen.protein_binding.human_fraction_free_pct",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_protein_binding_rat_fraction_free_pct",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Rat plasma fraction free",
+      "unit": "%",
+      "endpointId": "spark.achaogen.protein_binding.rat_fraction_free_pct",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_protein_binding_mouse_fraction_free_pct",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Mouse plasma fraction free",
+      "unit": "%",
+      "endpointId": "spark.achaogen.protein_binding.mouse_fraction_free_pct",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_protein_binding_dog_fraction_free_pct",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Dog plasma fraction free",
+      "unit": "%",
+      "endpointId": "spark.achaogen.protein_binding.dog_fraction_free_pct",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_protein_binding_nhp_fraction_free_pct",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "NHP plasma fraction free",
+      "unit": "%",
+      "endpointId": "spark.achaogen.protein_binding.nhp_fraction_free_pct",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_cytotox_ic50_um",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Cytotoxicity IC50",
+      "unit": "uM",
+      "endpointId": "spark.achaogen.cytotox.ic50_um",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_cytotox_r_squared",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Cytotoxicity fit R-squared",
+      "unit": "",
+      "endpointId": "spark.achaogen.cytotox.r_squared",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_mic_population_mic50_ug_ml",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Population MIC50",
+      "unit": "ug/mL",
+      "endpointId": "spark.achaogen.mic_population.mic50_ug_ml",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_mic_population_mic90_ug_ml",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Population MIC90",
+      "unit": "ug/mL",
+      "endpointId": "spark.achaogen.mic_population.mic90_ug_ml",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_mic_population_min_mic_ug_ml",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Population Min MIC",
+      "unit": "ug/mL",
+      "endpointId": "spark.achaogen.mic_population.min_mic_ug_ml",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_mic_population_max_mic_ug_ml",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Population Max MIC",
+      "unit": "ug/mL",
+      "endpointId": "spark.achaogen.mic_population.max_mic_ug_ml",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_pae_clinical_isolate_mic5_ug_ml",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "P. aeruginosa clinical isolate MIC5",
+      "unit": "ug/mL",
+      "endpointId": "spark.achaogen.pae_clinical_isolate.mic5_ug_ml",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_pk_rat_iv_auc_0_inf_hr_ug_ml",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Rat IV AUC 0-inf",
+      "unit": "hr*ug/mL",
+      "endpointId": "spark.achaogen.pk.rat_iv_auc_0_inf_hr_ug_ml",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_pk_rat_iv_auc_0_t_hr_ug_ml",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Rat IV AUC 0-t",
+      "unit": "hr*ug/mL",
+      "endpointId": "spark.achaogen.pk.rat_iv_auc_0_t_hr_ug_ml",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_pk_rat_iv_cmax_ug_ml",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Rat IV Cmax",
+      "unit": "ug/mL",
+      "endpointId": "spark.achaogen.pk.rat_iv_cmax_ug_ml",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_pk_rat_iv_c0_ug_ml",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Rat IV C0",
+      "unit": "ug/mL",
+      "endpointId": "spark.achaogen.pk.rat_iv_c0_ug_ml",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_pk_rat_iv_cl_l_hr_kg",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Rat IV CL",
+      "unit": "L/hr/kg",
+      "endpointId": "spark.achaogen.pk.rat_iv_cl_l_hr_kg",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_pk_rat_iv_vss_l_kg",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Rat IV Vss",
+      "unit": "L/kg",
+      "endpointId": "spark.achaogen.pk.rat_iv_vss_l_kg",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "spark_achaogen_pk_rat_iv_free_auc_0_t_hr_ug_ml",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Rat IV Mean free AUC 0-t",
+      "unit": "hr*ug/mL",
+      "endpointId": "spark.achaogen.pk.rat_iv_free_auc_0_t_hr_ug_ml",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_pk_rat_iv_free_cmax_ug_ml",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Rat IV Mean free Cmax",
+      "unit": "ug/mL",
+      "endpointId": "spark.achaogen.pk.rat_iv_free_cmax_ug_ml",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "spark_achaogen_pk_rat_iv_free_cl_l_hr_kg",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Rat IV Mean free CL",
+      "unit": "L/hr/kg",
+      "endpointId": "spark.achaogen.pk.rat_iv_free_cl_l_hr_kg",
+      "direction": "lower_is_better"
+    }
+  ]
+}

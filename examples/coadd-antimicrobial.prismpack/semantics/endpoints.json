@@ -1,0 +1,418 @@
+{
+  "endpoints": [
+    {
+      "id": "coadd.cc50.ma_007.ug_ml",
+      "column": "coadd_cc50_ma_007_ug_ml",
+      "displayName": "CC50 Homo sapiens HEK293; ATCC CRL1573 (ug/mL) [MA_007]",
+      "unit": "ug/mL",
+      "direction": "higher_is_better",
+      "assay": "CO-ADD CC50 dose-response",
+      "protocol": "MA_007; Homo sapiens; HEK293; ATCC CRL1573"
+    },
+    {
+      "id": "coadd.mic.gn_034.ug_ml",
+      "column": "coadd_mic_gn_034_ug_ml",
+      "displayName": "MIC Acinetobacter baumannii ATCC 19606 (ug/mL) [GN_034]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_034; Acinetobacter baumannii; ATCC 19606"
+    },
+    {
+      "id": "coadd.mic.gn_042.ug_ml",
+      "column": "coadd_mic_gn_042_ug_ml",
+      "displayName": "MIC Pseudomonas aeruginosa ATCC 27853 (ug/mL) [GN_042]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_042; Pseudomonas aeruginosa; ATCC 27853"
+    },
+    {
+      "id": "coadd.mic.gp_020.ug_ml",
+      "column": "coadd_mic_gp_020_ug_ml",
+      "displayName": "MIC Staphylococcus aureus ATCC 43300; MRSA (ug/mL) [GP_020]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GP_020; Staphylococcus aureus; ATCC 43300; MRSA"
+    },
+    {
+      "id": "coadd.mic.gn_001.ug_ml",
+      "column": "coadd_mic_gn_001_ug_ml",
+      "displayName": "MIC Escherichia coli ATCC 25922 (ug/mL) [GN_001]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_001; Escherichia coli; ATCC 25922"
+    },
+    {
+      "id": "coadd.mic.gn_003.ug_ml",
+      "column": "coadd_mic_gn_003_ug_ml",
+      "displayName": "MIC Klebsiella pneumoniae ATCC 700603; MDR (ug/mL) [GN_003]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_003; Klebsiella pneumoniae; ATCC 700603; MDR"
+    },
+    {
+      "id": "coadd.mic.fg_001.ug_ml",
+      "column": "coadd_mic_fg_001_ug_ml",
+      "displayName": "MIC Candida albicans ATCC 90028 (ug/mL) [FG_001]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "FG_001; Candida albicans; ATCC 90028"
+    },
+    {
+      "id": "coadd.mic.fg_002.ug_ml",
+      "column": "coadd_mic_fg_002_ug_ml",
+      "displayName": "MIC Cryptococcus neoformans ATCC 208821; H99 (ug/mL) [FG_002]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "FG_002; Cryptococcus neoformans; ATCC 208821; H99"
+    },
+    {
+      "id": "coadd.hc10.ha_150.ug_ml",
+      "column": "coadd_hc10_ha_150_ug_ml",
+      "displayName": "HC10 Homo sapiens Red blood cell (ug/mL) [HA_150]",
+      "unit": "ug/mL",
+      "direction": "higher_is_better",
+      "assay": "CO-ADD HC10 dose-response",
+      "protocol": "HA_150; Homo sapiens; Red blood cell"
+    },
+    {
+      "id": "coadd.mic.gn_034.um",
+      "column": "coadd_mic_gn_034_um",
+      "displayName": "MIC Acinetobacter baumannii ATCC 19606 (uM) [GN_034]",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_034; Acinetobacter baumannii; ATCC 19606"
+    },
+    {
+      "id": "coadd.mic.gn_042.um",
+      "column": "coadd_mic_gn_042_um",
+      "displayName": "MIC Pseudomonas aeruginosa ATCC 27853 (uM) [GN_042]",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_042; Pseudomonas aeruginosa; ATCC 27853"
+    },
+    {
+      "id": "coadd.mic.gn_003.um",
+      "column": "coadd_mic_gn_003_um",
+      "displayName": "MIC Klebsiella pneumoniae ATCC 700603; MDR (uM) [GN_003]",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_003; Klebsiella pneumoniae; ATCC 700603; MDR"
+    },
+    {
+      "id": "coadd.mic.fg_002.um",
+      "column": "coadd_mic_fg_002_um",
+      "displayName": "MIC Cryptococcus neoformans ATCC 208821; H99 (uM) [FG_002]",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "FG_002; Cryptococcus neoformans; ATCC 208821; H99"
+    },
+    {
+      "id": "coadd.mic.gn_001.um",
+      "column": "coadd_mic_gn_001_um",
+      "displayName": "MIC Escherichia coli ATCC 25922 (uM) [GN_001]",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_001; Escherichia coli; ATCC 25922"
+    },
+    {
+      "id": "coadd.mic.fg_001.um",
+      "column": "coadd_mic_fg_001_um",
+      "displayName": "MIC Candida albicans ATCC 90028 (uM) [FG_001]",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "FG_001; Candida albicans; ATCC 90028"
+    },
+    {
+      "id": "coadd.mic.gp_020.um",
+      "column": "coadd_mic_gp_020_um",
+      "displayName": "MIC Staphylococcus aureus ATCC 43300; MRSA (uM) [GP_020]",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GP_020; Staphylococcus aureus; ATCC 43300; MRSA"
+    },
+    {
+      "id": "coadd.cc50.ma_007.um",
+      "column": "coadd_cc50_ma_007_um",
+      "displayName": "CC50 Homo sapiens HEK293; ATCC CRL1573 (uM) [MA_007]",
+      "unit": "uM",
+      "direction": "higher_is_better",
+      "assay": "CO-ADD CC50 dose-response",
+      "protocol": "MA_007; Homo sapiens; HEK293; ATCC CRL1573"
+    },
+    {
+      "id": "coadd.hc10.ha_150.um",
+      "column": "coadd_hc10_ha_150_um",
+      "displayName": "HC10 Homo sapiens Red blood cell (uM) [HA_150]",
+      "unit": "uM",
+      "direction": "higher_is_better",
+      "assay": "CO-ADD HC10 dose-response",
+      "protocol": "HA_150; Homo sapiens; Red blood cell"
+    },
+    {
+      "id": "coadd.mic.gn_211.um",
+      "column": "coadd_mic_gn_211_um",
+      "displayName": "MIC Pseudomonas aeruginosa PAO397; PAO1 d(mexAB-oprM) d(mexCD-oprJ) d(mexEF-oprN) d(mexJKL) d(mexXY) d(opmH) d(pscC) (uM) [GN_211]",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_211; Pseudomonas aeruginosa; PAO397; PAO1 d(mexAB-oprM) d(mexCD-oprJ) d(mexEF-oprN) d(mexJKL) d(mexXY) d(opmH) d(pscC)"
+    },
+    {
+      "id": "coadd.mic.gn_211.ug_ml",
+      "column": "coadd_mic_gn_211_ug_ml",
+      "displayName": "MIC Pseudomonas aeruginosa PAO397; PAO1 d(mexAB-oprM) d(mexCD-oprJ) d(mexEF-oprN) d(mexJKL) d(mexXY) d(opmH) d(pscC) (ug/mL) [GN_211]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_211; Pseudomonas aeruginosa; PAO397; PAO1 d(mexAB-oprM) d(mexCD-oprJ) d(mexEF-oprN) d(mexJKL) d(mexXY) d(opmH) d(pscC)"
+    },
+    {
+      "id": "coadd.mic.gp_019.ug_ml",
+      "column": "coadd_mic_gp_019_ug_ml",
+      "displayName": "MIC Bacillus subtilis ATCC 6051 (ug/mL) [GP_019]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GP_019; Bacillus subtilis; ATCC 6051"
+    },
+    {
+      "id": "coadd.mic.gp_023.ug_ml",
+      "column": "coadd_mic_gp_023_ug_ml",
+      "displayName": "MIC Streptococcus pneumoniae ATCC 700677 (ug/mL) [GP_023]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GP_023; Streptococcus pneumoniae; ATCC 700677"
+    },
+    {
+      "id": "coadd.mic.gp_064.ug_ml",
+      "column": "coadd_mic_gp_064_ug_ml",
+      "displayName": "MIC Staphylococcus aureus VRS1 (ug/mL) [GP_064]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GP_064; Staphylococcus aureus; VRS1"
+    },
+    {
+      "id": "coadd.mic.fg_005.ug_ml",
+      "column": "coadd_mic_fg_005_ug_ml",
+      "displayName": "MIC Candida tropicalis ATCC 750 (ug/mL) [FG_005]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "FG_005; Candida tropicalis; ATCC 750"
+    },
+    {
+      "id": "coadd.mic.fg_006.ug_ml",
+      "column": "coadd_mic_fg_006_ug_ml",
+      "displayName": "MIC Candida glabrata ATCC 90030 (ug/mL) [FG_006]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "FG_006; Candida glabrata; ATCC 90030"
+    },
+    {
+      "id": "coadd.mic.fg_011.ug_ml",
+      "column": "coadd_mic_fg_011_ug_ml",
+      "displayName": "MIC Cryptococcus gattii ATCC 32609 (ug/mL) [FG_011]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "FG_011; Cryptococcus gattii; ATCC 32609"
+    },
+    {
+      "id": "coadd.mic.fg_007.ug_ml",
+      "column": "coadd_mic_fg_007_ug_ml",
+      "displayName": "MIC Cryptococcus deuterogattii CBS 7750 (ug/mL) [FG_007]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "FG_007; Cryptococcus deuterogattii; CBS 7750"
+    },
+    {
+      "id": "coadd.mic.gp_030.ug_ml",
+      "column": "coadd_mic_gp_030_ug_ml",
+      "displayName": "MIC Staphylococcus aureus NRS17; GISA (ug/mL) [GP_030]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GP_030; Staphylococcus aureus; NRS17; GISA"
+    },
+    {
+      "id": "coadd.mic.gp_020_s50.ug_ml",
+      "column": "coadd_mic_gp_020_s50_ug_ml",
+      "displayName": "MIC Staphylococcus aureus ATCC 43300; MRSA (ug/mL) [GP_020_S50]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GP_020_S50; Staphylococcus aureus; ATCC 43300; MRSA"
+    },
+    {
+      "id": "coadd.mic.gp_025.ug_ml",
+      "column": "coadd_mic_gp_025_ug_ml",
+      "displayName": "MIC Enterococcus faecium ATCC 51559; MR (ug/mL) [GP_025]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GP_025; Enterococcus faecium; ATCC 51559; MR"
+    },
+    {
+      "id": "coadd.mic.gn_049.ug_ml",
+      "column": "coadd_mic_gn_049_ug_ml",
+      "displayName": "MIC Escherichia coli tolC; MB5747 (ug/mL) [GN_049]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_049; Escherichia coli; tolC; MB5747"
+    },
+    {
+      "id": "coadd.mic.fg_001_s50.ug_ml",
+      "column": "coadd_mic_fg_001_s50_ug_ml",
+      "displayName": "MIC Candida albicans ATCC 90028 (ug/mL) [FG_001_S50]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "FG_001_S50; Candida albicans; ATCC 90028"
+    },
+    {
+      "id": "coadd.mic.fg_002_s20.ug_ml",
+      "column": "coadd_mic_fg_002_s20_ug_ml",
+      "displayName": "MIC Cryptococcus neoformans ATCC 208821; H99 (ug/mL) [FG_002_S20]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "FG_002_S20; Cryptococcus neoformans; ATCC 208821; H99"
+    },
+    {
+      "id": "coadd.mic.gn_032.ug_ml",
+      "column": "coadd_mic_gn_032_ug_ml",
+      "displayName": "MIC Acinetobacter baumannii BAA-1605 (ug/mL) [GN_032]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_032; Acinetobacter baumannii; BAA-1605"
+    },
+    {
+      "id": "coadd.mic.gn_046.ug_ml",
+      "column": "coadd_mic_gn_046_ug_ml",
+      "displayName": "MIC Escherichia coli lpxC; MB4902 (ug/mL) [GN_046]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_046; Escherichia coli; lpxC; MB4902"
+    },
+    {
+      "id": "coadd.mic.gn_034_s50.ug_ml",
+      "column": "coadd_mic_gn_034_s50_ug_ml",
+      "displayName": "MIC Acinetobacter baumannii ATCC 19606 (ug/mL) [GN_034_S50]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_034_S50; Acinetobacter baumannii; ATCC 19606"
+    },
+    {
+      "id": "coadd.mic.gn_004.ug_ml",
+      "column": "coadd_mic_gn_004_ug_ml",
+      "displayName": "MIC Klebsiella pneumoniae ATCC 13883 (ug/mL) [GN_004]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_004; Klebsiella pneumoniae; ATCC 13883"
+    },
+    {
+      "id": "coadd.mic.gn_043.ug_ml",
+      "column": "coadd_mic_gn_043_ug_ml",
+      "displayName": "MIC Pseudomonas aeruginosa FADDI-PA070; R(PolB) (ug/mL) [GN_043]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_043; Pseudomonas aeruginosa; FADDI-PA070; R(PolB)"
+    },
+    {
+      "id": "coadd.mic.gn_045.ug_ml",
+      "column": "coadd_mic_gn_045_ug_ml",
+      "displayName": "MIC Klebsiella pneumoniae ATCC BAA-2146; NDM-1 (ug/mL) [GN_045]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_045; Klebsiella pneumoniae; ATCC BAA-2146; NDM-1"
+    },
+    {
+      "id": "coadd.mic.gn_093.ug_ml",
+      "column": "coadd_mic_gn_093_ug_ml",
+      "displayName": "MIC Acinetobacter baumannii CI; Metallo Oxa; R(pPept) (ug/mL) [GN_093]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_093; Acinetobacter baumannii; CI; Metallo Oxa; R(pPept)"
+    },
+    {
+      "id": "coadd.mic.gn_111.ug_ml",
+      "column": "coadd_mic_gn_111_ug_ml",
+      "displayName": "MIC Escherichia coli HS73; CTX-M (ug/mL) [GN_111]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_111; Escherichia coli; HS73; CTX-M"
+    },
+    {
+      "id": "coadd.mic.gn_034_s20.ug_ml",
+      "column": "coadd_mic_gn_034_s20_ug_ml",
+      "displayName": "MIC Acinetobacter baumannii ATCC 19606 (ug/mL) [GN_034_S20]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_034_S20; Acinetobacter baumannii; ATCC 19606"
+    },
+    {
+      "id": "coadd.mic.fg_018.ug_ml",
+      "column": "coadd_mic_fg_018_ug_ml",
+      "displayName": "MIC Candida auris JCM 15448;DSM 21092; CBS 10913 (ug/mL) [FG_018]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "FG_018; Candida auris; JCM 15448;DSM 21092; CBS 10913"
+    },
+    {
+      "id": "coadd.mic.gp_011.ug_ml",
+      "column": "coadd_mic_gp_011_ug_ml",
+      "displayName": "MIC Enterococcus faecalis VanA (ug/mL) [GP_011]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GP_011; Enterococcus faecalis; VanA"
+    },
+    {
+      "id": "coadd.mic.gp_035.ug_ml",
+      "column": "coadd_mic_gp_035_ug_ml",
+      "displayName": "MIC Staphylococcus aureus NRS 1; Mu50; ATCC 700699 (ug/mL) [GP_035]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GP_035; Staphylococcus aureus; NRS 1; Mu50; ATCC 700699"
+    },
+    {
+      "id": "coadd.mic.gn_001_s50.ug_ml",
+      "column": "coadd_mic_gn_001_s50_ug_ml",
+      "displayName": "MIC Escherichia coli ATCC 25922 (ug/mL) [GN_001_S50]",
+      "unit": "ug/mL",
+      "direction": "lower_is_better",
+      "assay": "CO-ADD MIC dose-response",
+      "protocol": "GN_001_S50; Escherichia coli; ATCC 25922"
+    }
+  ]
+}

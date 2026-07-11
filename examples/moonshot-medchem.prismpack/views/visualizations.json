@@ -1,0 +1,31 @@
+{
+  "visualizations": [
+    {
+      "id": "fluorescence-vs-rapidfire",
+      "type": "scatter",
+      "title": "Fluorescence vs RapidFire potency",
+      "x": "mpro_fluorescence_pIC50",
+      "y": "mpro_rapidfire_pIC50",
+      "colorBy": "series",
+      "sizeBy": "trypsin_mpro_selectivity_ratio"
+    },
+    {
+      "id": "potency-vs-selectivity",
+      "type": "scatter",
+      "title": "Potency vs trypsin selectivity",
+      "x": "mpro_fluorescence_pIC50",
+      "y": "trypsin_mpro_selectivity_ratio",
+      "colorBy": "series",
+      "sizeBy": "mpro_rapidfire_pIC50"
+    },
+    {
+      "id": "mpro-vs-trypsin-ic50",
+      "type": "scatter",
+      "title": "Mpro IC50 vs Trypsin IC50",
+      "x": "mpro_fluorescence_IC50_uM",
+      "y": "trypsin_IC50_uM",
+      "colorBy": "series",
+      "sizeBy": "mpro_fluorescence_pIC50"
+    }
+  ]
+}

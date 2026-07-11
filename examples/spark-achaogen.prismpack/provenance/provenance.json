@@ -1,0 +1,21 @@
+{
+  "sources": [
+    {
+      "type": "public_csv",
+      "name": "SPARK Data Achaogen Contribution",
+      "url": "https://www.collaborativedrug.com/SPARK-data-downloads"
+    }
+  ],
+  "terms": [
+    {
+      "name": "SPARK Data Terms of Use",
+      "url": "https://www.collaborativedrug.com/hubfs/SPARK-data-terms-of-use.pdf"
+    }
+  ],
+  "steps": [
+    {
+      "type": "data_preparation",
+      "name": "Generated demo PrismPack; per-strain MIC records were aggregated to species-level median endpoints."
+    }
+  ]
+}

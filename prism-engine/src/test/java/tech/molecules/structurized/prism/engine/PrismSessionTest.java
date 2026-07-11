@@ -291,6 +291,73 @@ class PrismSessionTest {
         assertEquals(3, session.activeRows().cardinality());
     }
 
+
+    @Test
+    void opensMoonshotPackWithConfiguredFullView() throws Exception {
+        PrismSession session = PrismSession.open(Path.of("..", "examples", "moonshot-medchem.prismpack"));
+
+        assertEquals(2062, session.totalRowCount());
+        assertEquals(2062, session.visibleRowCount());
+        assertEquals(13, session.visibleColumnCount());
+        assertEquals("compound_id", session.visibleColumnId(0));
+        assertEquals("mpro_fluorescence_pIC50", session.visibleColumnId(3));
+        assertEquals(PrismColumnType.MOLECULE, session.table().column("smiles").type());
+        assertEquals(PrismColumnType.NUMERIC, session.table().column("mpro_fluorescence_pIC50").type());
+        double firstPotency = (double) session.valueAtVisible(0, 3);
+        double secondPotency = (double) session.valueAtVisible(1, 3);
+        assertTrue(firstPotency >= secondPotency);
+    }
+
+    @Test
+    void opensCoaddPackWithConfiguredFullView() throws Exception {
+        PrismSession session = PrismSession.open(Path.of("..", "examples", "coadd-antimicrobial.prismpack"));
+
+        assertEquals(4803, session.totalRowCount());
+        assertEquals(4803, session.visibleRowCount());
+        assertEquals(15, session.visibleColumnCount());
+        assertEquals("compound_id", session.visibleColumnId(0));
+        assertEquals("coadd_cc50_ma_007_ug_ml", session.visibleColumnId(3));
+        assertEquals(PrismColumnType.MOLECULE, session.table().column("smiles").type());
+        assertEquals(PrismColumnType.NUMERIC, session.table().column("coadd_mic_gn_001_ug_ml").type());
+        double firstMic = (double) session.table().valueAt(session.physicalRowAtVisibleIndex(0), "coadd_mic_gn_001_ug_ml");
+        double secondMic = (double) session.table().valueAt(session.physicalRowAtVisibleIndex(1), "coadd_mic_gn_001_ug_ml");
+        assertTrue(firstMic <= secondMic);
+    }
+
+    @Test
+    void opensSparkAchaogenPackWithConfiguredFullView() throws Exception {
+        PrismSession session = PrismSession.open(Path.of("..", "examples", "spark-achaogen.prismpack"));
+
+        assertEquals(1873, session.totalRowCount());
+        assertEquals(1873, session.visibleRowCount());
+        assertEquals(22, session.visibleColumnCount());
+        assertEquals("compound_id", session.visibleColumnId(0));
+        assertEquals("spark_achaogen_lpxc_pic50", session.visibleColumnId(3));
+        assertEquals(PrismColumnType.MOLECULE, session.table().column("smiles").type());
+        assertEquals(PrismColumnType.NUMERIC, session.table().column("spark_achaogen_lpxc_pic50").type());
+        assertEquals("SPK-0125656", session.rowIdForPhysicalRow(session.physicalRowAtVisibleIndex(0)));
+        double firstPotency = (double) session.valueAtVisible(0, 3);
+        double secondPotency = (double) session.valueAtVisible(1, 3);
+        assertTrue(firstPotency >= secondPotency);
+    }
+
+    @Test
+    void opensMoleculeAcePackWithConfiguredFullView() throws Exception {
+        PrismSession session = PrismSession.open(Path.of("..", "examples", "moleculeace-chembl2034-ki.prismpack"));
+
+        assertEquals(750, session.totalRowCount());
+        assertEquals(750, session.visibleRowCount());
+        assertEquals(11, session.visibleColumnCount());
+        assertEquals("compound_id", session.visibleColumnId(0));
+        assertEquals("p_activity", session.visibleColumnId(6));
+        assertEquals(PrismColumnType.MOLECULE, session.table().column("smiles").type());
+        assertEquals(PrismColumnType.NUMERIC, session.table().column("p_activity").type());
+        assertEquals(10.0, (double) session.valueAtVisible(0, 6));
+        double firstPotency = (double) session.valueAtVisible(0, 6);
+        double secondPotency = (double) session.valueAtVisible(1, 6);
+        assertTrue(firstPotency >= secondPotency);
+    }
+
     private static PrismSession exampleSession() throws Exception {
         return PrismSession.open(Path.of("..", "examples", "example.prismpack"));
     }

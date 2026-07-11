@@ -18,23 +18,25 @@ public final class DefaultPrismFilterLabelProvider implements PrismFilterLabelPr
 
     @Override
     public String label(PrismFilter filter, PrismTable table) {
-        if (filter instanceof NumericRangeFilter numeric) {
-            return columnName(table, numeric.columnId()) + ": " + range(numeric.min(), numeric.max());
+        PrismFilter unwrapped = FilterListUtil.unwrap(filter);
+        String prefix = FilterListUtil.isInverted(filter) ? "not " : "";
+        if (unwrapped instanceof NumericRangeFilter numeric) {
+            return prefix + columnName(table, numeric.columnId()) + ": " + range(numeric.min(), numeric.max());
         }
-        if (filter instanceof TextPatternFilter text) {
-            return columnName(table, text.columnId()) + ": " + text.patternText();
+        if (unwrapped instanceof TextPatternFilter text) {
+            return prefix + columnName(table, text.columnId()) + ": " + text.patternText();
         }
-        if (filter instanceof CategoryIncludeFilter category) {
-            return columnName(table, category.columnId()) + ": categories";
+        if (unwrapped instanceof CategoryIncludeFilter category) {
+            return prefix + columnName(table, category.columnId()) + ": categories";
         }
-        if (filter instanceof MissingValueFilter missing) {
-            return columnName(table, missing.columnId()) + ": missing/value";
+        if (unwrapped instanceof MissingValueFilter missing) {
+            return prefix + columnName(table, missing.columnId()) + ": missing/value";
         }
-        if (filter instanceof RowSetFilter rowSet) {
+        if (unwrapped instanceof RowSetFilter rowSet) {
             return "Row set: " + rowSet.rowSetId();
         }
-        if (filter instanceof ColumnFilter columnFilter) {
-            return columnName(table, columnFilter.columnId()) + ": filter";
+        if (unwrapped instanceof ColumnFilter columnFilter) {
+            return prefix + columnName(table, columnFilter.columnId()) + ": filter";
         }
         return "Filter";
     }

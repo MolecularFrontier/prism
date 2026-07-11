@@ -1,0 +1,19 @@
+{
+  "prismPackVersion": "0.1",
+  "id": "spark-achaogen-lpxc-overview",
+  "title": "SPARK Achaogen LpxC Overview",
+  "description": "Toy/demo PrismPack generated from the public SPARK Achaogen LpxC contribution.",
+  "createdAt": "2026-07-11T00:00:00+02:00",
+  "createdBy": "Codex demo importer",
+  "dataframe": {
+    "id": "main",
+    "path": "data/dataframe.tsv",
+    "schema": "schema/dataframe.schema.json",
+    "rowType": "compound"
+  },
+  "molecules": "semantics/molecules.json",
+  "endpoints": "semantics/endpoints.json",
+  "tableView": "views/table-view.json",
+  "visualizations": "views/visualizations.json",
+  "provenance": "provenance/provenance.json"
+}

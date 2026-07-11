@@ -1,0 +1,80 @@
+{
+  "columns": [
+    {
+      "name": "compound_id",
+      "type": "string",
+      "semanticType": "compound_id",
+      "displayName": "Compound ID",
+      "role": "identifier"
+    },
+    {
+      "name": "smiles",
+      "type": "string",
+      "semanticType": "chemical_structure",
+      "structureFormat": "smiles",
+      "displayName": "Structure",
+      "role": "primary_structure"
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "semanticType": "target",
+      "displayName": "Target"
+    },
+    {
+      "name": "target_abbreviation",
+      "type": "string",
+      "semanticType": "category",
+      "displayName": "Target"
+    },
+    {
+      "name": "assay_type",
+      "type": "string",
+      "semanticType": "category",
+      "displayName": "Assay Type"
+    },
+    {
+      "name": "receptor_class",
+      "type": "string",
+      "semanticType": "category",
+      "displayName": "Target Class"
+    },
+    {
+      "name": "split",
+      "type": "string",
+      "semanticType": "category",
+      "displayName": "Split"
+    },
+    {
+      "name": "activity_cliff",
+      "type": "string",
+      "semanticType": "category",
+      "displayName": "Activity Cliff"
+    },
+    {
+      "name": "p_activity",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "pKi",
+      "endpointId": "moleculeace.chembl234_ki.pactivity",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "activity_nm",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Ki nM",
+      "unit": "nM",
+      "endpointId": "moleculeace.chembl234_ki.activity_nm",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "moleculeace_y",
+      "type": "number",
+      "semanticType": "benchmark_label",
+      "displayName": "MoleculeACE y",
+      "endpointId": "moleculeace.chembl234_ki.benchmark_y",
+      "direction": "higher_is_better"
+    }
+  ]
+}

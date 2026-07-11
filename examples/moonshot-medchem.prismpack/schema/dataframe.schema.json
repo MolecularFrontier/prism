@@ -1,0 +1,101 @@
+{
+  "columns": [
+    {
+      "name": "compound_id",
+      "type": "string",
+      "semanticType": "compound_id",
+      "displayName": "Compound ID",
+      "role": "identifier"
+    },
+    {
+      "name": "smiles",
+      "type": "string",
+      "semanticType": "chemical_structure",
+      "structureFormat": "smiles",
+      "displayName": "Structure",
+      "role": "primary_structure"
+    },
+    {
+      "name": "series",
+      "type": "string",
+      "semanticType": "category",
+      "displayName": "Series"
+    },
+    {
+      "name": "canonical_postera_id",
+      "type": "string",
+      "semanticType": "compound_id",
+      "displayName": "Canonical PostEra ID"
+    },
+    {
+      "name": "fragalysis_id",
+      "type": "string",
+      "semanticType": "external_id",
+      "displayName": "Fragalysis ID"
+    },
+    {
+      "name": "acrylamide",
+      "type": "boolean",
+      "semanticType": "flag",
+      "displayName": "Acrylamide"
+    },
+    {
+      "name": "chloroacetamide",
+      "type": "boolean",
+      "semanticType": "flag",
+      "displayName": "Chloroacetamide"
+    },
+    {
+      "name": "mpro_fluorescence_pIC50",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Mpro pIC50 - fluorescence",
+      "endpointId": "moonshot.mpro.fluorescence.pic50",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "mpro_fluorescence_IC50_uM",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Mpro IC50 - fluorescence",
+      "unit": "uM",
+      "endpointId": "moonshot.mpro.fluorescence.ic50_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "mpro_rapidfire_pIC50",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Mpro pIC50 - RapidFire",
+      "endpointId": "moonshot.mpro.rapidfire.pic50",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "mpro_rapidfire_IC50_uM",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Mpro IC50 - RapidFire",
+      "unit": "uM",
+      "endpointId": "moonshot.mpro.rapidfire.ic50_um",
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "trypsin_IC50_uM",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Trypsin IC50",
+      "unit": "uM",
+      "endpointId": "moonshot.trypsin.ic50_um",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "trypsin_mpro_selectivity_ratio",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "Trypsin/Mpro selectivity",
+      "unit": "fold",
+      "endpointId": "moonshot.selectivity.trypsin_over_mpro_fluorescence",
+      "direction": "higher_is_better"
+    }
+  ]
+}

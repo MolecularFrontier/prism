@@ -1,0 +1,195 @@
+{
+  "id": "spark-achaogen-full",
+  "title": "SPARK Achaogen LpxC overview",
+  "columns": [
+    "compound_id",
+    "smiles",
+    "series",
+    "spark_achaogen_lpxc_pic50",
+    "spark_achaogen_lpxc_ic50_um",
+    "spark_achaogen_primary_mic_pseudomonas_aeruginosa_pmic",
+    "spark_achaogen_primary_mic_escherichia_coli_pmic",
+    "spark_achaogen_primary_mic_klebsiella_pneumoniae_pmic",
+    "spark_achaogen_primary_mic_acinetobacter_baumannii_pmic",
+    "spark_achaogen_primary_mic_staphylococcus_aureus_pmic",
+    "spark_achaogen_cytotox_ic50_um",
+    "spark_achaogen_protein_binding_human_fraction_free_pct",
+    "spark_achaogen_protein_binding_rat_fraction_free_pct",
+    "spark_achaogen_mic_population_mic50_ug_ml",
+    "spark_achaogen_mic_population_mic90_ug_ml",
+    "spark_achaogen_pae_clinical_isolate_mic5_ug_ml",
+    "spark_achaogen_pk_rat_iv_auc_0_t_hr_ug_ml",
+    "spark_achaogen_pk_rat_iv_cmax_ug_ml",
+    "spark_achaogen_pk_rat_iv_cl_l_hr_kg",
+    "batch_id",
+    "source_id",
+    "synonyms"
+  ],
+  "frozenColumns": [
+    "compound_id",
+    "smiles"
+  ],
+  "hiddenColumns": [
+    "batch_id",
+    "source_id",
+    "synonyms"
+  ],
+  "sort": [
+    {
+      "column": "spark_achaogen_lpxc_pic50",
+      "direction": "desc"
+    }
+  ],
+  "filters": [
+    {
+      "column": "series",
+      "type": "category"
+    },
+    {
+      "column": "spark_achaogen_lpxc_pic50",
+      "type": "range"
+    },
+    {
+      "column": "spark_achaogen_lpxc_ic50_um",
+      "type": "range"
+    },
+    {
+      "column": "spark_achaogen_primary_mic_pseudomonas_aeruginosa_pmic",
+      "type": "range"
+    },
+    {
+      "column": "spark_achaogen_primary_mic_escherichia_coli_pmic",
+      "type": "range"
+    },
+    {
+      "column": "spark_achaogen_primary_mic_klebsiella_pneumoniae_pmic",
+      "type": "range"
+    },
+    {
+      "column": "spark_achaogen_primary_mic_acinetobacter_baumannii_pmic",
+      "type": "range"
+    },
+    {
+      "column": "spark_achaogen_primary_mic_staphylococcus_aureus_pmic",
+      "type": "range"
+    },
+    {
+      "column": "spark_achaogen_cytotox_ic50_um",
+      "type": "range"
+    },
+    {
+      "column": "spark_achaogen_protein_binding_human_fraction_free_pct",
+      "type": "range"
+    },
+    {
+      "column": "spark_achaogen_protein_binding_rat_fraction_free_pct",
+      "type": "range"
+    },
+    {
+      "column": "spark_achaogen_mic_population_mic50_ug_ml",
+      "type": "range"
+    },
+    {
+      "column": "spark_achaogen_mic_population_mic90_ug_ml",
+      "type": "range"
+    },
+    {
+      "column": "spark_achaogen_pae_clinical_isolate_mic5_ug_ml",
+      "type": "range"
+    },
+    {
+      "column": "spark_achaogen_pk_rat_iv_auc_0_t_hr_ug_ml",
+      "type": "range"
+    },
+    {
+      "column": "spark_achaogen_pk_rat_iv_cmax_ug_ml",
+      "type": "range"
+    },
+    {
+      "column": "spark_achaogen_pk_rat_iv_cl_l_hr_kg",
+      "type": "range"
+    }
+  ],
+  "colorRules": [
+    {
+      "column": "spark_achaogen_lpxc_pic50",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "spark_achaogen_lpxc_ic50_um",
+      "type": "continuous",
+      "direction": "lower_is_better"
+    },
+    {
+      "column": "spark_achaogen_primary_mic_pseudomonas_aeruginosa_pmic",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "spark_achaogen_primary_mic_escherichia_coli_pmic",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "spark_achaogen_primary_mic_klebsiella_pneumoniae_pmic",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "spark_achaogen_primary_mic_acinetobacter_baumannii_pmic",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "spark_achaogen_primary_mic_staphylococcus_aureus_pmic",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "spark_achaogen_cytotox_ic50_um",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "spark_achaogen_protein_binding_human_fraction_free_pct",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "spark_achaogen_protein_binding_rat_fraction_free_pct",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "spark_achaogen_mic_population_mic50_ug_ml",
+      "type": "continuous",
+      "direction": "lower_is_better"
+    },
+    {
+      "column": "spark_achaogen_mic_population_mic90_ug_ml",
+      "type": "continuous",
+      "direction": "lower_is_better"
+    },
+    {
+      "column": "spark_achaogen_pae_clinical_isolate_mic5_ug_ml",
+      "type": "continuous",
+      "direction": "lower_is_better"
+    },
+    {
+      "column": "spark_achaogen_pk_rat_iv_auc_0_t_hr_ug_ml",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "spark_achaogen_pk_rat_iv_cmax_ug_ml",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "spark_achaogen_pk_rat_iv_cl_l_hr_kg",
+      "type": "continuous",
+      "direction": "lower_is_better"
+    }
+  ]
+}

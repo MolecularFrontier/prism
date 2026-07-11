@@ -1,0 +1,19 @@
+{
+  "sources": [
+    {
+      "type": "github_repository",
+      "name": "molML/MoleculeACE",
+      "url": "https://github.com/molML/MoleculeACE"
+    }
+  ],
+  "paper": {
+    "doi": "10.1021/acs.jcim.2c01073",
+    "title": "Exposing the Limitations of Molecular Machine Learning with Activity Cliffs"
+  },
+  "steps": [
+    {
+      "type": "conversion",
+      "name": "Converted processed MoleculeACE benchmark CSV to Prism TSV and PrismPack"
+    }
+  ]
+}

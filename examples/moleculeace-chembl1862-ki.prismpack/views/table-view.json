@@ -1,0 +1,60 @@
+{
+  "id": "moleculeace-chembl1862-ki-full",
+  "title": "MoleculeACE ABL1 Ki SAR",
+  "columns": [
+    "compound_id",
+    "smiles",
+    "target_abbreviation",
+    "assay_type",
+    "split",
+    "activity_cliff",
+    "p_activity",
+    "activity_nm",
+    "moleculeace_y",
+    "receptor_class",
+    "target"
+  ],
+  "frozenColumns": [
+    "compound_id",
+    "smiles"
+  ],
+  "hiddenColumns": [
+    "target"
+  ],
+  "sort": [
+    {
+      "column": "p_activity",
+      "direction": "desc"
+    }
+  ],
+  "filters": [
+    {
+      "column": "split",
+      "type": "category"
+    },
+    {
+      "column": "activity_cliff",
+      "type": "category"
+    },
+    {
+      "column": "p_activity",
+      "type": "range"
+    },
+    {
+      "column": "activity_nm",
+      "type": "range"
+    }
+  ],
+  "colorRules": [
+    {
+      "column": "p_activity",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "activity_nm",
+      "type": "continuous",
+      "direction": "lower_is_better"
+    }
+  ]
+}

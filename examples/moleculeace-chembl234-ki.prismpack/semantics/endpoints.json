@@ -1,0 +1,31 @@
+{
+  "endpoints": [
+    {
+      "id": "moleculeace.chembl234_ki.pactivity",
+      "column": "p_activity",
+      "displayName": "pKi",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Ki",
+      "target": "Dopamine D3 receptor"
+    },
+    {
+      "id": "moleculeace.chembl234_ki.activity_nm",
+      "column": "activity_nm",
+      "displayName": "Ki nM",
+      "unit": "nM",
+      "direction": "lower_is_better",
+      "assay": "Ki",
+      "target": "Dopamine D3 receptor"
+    },
+    {
+      "id": "moleculeace.chembl234_ki.benchmark_y",
+      "column": "moleculeace_y",
+      "displayName": "MoleculeACE y",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "benchmark label",
+      "target": "Dopamine D3 receptor"
+    }
+  ]
+}

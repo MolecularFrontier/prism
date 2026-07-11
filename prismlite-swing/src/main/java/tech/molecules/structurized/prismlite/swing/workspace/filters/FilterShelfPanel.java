@@ -5,10 +5,11 @@ import tech.molecules.structurized.prismlite.swing.workspace.PrismLiteWorkspaceC
 import tech.molecules.structurized.prismlite.swing.workspace.PrismLiteWorkspaceModel;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import java.awt.FlowLayout;
-import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public final class FilterShelfPanel extends JPanel {
@@ -30,11 +31,17 @@ public final class FilterShelfPanel extends JPanel {
     public void refresh() {
         removeAll();
         add(new JLabel("Filters"));
-        List<PrismFilter> filters = model.session().viewState().activeFilters();
-        if (filters.isEmpty()) {
-            add(new JLabel("none"));
+        boolean any = false;
+        for (Map.Entry<String, FilterDraftState> entry : model.appliedColumnFilterStates().entrySet()) {
+            FilterDraftState state = entry.getValue();
+            if (state == null || state.filter() == null) {
+                continue;
+            }
+            any = true;
+            add(columnFilterChip(entry.getKey(), state));
         }
-        for (PrismFilter filter : filters) {
+        for (PrismFilter filter : model.nonGuiActiveFilters()) {
+            any = true;
             JButton chip = new JButton(labelProvider.label(filter, model.table()) + " x");
             chip.addActionListener(event -> {
                 if (filter.referencedColumnIds().size() == 1) {
@@ -45,7 +52,37 @@ public final class FilterShelfPanel extends JPanel {
             });
             add(chip);
         }
+        if (!any) {
+            add(new JLabel("none"));
+        }
         revalidate();
         repaint();
+    }
+
+    private JPanel columnFilterChip(String columnId, FilterDraftState state) {
+        JPanel chip = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
+        JCheckBox enabled = new JCheckBox("on", state.enabled());
+        enabled.addActionListener(event -> {
+            model.setAppliedFilterEnabled(columnId, enabled.isSelected());
+            refresh.run();
+        });
+        JCheckBox inverted = new JCheckBox("not", state.inverted());
+        inverted.addActionListener(event -> {
+            model.setAppliedFilterInverted(columnId, inverted.isSelected());
+            refresh.run();
+        });
+        JButton edit = new JButton(labelProvider.label(state.filter(), model.table()));
+        edit.setEnabled(state.enabled());
+        edit.addActionListener(event -> controller.focusColumn(columnId));
+        JButton remove = new JButton("x");
+        remove.addActionListener(event -> {
+            model.removeColumnFilterState(columnId);
+            refresh.run();
+        });
+        chip.add(enabled);
+        chip.add(inverted);
+        chip.add(edit);
+        chip.add(remove);
+        return chip;
     }
 }

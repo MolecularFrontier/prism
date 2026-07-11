@@ -1,0 +1,55 @@
+{
+  "endpoints": [
+    {
+      "id": "moonshot.mpro.fluorescence.pic50",
+      "column": "mpro_fluorescence_pIC50",
+      "displayName": "Mpro pIC50 - fluorescence",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Moonshot fluorescence Mpro IC50",
+      "protocol": "pIC50 computed from IC50 in uM"
+    },
+    {
+      "id": "moonshot.mpro.fluorescence.ic50_um",
+      "column": "mpro_fluorescence_IC50_uM",
+      "displayName": "Mpro IC50 - fluorescence",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Moonshot fluorescence Mpro IC50"
+    },
+    {
+      "id": "moonshot.mpro.rapidfire.pic50",
+      "column": "mpro_rapidfire_pIC50",
+      "displayName": "Mpro pIC50 - RapidFire",
+      "unit": null,
+      "direction": "higher_is_better",
+      "assay": "Moonshot RapidFire Mpro IC50",
+      "protocol": "pIC50 computed from IC50 in uM"
+    },
+    {
+      "id": "moonshot.mpro.rapidfire.ic50_um",
+      "column": "mpro_rapidfire_IC50_uM",
+      "displayName": "Mpro IC50 - RapidFire",
+      "unit": "uM",
+      "direction": "lower_is_better",
+      "assay": "Moonshot RapidFire Mpro IC50"
+    },
+    {
+      "id": "moonshot.trypsin.ic50_um",
+      "column": "trypsin_IC50_uM",
+      "displayName": "Trypsin IC50",
+      "unit": "uM",
+      "direction": "higher_is_better",
+      "assay": "Moonshot trypsin counter-screen"
+    },
+    {
+      "id": "moonshot.selectivity.trypsin_over_mpro_fluorescence",
+      "column": "trypsin_mpro_selectivity_ratio",
+      "displayName": "Trypsin/Mpro selectivity",
+      "unit": "fold",
+      "direction": "higher_is_better",
+      "assay": "Derived selectivity",
+      "protocol": "trypsin_IC50 / fluorescence_Mpro_IC50"
+    }
+  ]
+}

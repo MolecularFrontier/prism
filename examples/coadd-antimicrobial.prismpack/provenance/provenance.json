@@ -1,0 +1,15 @@
+{
+  "sources": [
+    {
+      "type": "public_csv",
+      "name": "CO-ADD dose-response CSV export",
+      "url": "https://db.co-add.org/downloads"
+    }
+  ],
+  "steps": [
+    {
+      "type": "data_preparation",
+      "name": "Generated PrismPack from CO-ADD dose-response data; censored values imported as numeric bounds with qualifiers retained in Prism TSV details."
+    }
+  ]
+}

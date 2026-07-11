@@ -1,0 +1,31 @@
+{
+  "visualizations": [
+    {
+      "id": "ecoli-vs-saureus",
+      "type": "scatter",
+      "title": "E. coli vs MRSA MIC",
+      "x": "coadd_mic_gn_001_ug_ml",
+      "y": "coadd_mic_gp_020_ug_ml",
+      "colorBy": "library",
+      "sizeBy": "coadd_cc50_ma_007_ug_ml"
+    },
+    {
+      "id": "paeruginosa-vs-abumannii",
+      "type": "scatter",
+      "title": "P. aeruginosa vs A. baumannii MIC",
+      "x": "coadd_mic_gn_042_ug_ml",
+      "y": "coadd_mic_gn_034_ug_ml",
+      "colorBy": "library",
+      "sizeBy": "coadd_hc10_ha_150_ug_ml"
+    },
+    {
+      "id": "antibacterial-vs-cytotoxicity",
+      "type": "scatter",
+      "title": "E. coli MIC vs HEK293 CC50",
+      "x": "coadd_mic_gn_001_ug_ml",
+      "y": "coadd_cc50_ma_007_ug_ml",
+      "colorBy": "library",
+      "sizeBy": "coadd_mic_gn_003_ug_ml"
+    }
+  ]
+}
