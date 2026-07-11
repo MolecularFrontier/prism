@@ -1,0 +1,39 @@
+{
+  "sources": [
+    {
+      "type": "chembl_sqlite",
+      "name": "ChEMBL_37",
+      "url": "https://www.ebi.ac.uk/chembl",
+      "localPath": "/home/lithom/dev_chem/prism_datasets/chembl/chembl_37_sqlite/chembl_37/chembl_37_sqlite/chembl_37.db"
+    }
+  ],
+  "document": {
+    "doc_id": 127645,
+    "chembl_id": "CHEMBL5360622",
+    "journal": "J Med Chem",
+    "year": 2023,
+    "title": "Leucettinibs, a Class of DYRK/CLK Kinase Inhibitors Inspired by the Marine Sponge Natural Product Leucettamine B.",
+    "doi": "10.1021/acs.jmedchem.3c00884",
+    "pubmed_id": 37487467,
+    "doc_type": "PUBLICATION",
+    "authors": "Deau E, Lindberg MF, Miege F, Roche D, George N, George P, Kr\u00e4mer A, Knapp S, Meijer L.",
+    "abstract": "Dual-specificity, tyrosine phosphorylation-regulated kinases (DYRKs) and cdc2-like kinases (CLKs) recently attracted attention due to their central involvement in various pathologies. We here describe a family of DYRK/CLK inhibitors derived from Leucettines and the marine natural product Leucettamine B. Forty-five <i>N</i>2-functionalized 2-aminoimidazolin-4-ones bearing a fused [6 + 5]-heteroarylmethylene were synthesized. Benzothiazol-6-ylmethylene was selected as the most potent residue among 15 different heteroarylmethylenes. 186 <i>N</i>2-substituted 2-aminoimidazolin-4-ones bearing a benzothiazol-6-ylmethylene, collectively named Leucettinibs, were synthesized and extensively characterized. Subnanomolar IC<sub>50</sub> (0.5-20 nM on DYRK1A) inhibitors were identified and one Leucettinib was modeled in DYRK1A and co-crystallized with CLK1 and the weaker inhibited off-target CSNK2A1. Kinase-inactive isomers of Leucettinibs (>3-10 \u03bcM on DYRK1A), named iso-Leucettinibs, were synthesized and characterized as suitable negative control compounds for functional experiments. Leucettinibs, but not iso-Leucettinibs, inhibit the phosphorylation of DYRK1A substrates in cells. Leucettinibs provide new research tools and potential leads for further optimization toward therapeutic drug candidates."
+  },
+  "license": {
+    "name": "Creative Commons Attribution-ShareAlike 3.0 Unported",
+    "url": "https://creativecommons.org/licenses/by-sa/3.0/"
+  },
+  "requiredAttribution": "ChEMBL data is from https://www.ebi.ac.uk/chembl - the version of ChEMBL is ChEMBL_37.",
+  "citation": "Mendez D, Gaulton A, Bento AP, Chambers J, De Veij M, Felix E, Magarinos MP, Mosquera JF, Mutowo P, Nowotka M, Gordillo-Maranon M, Hunter F, Junco L, Mugumbate G, Rodriguez-Lopez M, Atkinson F, Bosc N, Radoux CJ, Segura-Cabrera A, Hersey A, Leach AR. ChEMBL: towards direct deposition of bioassay data. Nucleic Acids Res. 2019 47(D1):D930-D940. DOI: 10.1093/nar/gky1075",
+  "steps": [
+    {
+      "type": "data_preparation",
+      "name": "Generated PrismPack from ChEMBL publication pChEMBL activity groups."
+    }
+  ],
+  "counts": {
+    "subjects": 224,
+    "endpointValues": 2088,
+    "endpoints": 12
+  }
+}

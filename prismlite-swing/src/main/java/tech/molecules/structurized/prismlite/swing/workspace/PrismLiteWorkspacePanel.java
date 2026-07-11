@@ -155,6 +155,38 @@ public final class PrismLiteWorkspacePanel extends JPanel {
         return sidePanel;
     }
 
+    public void toggleNavigator() {
+        sidePanel.setVisible(!sidePanel.isVisible());
+    }
+
+    public void toggleInspector() {
+        inspectorContainer.setVisible(!inspectorContainer.isVisible());
+    }
+
+    public void autoSizeVisibleColumns() {
+        autoSizeColumns();
+    }
+
+    public void resetRowHeight() {
+        initializeDefaultRowHeight();
+        applyRowHeight();
+    }
+
+    public void applyAllDraftFilters() {
+        model.applyAllDrafts();
+        refreshDataWorkspace();
+    }
+
+    public void discardAllDraftFilters() {
+        model.discardAllDrafts();
+        refreshChrome();
+    }
+
+    public void clearAppliedFilters() {
+        model.clearAppliedFilters();
+        refreshDataWorkspace();
+    }
+
     public void registerRendererProvider(PrismColumnCellRendererProvider provider) {
         rendererProviders.add(Objects.requireNonNull(provider, "provider"));
         installColumnRenderers();
@@ -349,12 +381,16 @@ public final class PrismLiteWorkspacePanel extends JPanel {
     }
 
     private void initializeDefaultRowHeight() {
+        model.setRowHeight(defaultRowHeight());
+    }
+
+    private int defaultRowHeight() {
         for (PrismColumn column : model.session().table().columns()) {
             if (column.type() == PrismColumnType.MOLECULE) {
-                model.setRowHeight(88);
-                return;
+                return 88;
             }
         }
+        return 24;
     }
 
     private void applyRowHeight() {
@@ -368,11 +404,11 @@ public final class PrismLiteWorkspacePanel extends JPanel {
         JToolBar toolbar = new JToolBar();
         toolbar.setFloatable(false);
         JButton columns = new JButton("Columns");
-        columns.addActionListener(event -> sidePanel.setVisible(!sidePanel.isVisible()));
+        columns.addActionListener(event -> toggleNavigator());
         JButton inspectorButton = new JButton("Inspector");
-        inspectorButton.addActionListener(event -> inspectorContainer.setVisible(!inspectorContainer.isVisible()));
+        inspectorButton.addActionListener(event -> toggleInspector());
         JButton autoWidth = new JButton("Auto width");
-        autoWidth.addActionListener(event -> autoSizeColumns());
+        autoWidth.addActionListener(event -> autoSizeVisibleColumns());
         JLabel rowHeightLabel = new JLabel("Row height");
         JSlider rowHeight = new JSlider(18, 160, model.rowHeight());
         rowHeight.setFocusable(false);
@@ -382,15 +418,9 @@ public final class PrismLiteWorkspacePanel extends JPanel {
         ChangeListener rowHeightListener = event -> model.setRowHeight(rowHeight.getValue());
         rowHeight.addChangeListener(rowHeightListener);
         JButton applyAll = new JButton("Apply all");
-        applyAll.addActionListener(event -> {
-            model.applyAllDrafts();
-            refreshDataWorkspace();
-        });
+        applyAll.addActionListener(event -> applyAllDraftFilters());
         JButton discardAll = new JButton("Discard all");
-        discardAll.addActionListener(event -> {
-            model.discardAllDrafts();
-            refreshChrome();
-        });
+        discardAll.addActionListener(event -> discardAllDraftFilters());
         toolbar.add(columns);
         toolbar.add(inspectorButton);
         toolbar.addSeparator();

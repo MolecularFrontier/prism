@@ -358,6 +358,23 @@ class PrismSessionTest {
         assertTrue(firstPotency >= secondPotency);
     }
 
+    @Test
+    void opensChemblPublicationPackWithConfiguredFullView() throws Exception {
+        PrismSession session = PrismSession.open(Path.of("..", "examples", "chembl-publication-chembl5360622.prismpack"));
+
+        assertEquals(224, session.totalRowCount());
+        assertEquals(224, session.visibleRowCount());
+        assertEquals(18, session.visibleColumnCount());
+        assertEquals("compound_id", session.visibleColumnId(0));
+        assertEquals("chembl_chembl5360622_chembl5363957_ic50_chembl4203", session.visibleColumnId(5));
+        assertEquals(PrismColumnType.MOLECULE, session.table().column("smiles").type());
+        assertEquals(PrismColumnType.NUMERIC, session.table().column("chembl_chembl5360622_chembl5363957_ic50_chembl4203").type());
+        assertEquals(9.0, (double) session.valueAtVisible(0, 5));
+        double firstPotency = (double) session.valueAtVisible(0, 5);
+        double secondPotency = (double) session.valueAtVisible(1, 5);
+        assertTrue(firstPotency >= secondPotency);
+    }
+
     private static PrismSession exampleSession() throws Exception {
         return PrismSession.open(Path.of("..", "examples", "example.prismpack"));
     }

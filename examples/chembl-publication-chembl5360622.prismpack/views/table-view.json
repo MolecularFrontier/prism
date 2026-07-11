@@ -1,0 +1,113 @@
+{
+  "id": "chembl-chembl5360622-full",
+  "title": "ChEMBL CHEMBL5360622 publication view",
+  "columns": [
+    "compound_id",
+    "smiles",
+    "molecule_name",
+    "document_chembl_id",
+    "target_summary",
+    "chembl_chembl5360622_chembl5363957_ic50_chembl4203",
+    "chembl_chembl5360622_chembl5363954_ic50_chembl4224",
+    "chembl_chembl5360622_chembl5363958_ic50_chembl2292",
+    "chembl_chembl5360622_chembl5363955_ic50_chembl4225",
+    "chembl_chembl5360622_chembl5363959_ic50_chembl5543",
+    "chembl_chembl5360622_chembl5363961_ic50_chembl4575",
+    "chembl_chembl5360622_chembl5363960_ic50_chembl4376",
+    "chembl_chembl5360622_chembl5363956_ic50_chembl4226",
+    "chembl_chembl5360622_chembl5363962_ic50_chembl1075115",
+    "chembl_chembl5360622_chembl5363963_ic50_chembl262",
+    "chembl_chembl5360622_chembl5363953_ic50_chembl1907600",
+    "chembl_chembl5360622_chembl5363952_ic50_chembl4937",
+    "source_molecule_ids"
+  ],
+  "frozenColumns": [
+    "compound_id",
+    "smiles"
+  ],
+  "hiddenColumns": [
+    "source_molecule_ids"
+  ],
+  "sort": [
+    {
+      "column": "chembl_chembl5360622_chembl5363957_ic50_chembl4203",
+      "direction": "desc"
+    }
+  ],
+  "filters": [
+    {
+      "column": "document_chembl_id",
+      "type": "category"
+    },
+    {
+      "column": "chembl_chembl5360622_chembl5363957_ic50_chembl4203",
+      "type": "range"
+    },
+    {
+      "column": "chembl_chembl5360622_chembl5363954_ic50_chembl4224",
+      "type": "range"
+    }
+  ],
+  "colorRules": [
+    {
+      "column": "chembl_chembl5360622_chembl5363957_ic50_chembl4203",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "chembl_chembl5360622_chembl5363954_ic50_chembl4224",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "chembl_chembl5360622_chembl5363958_ic50_chembl2292",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "chembl_chembl5360622_chembl5363955_ic50_chembl4225",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "chembl_chembl5360622_chembl5363959_ic50_chembl5543",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "chembl_chembl5360622_chembl5363961_ic50_chembl4575",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "chembl_chembl5360622_chembl5363960_ic50_chembl4376",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "chembl_chembl5360622_chembl5363956_ic50_chembl4226",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "chembl_chembl5360622_chembl5363962_ic50_chembl1075115",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "chembl_chembl5360622_chembl5363963_ic50_chembl262",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "chembl_chembl5360622_chembl5363953_ic50_chembl1907600",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    },
+    {
+      "column": "chembl_chembl5360622_chembl5363952_ic50_chembl4937",
+      "type": "continuous",
+      "direction": "higher_is_better"
+    }
+  ]
+}

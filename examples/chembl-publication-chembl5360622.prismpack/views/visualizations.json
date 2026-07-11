@@ -1,0 +1,36 @@
+{
+  "visualizations": [
+    {
+      "id": "primary-potency-distribution",
+      "type": "histogram",
+      "title": "Primary pChEMBL distribution",
+      "x": "chembl_chembl5360622_chembl5363957_ic50_chembl4203"
+    },
+    {
+      "id": "primary-vs-secondary",
+      "type": "scatter",
+      "title": "Primary vs secondary pChEMBL",
+      "x": "chembl_chembl5360622_chembl5363954_ic50_chembl4224",
+      "y": "chembl_chembl5360622_chembl5363957_ic50_chembl4203"
+    },
+    {
+      "id": "endpoint-profile",
+      "type": "heatmap",
+      "title": "Endpoint profile",
+      "columns": [
+        "chembl_chembl5360622_chembl5363957_ic50_chembl4203",
+        "chembl_chembl5360622_chembl5363954_ic50_chembl4224",
+        "chembl_chembl5360622_chembl5363958_ic50_chembl2292",
+        "chembl_chembl5360622_chembl5363955_ic50_chembl4225",
+        "chembl_chembl5360622_chembl5363959_ic50_chembl5543",
+        "chembl_chembl5360622_chembl5363961_ic50_chembl4575",
+        "chembl_chembl5360622_chembl5363960_ic50_chembl4376",
+        "chembl_chembl5360622_chembl5363956_ic50_chembl4226",
+        "chembl_chembl5360622_chembl5363962_ic50_chembl1075115",
+        "chembl_chembl5360622_chembl5363963_ic50_chembl262",
+        "chembl_chembl5360622_chembl5363953_ic50_chembl1907600",
+        "chembl_chembl5360622_chembl5363952_ic50_chembl4937"
+      ]
+    }
+  ]
+}

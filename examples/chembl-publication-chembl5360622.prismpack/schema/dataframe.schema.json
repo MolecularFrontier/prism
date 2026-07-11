@@ -1,0 +1,139 @@
+{
+  "columns": [
+    {
+      "name": "compound_id",
+      "type": "string",
+      "semanticType": "compound_id",
+      "displayName": "Compound ID",
+      "role": "identifier"
+    },
+    {
+      "name": "smiles",
+      "type": "string",
+      "semanticType": "chemical_structure",
+      "structureFormat": "smiles",
+      "displayName": "Structure",
+      "role": "primary_structure"
+    },
+    {
+      "name": "molecule_name",
+      "type": "string",
+      "semanticType": "name",
+      "displayName": "Molecule Name"
+    },
+    {
+      "name": "document_chembl_id",
+      "type": "string",
+      "semanticType": "document_id",
+      "displayName": "Document"
+    },
+    {
+      "name": "target_summary",
+      "type": "string",
+      "semanticType": "target",
+      "displayName": "Targets"
+    },
+    {
+      "name": "source_molecule_ids",
+      "type": "string",
+      "semanticType": "source_ids",
+      "displayName": "Source Molecules"
+    },
+    {
+      "name": "chembl_chembl5360622_chembl5363957_ic50_chembl4203",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "IC50 pChEMBL - Dual specificity protein kinase CLK4 [CHEMBL5363957]",
+      "endpointId": "chembl.chembl5360622.chembl5363957.ic50.chembl4203",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "chembl_chembl5360622_chembl5363954_ic50_chembl4224",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "IC50 pChEMBL - Dual specificity protein kinase CLK1 [CHEMBL5363954]",
+      "endpointId": "chembl.chembl5360622.chembl5363954.ic50.chembl4224",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "chembl_chembl5360622_chembl5363958_ic50_chembl2292",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "IC50 pChEMBL - Dual specificity tyrosine-phosphorylation-regulated kinase 1A [CHEMBL5363958]",
+      "endpointId": "chembl.chembl5360622.chembl5363958.ic50.chembl2292",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "chembl_chembl5360622_chembl5363955_ic50_chembl4225",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "IC50 pChEMBL - Dual specificity protein kinase CLK2 [CHEMBL5363955]",
+      "endpointId": "chembl.chembl5360622.chembl5363955.ic50.chembl4225",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "chembl_chembl5360622_chembl5363959_ic50_chembl5543",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "IC50 pChEMBL - Dual specificity tyrosine-phosphorylation-regulated kinase 1B [CHEMBL5363959]",
+      "endpointId": "chembl.chembl5360622.chembl5363959.ic50.chembl5543",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "chembl_chembl5360622_chembl5363961_ic50_chembl4575",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "IC50 pChEMBL - Dual specificity tyrosine-phosphorylation-regulated kinase 3 [CHEMBL5363961]",
+      "endpointId": "chembl.chembl5360622.chembl5363961.ic50.chembl4575",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "chembl_chembl5360622_chembl5363960_ic50_chembl4376",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "IC50 pChEMBL - Dual specificity tyrosine-phosphorylation-regulated kinase 2 [CHEMBL5363960]",
+      "endpointId": "chembl.chembl5360622.chembl5363960.ic50.chembl4376",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "chembl_chembl5360622_chembl5363956_ic50_chembl4226",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "IC50 pChEMBL - Dual specificity protein kinase CLK3 [CHEMBL5363956]",
+      "endpointId": "chembl.chembl5360622.chembl5363956.ic50.chembl4226",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "chembl_chembl5360622_chembl5363962_ic50_chembl1075115",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "IC50 pChEMBL - Dual specificity tyrosine-phosphorylation-regulated kinase 4 [CHEMBL5363962]",
+      "endpointId": "chembl.chembl5360622.chembl5363962.ic50.chembl1075115",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "chembl_chembl5360622_chembl5363963_ic50_chembl262",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "IC50 pChEMBL - Glycogen synthase kinase-3 beta [CHEMBL5363963]",
+      "endpointId": "chembl.chembl5360622.chembl5363963.ic50.chembl262",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "chembl_chembl5360622_chembl5363953_ic50_chembl1907600",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "IC50 pChEMBL - Cyclin-dependent kinase 5/CDK5 activator 1 [CHEMBL5363953]",
+      "endpointId": "chembl.chembl5360622.chembl5363953.ic50.chembl1907600",
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "chembl_chembl5360622_chembl5363952_ic50_chembl4937",
+      "type": "number",
+      "semanticType": "endpoint_value",
+      "displayName": "IC50 pChEMBL - Casein kinase I isoform epsilon [CHEMBL5363952]",
+      "endpointId": "chembl.chembl5360622.chembl5363952.ic50.chembl4937",
+      "direction": "higher_is_better"
+    }
+  ]
+}

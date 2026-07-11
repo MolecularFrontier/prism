@@ -318,6 +318,14 @@ public final class PrismLiteWorkspaceModel {
         fireChanged(WorkspaceChange.FILTER_STATE);
     }
 
+    public void clearAppliedFilters() {
+        appliedFilterStatesByColumn.clear();
+        draftFilterStatesByColumn.clear();
+        dirtyFilterColumns.clear();
+        session.setFilters(List.of());
+        fireChanged(WorkspaceChange.FILTER_STATE);
+    }
+
     public List<PrismFilter> nonGuiActiveFilters() {
         syncAppliedColumnFiltersFromSession();
         ArrayList<PrismFilter> result = new ArrayList<>();

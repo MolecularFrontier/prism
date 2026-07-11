@@ -98,6 +98,23 @@ class PrismPackReaderTest {
     }
 
     @Test
+    void readsChemblPublicationExampleDirectory() throws IOException {
+        Path example = Path.of("..", "examples", "chembl-publication-chembl5360622.prismpack");
+
+        PrismPack pack = PrismPackReader.read(example);
+
+        assertEquals("0.1", pack.manifest().prismPackVersion());
+        assertEquals("ChEMBL Publication CHEMBL5360622", pack.manifest().title());
+        assertEquals(18, pack.dataFrame().headers().size());
+        assertEquals(224, pack.dataFrame().rows().size());
+        assertEquals("smiles", pack.molecules().primaryStructureColumn());
+        assertEquals(12, pack.endpoints().endpoints().size());
+        assertEquals(3, pack.visualizations().visualizations().size());
+        assertEquals("chembl_chembl5360622_chembl5363957_ic50_chembl4203", pack.tableView().sort().getFirst().column());
+        assertTrue(pack.warnings().isEmpty());
+    }
+
+    @Test
     void readsPackageWithRootDirectoryFromZip(@TempDir Path tempDir) throws IOException {
         Path source = Path.of("..", "examples", "example.prismpack");
         Path zip = tempDir.resolve("example.prismpack");
