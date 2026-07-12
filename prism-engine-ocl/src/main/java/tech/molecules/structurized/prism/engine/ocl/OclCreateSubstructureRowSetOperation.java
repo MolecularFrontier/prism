@@ -30,6 +30,7 @@ public final class OclCreateSubstructureRowSetOperation implements PrismOperatio
             "Find structures containing the query and create a named row set.",
             List.of(
                     PrismOperationParameter.requiredColumn("structureColumn", "Structure column", "chemical_structure"),
+                    PrismOperationParameter.optionalRowSet("sourceRowSetId", "Source row set"),
                     PrismOperationParameter.requiredString("query", "Query structure"),
                     PrismOperationParameter.requiredEnum("queryFormat", "Query format", List.of("SMILES", "IDCODE", "MOLFILE")),
                     PrismOperationParameter.requiredEnum("stereoMode", "Stereo mode", List.of("IGNORE_STEREO", "REQUIRE_STEREO")),
@@ -49,6 +50,7 @@ public final class OclCreateSubstructureRowSetOperation implements PrismOperatio
         String structureColumn = required(parameters, "structureColumn");
         String queryText = required(parameters, "query");
         String rowSetName = required(parameters, "rowSetName");
+        String sourceRowSetId = optionalString(parameters, "sourceRowSetId");
         OclStructureFormat queryFormat = enumValue(parameters, "queryFormat", OclStructureFormat.SMILES, OclStructureFormat.class);
         OclStereoMode stereoMode = enumValue(parameters, "stereoMode", OclStereoMode.IGNORE_STEREO, OclStereoMode.class);
 
@@ -80,6 +82,19 @@ public final class OclCreateSubstructureRowSetOperation implements PrismOperatio
 
         OclSubstructureFilter filter = new OclSubstructureFilter(structureColumn, query, stereoMode);
         BitSet matches = filter.evaluate(snapshot.table(), new PrismEvaluationContext(null, snapshot.computedValues(), snapshot.rowIdIndex()));
+        if (sourceRowSetId != null) {
+            BitSet scopedRows = new BitSet(snapshot.rowIdIndex().rowCount());
+            PrismRowSet sourceRowSet = snapshot.rowSet(sourceRowSetId).orElseThrow(() -> new PrismOperationException(
+                    "UNKNOWN_ROW_SET",
+                    "unknown source row set '" + sourceRowSetId + "'",
+                    "sourceRowSetId",
+                    Map.of("rowSetId", sourceRowSetId)
+            ));
+            for (String rowId : sourceRowSet.rowIds()) {
+                snapshot.rowIdIndex().physicalRow(rowId).ifPresent(row -> scopedRows.set(row));
+            }
+            matches.and(scopedRows);
+        }
         LinkedHashSet<String> rowIds = new LinkedHashSet<>();
         for (int row = matches.nextSetBit(0); row >= 0; row = matches.nextSetBit(row + 1)) {
             rowIds.add(snapshot.rowIdIndex().rowId(row));
@@ -96,6 +111,7 @@ public final class OclCreateSubstructureRowSetOperation implements PrismOperatio
                         "structureColumn", structureColumn,
                         "queryFormat", queryFormat.name(),
                         "stereoMode", stereoMode.name(),
+                        "sourceRowSetId", sourceRowSetId == null ? "" : sourceRowSetId,
                         "createdAt", Instant.now().toString()
                 )
         );
@@ -111,6 +127,14 @@ public final class OclCreateSubstructureRowSetOperation implements PrismOperatio
         Object value = parameters.get(id);
         if (value == null || String.valueOf(value).isBlank()) {
             throw new IllegalArgumentException("missing required parameter '" + id + "'");
+        }
+        return String.valueOf(value).trim();
+    }
+
+    private static String optionalString(Map<String, Object> parameters, String id) {
+        Object value = parameters.get(id);
+        if (value == null || String.valueOf(value).isBlank()) {
+            return null;
         }
         return String.valueOf(value).trim();
     }

@@ -1,11 +1,13 @@
 package tech.molecules.structurized.prismlite.swing;
 
 import tech.molecules.structurized.prism.engine.CachePolicy;
+import tech.molecules.structurized.prism.engine.CreateScatterPlotViewOperation;
 import tech.molecules.structurized.prism.engine.PrismColumn;
 import tech.molecules.structurized.prism.engine.PrismColumnType;
 import tech.molecules.structurized.prism.engine.PrismSession;
 import tech.molecules.structurized.prism.io.PrismTsvDatasetLoader;
 import tech.molecules.structurized.prism.provider.inmemory.InMemoryPrismDataset;
+import tech.molecules.structurized.prism.engine.ocl.OclCreateStructureGridViewOperation;
 import tech.molecules.structurized.prism.engine.ocl.OclCreateSubstructureRowSetOperation;
 import tech.molecules.structurized.prism.engine.ocl.OclPrismEngineSupport;
 import tech.molecules.structurized.prism.engine.ocl.OclStructureFormat;
@@ -267,6 +269,12 @@ public final class PrismLiteFrame extends JFrame {
         try {
             if (!session.operationRegistry().operationIds().contains(OclCreateSubstructureRowSetOperation.ID)) {
                 session.operationRegistry().register(new OclCreateSubstructureRowSetOperation());
+            }
+            if (!session.operationRegistry().operationIds().contains(OclCreateStructureGridViewOperation.ID)) {
+                session.operationRegistry().register(new OclCreateStructureGridViewOperation());
+            }
+            if (!session.operationRegistry().operationIds().contains(CreateScatterPlotViewOperation.ID)) {
+                session.operationRegistry().register(new CreateScatterPlotViewOperation());
             }
         } catch (IllegalArgumentException ignored) {
             // A plugin or caller may already have registered the same OCL operation.

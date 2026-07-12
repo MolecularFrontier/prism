@@ -5,5 +5,7 @@ public enum PrismOperationParameterType {
     BOOLEAN,
     NUMBER,
     ENUM,
-    COLUMN
+    COLUMN,
+    COLUMN_LIST,
+    ROW_SET
 }

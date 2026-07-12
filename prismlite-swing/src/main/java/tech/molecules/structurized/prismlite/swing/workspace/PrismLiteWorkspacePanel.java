@@ -3,6 +3,7 @@ package tech.molecules.structurized.prismlite.swing.workspace;
 import tech.molecules.structurized.prism.engine.PrismColumn;
 import tech.molecules.structurized.prism.engine.PrismColumnType;
 import tech.molecules.structurized.prism.engine.PrismSession;
+import tech.molecules.structurized.prism.engine.PrismViewRecord;
 import tech.molecules.structurized.prismlite.swing.PrismLiteOperationPanel;
 import tech.molecules.structurized.prismlite.swing.PrismLiteRowSetPanel;
 import tech.molecules.structurized.prismlite.swing.PrismLiteTableModel;
@@ -16,6 +17,7 @@ import tech.molecules.structurized.prismlite.swing.workspace.table.MoleculeColum
 import tech.molecules.structurized.prismlite.swing.workspace.table.PrismColumnCellRendererProvider;
 import tech.molecules.structurized.prismlite.swing.workspace.table.PrismColumnHeaderRenderer;
 import tech.molecules.structurized.prismlite.swing.workspace.table.PrismTableHeader;
+import tech.molecules.structurized.prismlite.swing.workspace.views.PrismSwingViewRendererRegistry;
 
 import javax.swing.Box;
 import javax.swing.JButton;
@@ -56,6 +58,7 @@ public final class PrismLiteWorkspacePanel extends JPanel {
     private final PrismLiteWorkspaceController controller;
     private final JTable table;
     private final JScrollPane tableScrollPane;
+    private final JTabbedPane mainTabs = new JTabbedPane();
     private final JPanel sidePanel = new JPanel(new BorderLayout());
     private final ColumnNavigatorPanel navigator;
     private final ColumnInspectorPanel columnInspector;
@@ -65,7 +68,9 @@ public final class PrismLiteWorkspacePanel extends JPanel {
     private final JTabbedPane inspectorTabs = new JTabbedPane();
     private final JPanel inspectorContainer = new JPanel(new BorderLayout());
     private final ExecutorService summaryExecutor;
+    private final PrismSwingViewRendererRegistry viewRenderers = PrismSwingViewRendererRegistry.defaults();
     private final List<PrismColumnCellRendererProvider> rendererProviders = new ArrayList<>();
+    private int renderedViewCount;
     private boolean restoringSelection;
     private boolean restoringColumnWidths;
 
@@ -115,7 +120,7 @@ public final class PrismLiteWorkspacePanel extends JPanel {
         JTabbedPane tools = new JTabbedPane();
         tools.addTab("Columns", navigator);
         tools.addTab("Row Sets", rowSetPanel);
-        tools.addTab("Operations", new PrismLiteOperationPanel(session, rowSetPanel, this::refreshWorkspace));
+        tools.addTab("Operations", new PrismLiteOperationPanel(session, rowSetPanel, this::refreshWorkspace, this::selectedPhysicalRowsForOperations));
         sidePanel.add(tools, BorderLayout.CENTER);
 
         inspectorTabs.addTab("Column", columnInspector);
@@ -126,15 +131,18 @@ public final class PrismLiteWorkspacePanel extends JPanel {
         footer.add(filterShelf, BorderLayout.CENTER);
         footer.add(status, BorderLayout.EAST);
 
+        mainTabs.addTab("Table", tableScrollPane);
+
         add(toolbar(), BorderLayout.NORTH);
         add(sidePanel, BorderLayout.WEST);
-        add(tableScrollPane, BorderLayout.CENTER);
+        add(mainTabs, BorderLayout.CENTER);
         add(inspectorContainer, BorderLayout.EAST);
         add(footer, BorderLayout.SOUTH);
 
         installColumnRenderers();
         restoreColumnWidths();
         applyRowHeight();
+        refreshViewTabs();
         model.addChangeListener(this::handleWorkspaceChange);
         refreshChrome();
     }
@@ -149,6 +157,15 @@ public final class PrismLiteWorkspacePanel extends JPanel {
 
     public JTable table() {
         return table;
+    }
+
+    public int workspaceTabCount() {
+        return mainTabs.getTabCount();
+    }
+
+    public String selectedWorkspaceTabTitle() {
+        int selected = mainTabs.getSelectedIndex();
+        return selected < 0 ? null : mainTabs.getTitleAt(selected);
     }
 
     public JPanel sidePanel() {
@@ -210,11 +227,93 @@ public final class PrismLiteWorkspacePanel extends JPanel {
         restoreColumnWidths();
         applyRowHeight();
         restoreSelection(selectedPhysicalRows);
+        refreshViewTabs();
         refreshChrome();
         String focused = model.focusedColumnId();
         if (focused != null) {
             controller.scrollTableToColumn(focused);
         }
+    }
+
+
+    public void focusView(String viewId) {
+        for (int index = 1; index < mainTabs.getTabCount(); index++) {
+            if (Objects.equals(viewId, viewIdForTab(index))) {
+                mainTabs.setSelectedIndex(index);
+                return;
+            }
+        }
+    }
+
+    private void refreshViewTabs() {
+        String selectedViewId = selectedViewId();
+        int previousViewCount = renderedViewCount;
+        while (mainTabs.getTabCount() > 1) {
+            mainTabs.removeTabAt(1);
+        }
+        for (PrismViewRecord view : model.session().views()) {
+            java.awt.Component component = createViewTabComponent(view);
+            if (component instanceof javax.swing.JComponent jComponent) {
+                jComponent.putClientProperty("prismViewId", view.id());
+            }
+            mainTabs.addTab(view.title(), component);
+        }
+        renderedViewCount = model.session().views().size();
+        if (selectedViewId != null) {
+            focusView(selectedViewId);
+        } else if (renderedViewCount > previousViewCount && mainTabs.getTabCount() > 1) {
+            mainTabs.setSelectedIndex(mainTabs.getTabCount() - 1);
+        }
+    }
+
+    private java.awt.Component createViewTabComponent(PrismViewRecord view) {
+        java.util.Optional<tech.molecules.structurized.prismlite.swing.workspace.views.PrismSwingViewRenderer> renderer = viewRenderers.find(view.type());
+        if (renderer.isEmpty()) {
+            return unsupportedView(view);
+        }
+        tech.molecules.structurized.prismlite.swing.workspace.views.PrismSwingViewRenderer viewRenderer = renderer.get();
+        javax.swing.JComponent content = viewRenderer.createComponent(view, model, controller, this::refreshViewTabs);
+        javax.swing.JComponent configuration = viewRenderer.createConfigurationComponent(view, model, controller, this::refreshStructureWorkspace);
+        if (configuration == null) {
+            return content;
+        }
+        JPanel wrapper = new JPanel(new BorderLayout());
+        JPanel header = new JPanel(new BorderLayout());
+        JToolBar toolbar = new JToolBar();
+        toolbar.setFloatable(false);
+        JButton configure = new JButton("Configure");
+        configuration.setVisible(false);
+        configure.addActionListener(event -> {
+            configuration.setVisible(!configuration.isVisible());
+            wrapper.revalidate();
+        });
+        toolbar.add(Box.createHorizontalGlue());
+        toolbar.add(configure);
+        header.add(toolbar, BorderLayout.NORTH);
+        header.add(configuration, BorderLayout.CENTER);
+        wrapper.add(header, BorderLayout.NORTH);
+        wrapper.add(content, BorderLayout.CENTER);
+        return wrapper;
+    }
+
+    private String selectedViewId() {
+        int selected = mainTabs.getSelectedIndex();
+        return selected <= 0 ? null : viewIdForTab(selected);
+    }
+
+    private String viewIdForTab(int index) {
+        java.awt.Component component = mainTabs.getComponentAt(index);
+        if (component instanceof javax.swing.JComponent jComponent) {
+            Object value = jComponent.getClientProperty("prismViewId");
+            return value instanceof String text ? text : null;
+        }
+        return null;
+    }
+
+    private static JPanel unsupportedView(PrismViewRecord view) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(new JLabel("No renderer registered for view type: " + view.type()), BorderLayout.CENTER);
+        return panel;
     }
 
     private void handleWorkspaceChange(PrismLiteWorkspaceModel.WorkspaceChange change) {
@@ -275,6 +374,15 @@ public final class PrismLiteWorkspacePanel extends JPanel {
             refreshRowFocus();
         }
         restoreTableViewPosition(viewPosition);
+    }
+
+    private Set<Integer> selectedPhysicalRowsForOperations() {
+        LinkedHashSet<Integer> rows = new LinkedHashSet<>(selectedPhysicalRows());
+        java.util.BitSet selected = model.session().viewState().selectionModel().selectedRows();
+        for (int row = selected.nextSetBit(0); row >= 0; row = selected.nextSetBit(row + 1)) {
+            rows.add(row);
+        }
+        return rows;
     }
 
     private Set<Integer> selectedPhysicalRows() {

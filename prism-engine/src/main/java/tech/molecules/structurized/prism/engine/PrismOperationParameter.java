@@ -44,6 +44,22 @@ public record PrismOperationParameter(
         return new PrismOperationParameter(id, PrismOperationParameterType.STRING, name, "", true, List.of(), Map.of());
     }
 
+    public static PrismOperationParameter optionalRowSet(String id, String name) {
+        return new PrismOperationParameter(id, PrismOperationParameterType.ROW_SET, name, "", false, List.of(), Map.of());
+    }
+
+    public static PrismOperationParameter optionalColumnList(String id, String name, String semanticType) {
+        return new PrismOperationParameter(
+                id,
+                PrismOperationParameterType.COLUMN_LIST,
+                name,
+                "",
+                false,
+                List.of(),
+                semanticType == null ? Map.of() : Map.of("semanticType", semanticType)
+        );
+    }
+
     public static PrismOperationParameter requiredEnum(String id, String name, List<String> allowedValues) {
         return new PrismOperationParameter(id, PrismOperationParameterType.ENUM, name, "", true, allowedValues, Map.of());
     }

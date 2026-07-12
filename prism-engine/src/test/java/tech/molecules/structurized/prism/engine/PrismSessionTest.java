@@ -125,6 +125,112 @@ class PrismSessionTest {
         assertEquals("CMPD-003", session.rowIdForPhysicalRow(session.physicalRowAtVisibleIndex(1)));
     }
 
+
+
+
+    @Test
+    void scatterPlotOperationCreatesViewRecord() throws Exception {
+        PrismSession session = exampleSession();
+        session.operationRegistry().register(new CreateScatterPlotViewOperation());
+        session.addRowSet(new PrismRowSet("preferred", "Preferred", "", Set.of("CMPD-001", "CMPD-002"), Map.of()));
+
+        PrismOperationResult result = session.runOperation(CreateScatterPlotViewOperation.ID, Map.of(
+                "viewId", "scatter:potency-clearance",
+                "title", "Potency versus Clearance",
+                "rowSetId", "preferred",
+                "xColumnId", "pIC50",
+                "yColumnId", "HLM_CLint",
+                "colorColumnId", "series",
+                "xMin", "5.0",
+                "xMax", "9.0"
+        ));
+
+        assertEquals(1, result.addedViews().size());
+        ScatterPlotViewSpec spec = (ScatterPlotViewSpec) session.view("scatter:potency-clearance").specification();
+        assertEquals("Potency versus Clearance", spec.title());
+        assertEquals("preferred", spec.rowSetId());
+        assertEquals("pIC50", spec.xColumnId());
+        assertEquals("HLM_CLint", spec.yColumnId());
+        assertEquals("series", spec.colorColumnId());
+        assertEquals(5.0, spec.xMin());
+        assertEquals(9.0, spec.xMax());
+    }
+
+    @Test
+    void scatterPlotOperationRejectsNonNumericAxes() throws Exception {
+        PrismSession session = exampleSession();
+        session.operationRegistry().register(new CreateScatterPlotViewOperation());
+
+        PrismOperationException exception = assertThrows(PrismOperationException.class, () ->
+                session.runOperation(CreateScatterPlotViewOperation.ID, Map.of(
+                        "title", "Bad Scatter",
+                        "xColumnId", "compound_id",
+                        "yColumnId", "pIC50"
+                )));
+
+        assertEquals("INCOMPATIBLE_COLUMN", exception.errorCode());
+        assertEquals("xColumnId", exception.parameterName());
+        assertEquals(0, session.views().size());
+    }
+
+    @Test
+    void operationResultsCanAddViews() throws Exception {
+        PrismSession session = exampleSession();
+        session.addRowSet(new PrismRowSet("preferred", "Preferred", "", Set.of("CMPD-001", "CMPD-003"), Map.of()));
+        PrismViewRecord view = PrismViewRecord.of(new TestViewSpec(
+                "view-1",
+                "test.view",
+                "Test View",
+                Set.of("preferred"),
+                Set.of("smiles", "pIC50")
+        ));
+
+        session.applyOperationResult(PrismOperationResult.builder().addView(view).build());
+
+        assertEquals(1, session.views().size());
+        assertEquals("Test View", session.view("view-1").title());
+    }
+
+    @Test
+    void viewResultsRejectDuplicateIdsAndUnknownReferencesAtomically() throws Exception {
+        PrismSession session = exampleSession();
+        PrismViewRecord valid = PrismViewRecord.of(new TestViewSpec(
+                "view-1",
+                "test.view",
+                "Test View",
+                Set.of(),
+                Set.of("smiles")
+        ));
+        session.addView(valid);
+
+        PrismOperationException duplicate = assertThrows(PrismOperationException.class,
+                () -> session.addView(valid));
+        assertEquals("VIEW_EXISTS", duplicate.errorCode());
+
+        PrismOperationException unknownColumn = assertThrows(PrismOperationException.class,
+                () -> session.addView(PrismViewRecord.of(new TestViewSpec(
+                        "view-2",
+                        "test.view",
+                        "Bad Column",
+                        Set.of(),
+                        Set.of("missing_column")
+                ))));
+        assertEquals("UNKNOWN_COLUMN", unknownColumn.errorCode());
+        assertEquals(1, session.views().size());
+
+        PrismOperationException unknownRowSet = assertThrows(PrismOperationException.class,
+                () -> session.addView(PrismViewRecord.of(new TestViewSpec(
+                        "view-3",
+                        "test.view",
+                        "Bad Row Set",
+                        Set.of("missing_row_set"),
+                        Set.of("smiles")
+                ))));
+        assertEquals("UNKNOWN_ROW_SET", unknownRowSet.errorCode());
+        assertEquals(1, session.views().size());
+    }
+
+
     @Test
     void materializedColumnsAreVisibleThroughRuntimeTable() throws Exception {
         PrismSession session = exampleSession();
@@ -282,6 +388,46 @@ class PrismSessionTest {
         assertTrue(session.table().findColumn("unknown_row_score").isEmpty());
     }
 
+
+    @Test
+    void operationResultsCanUpdateViewsAtomically() throws Exception {
+        PrismSession session = exampleSession();
+        session.addRowSet(new PrismRowSet("preferred", "Preferred", "", Set.of("CMPD-001"), Map.of()));
+        session.addView(PrismViewRecord.of(new TestViewSpec(
+                "view:test",
+                "test.view",
+                "Initial",
+                Set.of("preferred"),
+                Set.of("smiles")
+        )));
+
+        PrismViewRecord updated = PrismViewRecord.of(new TestViewSpec(
+                "view:test",
+                "test.view",
+                "Updated",
+                Set.of("preferred"),
+                Set.of("pIC50")
+        ));
+        session.applyOperationResult(PrismOperationResult.builder().updateView(updated).build());
+
+        assertEquals("Updated", session.view("view:test").title());
+        assertEquals(Set.of("pIC50"), session.view("view:test").specification().referencedColumnIds());
+
+        PrismOperationException exception = assertThrows(PrismOperationException.class,
+                () -> session.applyOperationResult(PrismOperationResult.builder()
+                        .updateView(PrismViewRecord.of(new TestViewSpec(
+                                "view:test",
+                                "test.view",
+                                "Invalid",
+                                Set.of("missing"),
+                                Set.of("smiles")
+                        )))
+                        .build()));
+
+        assertEquals("UNKNOWN_ROW_SET", exception.errorCode());
+        assertEquals("Updated", session.view("view:test").title());
+    }
+
     @Test
     void activeRowsReturnsDefensiveCopy() throws Exception {
         PrismSession session = exampleSession();
@@ -374,6 +520,16 @@ class PrismSessionTest {
         double secondPotency = (double) session.valueAtVisible(1, 5);
         assertTrue(firstPotency >= secondPotency);
     }
+
+    private record TestViewSpec(
+            String viewId,
+            String viewType,
+            String title,
+            Set<String> referencedRowSetIds,
+            Set<String> referencedColumnIds
+    ) implements PrismViewSpec {
+    }
+
 
     private static PrismSession exampleSession() throws Exception {
         return PrismSession.open(Path.of("..", "examples", "example.prismpack"));

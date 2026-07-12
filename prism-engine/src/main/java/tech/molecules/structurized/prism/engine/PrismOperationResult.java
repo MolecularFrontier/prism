@@ -10,6 +10,8 @@ public final class PrismOperationResult {
     private final List<MaterializedColumnData> addedColumns;
     private final List<RowIdMaterializedColumnData> addedColumnsByRowId;
     private final List<PrismRowSet> addedRowSets;
+    private final List<PrismViewRecord> addedViews;
+    private final List<PrismViewRecord> updatedViews;
     private final List<String> warnings;
     private final Map<String, Object> provenance;
 
@@ -17,6 +19,8 @@ public final class PrismOperationResult {
         this.addedColumns = List.copyOf(builder.addedColumns);
         this.addedColumnsByRowId = List.copyOf(builder.addedColumnsByRowId);
         this.addedRowSets = List.copyOf(builder.addedRowSets);
+        this.addedViews = List.copyOf(builder.addedViews);
+        this.updatedViews = List.copyOf(builder.updatedViews);
         this.warnings = List.copyOf(builder.warnings);
         this.provenance = builder.provenance.isEmpty()
                 ? Map.of()
@@ -35,6 +39,14 @@ public final class PrismOperationResult {
         return addedRowSets;
     }
 
+    public List<PrismViewRecord> addedViews() {
+        return addedViews;
+    }
+
+    public List<PrismViewRecord> updatedViews() {
+        return updatedViews;
+    }
+
     public List<String> warnings() {
         return warnings;
     }
@@ -51,6 +63,8 @@ public final class PrismOperationResult {
         private final ArrayList<MaterializedColumnData> addedColumns = new ArrayList<>();
         private final ArrayList<RowIdMaterializedColumnData> addedColumnsByRowId = new ArrayList<>();
         private final ArrayList<PrismRowSet> addedRowSets = new ArrayList<>();
+        private final ArrayList<PrismViewRecord> addedViews = new ArrayList<>();
+        private final ArrayList<PrismViewRecord> updatedViews = new ArrayList<>();
         private final ArrayList<String> warnings = new ArrayList<>();
         private final LinkedHashMap<String, Object> provenance = new LinkedHashMap<>();
 
@@ -66,6 +80,16 @@ public final class PrismOperationResult {
 
         public Builder addRowSet(PrismRowSet rowSet) {
             addedRowSets.add(rowSet);
+            return this;
+        }
+
+        public Builder addView(PrismViewRecord view) {
+            addedViews.add(view);
+            return this;
+        }
+
+        public Builder updateView(PrismViewRecord view) {
+            updatedViews.add(view);
             return this;
         }
 

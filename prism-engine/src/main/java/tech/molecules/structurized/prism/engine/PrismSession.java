@@ -26,6 +26,7 @@ public final class PrismSession {
     private final PrismTable table;
     private final PrismViewState viewState;
     private final Map<String, PrismRowSet> rowSets = new LinkedHashMap<>();
+    private final Map<String, PrismViewRecord> views = new LinkedHashMap<>();
     private BitSet activeRows;
     private int[] visibleRows;
 
@@ -137,8 +138,34 @@ public final class PrismSession {
         return rowSet;
     }
 
+    public List<PrismViewRecord> views() {
+        return List.copyOf(views.values());
+    }
+
+    public PrismViewRecord view(String viewId) {
+        PrismViewRecord view = views.get(viewId);
+        if (view == null) {
+            throw new IllegalArgumentException("unknown view '" + viewId + "'");
+        }
+        return view;
+    }
+
     public void addRowSet(PrismRowSet rowSet) {
         applyOperationResult(PrismOperationResult.builder().addRowSet(rowSet).build());
+    }
+
+    public void addView(PrismViewRecord view) {
+        applyOperationResult(PrismOperationResult.builder().addView(view).build());
+    }
+
+    public void updateView(PrismViewRecord view) {
+        applyOperationResult(PrismOperationResult.builder().updateView(view).build());
+    }
+
+    public void removeView(String viewId) {
+        if (views.remove(viewId) == null) {
+            throw new IllegalArgumentException("unknown view '" + viewId + "'");
+        }
     }
 
     public void addMaterializedColumn(MaterializedColumnData column, boolean visible) {
@@ -152,7 +179,7 @@ public final class PrismSession {
     }
 
     public PrismSessionSnapshot snapshot() {
-        return new PrismSessionSnapshot(table, computedValues, rowIdIndex);
+        return new PrismSessionSnapshot(table, computedValues, rowIdIndex, rowSets());
     }
 
     public void applyOperationResult(PrismOperationResult result) {
@@ -162,13 +189,19 @@ public final class PrismSession {
     private void applyOperationResult(PrismOperationResult result, boolean makeColumnsVisible) {
         Objects.requireNonNull(result, "result");
         List<MaterializedColumnData> columns = materializeColumns(result);
-        validateOperationResult(columns, result.addedRowSets());
+        validateOperationResult(columns, result.addedRowSets(), result.addedViews(), result.updatedViews());
 
         for (MaterializedColumnData column : columns) {
             materializedColumns.add(column);
         }
         for (PrismRowSet rowSet : result.addedRowSets()) {
             rowSets.put(rowSet.id(), rowSet);
+        }
+        for (PrismViewRecord view : result.addedViews()) {
+            views.put(view.id(), view);
+        }
+        for (PrismViewRecord view : result.updatedViews()) {
+            views.put(view.id(), view);
         }
         if (makeColumnsVisible && !columns.isEmpty()) {
             ArrayList<String> visible = new ArrayList<>(viewState.visibleColumns());
@@ -204,7 +237,10 @@ public final class PrismSession {
         return List.copyOf(columns);
     }
 
-    private void validateOperationResult(Collection<MaterializedColumnData> columns, Collection<PrismRowSet> newRowSets) {
+    private void validateOperationResult(Collection<MaterializedColumnData> columns,
+                                         Collection<PrismRowSet> newRowSets,
+                                         Collection<PrismViewRecord> newViews,
+                                         Collection<PrismViewRecord> updatedViews) {
         HashSet<String> newColumnIds = new HashSet<>();
         for (MaterializedColumnData column : columns) {
             validateMaterializedColumn(column);
@@ -234,6 +270,53 @@ public final class PrismSession {
                             Map.of("rowSetId", rowSet.id(), "rowId", rowId)
                     );
                 }
+            }
+        }
+
+        HashSet<String> newViewIds = new HashSet<>();
+        for (PrismViewRecord view : newViews) {
+            Objects.requireNonNull(view, "view");
+            if (!newViewIds.add(view.id())) {
+                throw new PrismOperationException("DUPLICATE_VIEW", "operation result contains duplicate view '" + view.id() + "'");
+            }
+            if (views.containsKey(view.id())) {
+                throw new PrismOperationException("VIEW_EXISTS", "view already exists: " + view.id());
+            }
+            validateViewReferences(view, newColumnIds, newRowSetIds);
+        }
+
+        HashSet<String> updatedViewIds = new HashSet<>();
+        for (PrismViewRecord view : updatedViews) {
+            Objects.requireNonNull(view, "view");
+            if (!updatedViewIds.add(view.id()) || newViewIds.contains(view.id())) {
+                throw new PrismOperationException("DUPLICATE_VIEW", "operation result contains duplicate view '" + view.id() + "'");
+            }
+            if (!views.containsKey(view.id())) {
+                throw new PrismOperationException("VIEW_NOT_FOUND", "view does not exist: " + view.id());
+            }
+            validateViewReferences(view, newColumnIds, newRowSetIds);
+        }
+    }
+
+    private void validateViewReferences(PrismViewRecord view, HashSet<String> newColumnIds, HashSet<String> newRowSetIds) {
+        for (String columnId : view.specification().referencedColumnIds()) {
+            if (!newColumnIds.contains(columnId) && table.findColumn(columnId).isEmpty()) {
+                throw new PrismOperationException(
+                        "UNKNOWN_COLUMN",
+                        "view '" + view.id() + "' references unknown column '" + columnId + "'",
+                        null,
+                        Map.of("viewId", view.id(), "columnId", columnId)
+                );
+            }
+        }
+        for (String rowSetId : view.specification().referencedRowSetIds()) {
+            if (!newRowSetIds.contains(rowSetId) && !rowSets.containsKey(rowSetId)) {
+                throw new PrismOperationException(
+                        "UNKNOWN_ROW_SET",
+                        "view '" + view.id() + "' references unknown row set '" + rowSetId + "'",
+                        null,
+                        Map.of("viewId", view.id(), "rowSetId", rowSetId)
+                );
             }
         }
     }

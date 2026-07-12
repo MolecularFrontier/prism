@@ -1,6 +1,9 @@
 package tech.molecules.structurized.prism.engine;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -49,6 +52,8 @@ final class PrismOperationParameterBinder {
             case NUMBER -> numberValue(parameter, value);
             case ENUM -> enumValue(parameter, value);
             case COLUMN -> columnValue(parameter, value, snapshot);
+            case COLUMN_LIST -> columnListValue(parameter, value, snapshot);
+            case ROW_SET -> rowSetValue(parameter, value, snapshot);
         };
     }
 
@@ -96,6 +101,49 @@ final class PrismOperationParameterBinder {
 
     private static String columnValue(PrismOperationParameter parameter, Object value, PrismSessionSnapshot snapshot) {
         String columnId = String.valueOf(value).trim();
+        validateColumn(parameter, columnId, snapshot);
+        return columnId;
+    }
+
+    private static List<String> columnListValue(PrismOperationParameter parameter, Object value, PrismSessionSnapshot snapshot) {
+        ArrayList<String> columnIds = new ArrayList<>();
+        if (value instanceof Collection<?> collection) {
+            for (Object item : collection) {
+                addColumnValue(parameter, item, snapshot, columnIds);
+            }
+        } else {
+            for (String item : String.valueOf(value).split(",")) {
+                addColumnValue(parameter, item, snapshot, columnIds);
+            }
+        }
+        return List.copyOf(columnIds);
+    }
+
+    private static String rowSetValue(PrismOperationParameter parameter, Object value, PrismSessionSnapshot snapshot) {
+        String rowSetId = String.valueOf(value).trim();
+        if (snapshot.rowSet(rowSetId).isEmpty()) {
+            throw new PrismOperationException(
+                    "UNKNOWN_ROW_SET",
+                    "unknown row set '" + rowSetId + "'",
+                    parameter.id(),
+                    Map.of("rowSetId", rowSetId)
+            );
+        }
+        return rowSetId;
+    }
+
+    private static void addColumnValue(PrismOperationParameter parameter, Object value, PrismSessionSnapshot snapshot, List<String> columnIds) {
+        if (value == null || String.valueOf(value).isBlank()) {
+            return;
+        }
+        String columnId = String.valueOf(value).trim();
+        validateColumn(parameter, columnId, snapshot);
+        if (!columnIds.contains(columnId)) {
+            columnIds.add(columnId);
+        }
+    }
+
+    private static void validateColumn(PrismOperationParameter parameter, String columnId, PrismSessionSnapshot snapshot) {
         PrismColumn column = snapshot.table().findColumn(columnId).orElseThrow(() -> new PrismOperationException(
                 "UNKNOWN_COLUMN",
                 "unknown column '" + columnId + "'",
@@ -116,7 +164,6 @@ final class PrismOperationParameterBinder {
                 );
             }
         }
-        return columnId;
     }
 
     private static boolean isMissing(Object value) {

@@ -5,7 +5,10 @@ import com.actelion.research.chem.StereoMolecule;
 import org.junit.jupiter.api.Test;
 import tech.molecules.structurized.prism.engine.CachePolicy;
 import tech.molecules.structurized.prism.engine.PrismOperationDescriptor;
+import tech.molecules.structurized.prism.engine.PrismOperationEffect;
 import tech.molecules.structurized.prism.engine.PrismOperationException;
+import tech.molecules.structurized.prism.engine.PrismOperationResult;
+import tech.molecules.structurized.prism.engine.PrismRowSet;
 import tech.molecules.structurized.prism.engine.PrismSession;
 import tech.molecules.structurized.prism.pack.PrismPack;
 import tech.molecules.structurized.prism.pack.PrismPackWriter;
@@ -92,6 +95,58 @@ class OclPrismEngineSupportTest {
         assertEquals("Phenyl Matches", session.rowSet("ocl:substructure:phenyl-matches").name());
         assertEquals(Set.of("CMPD-001", "CMPD-002"), session.rowSet("ocl:substructure:phenyl-matches").rowIds());
     }
+
+
+    @Test
+    void substructureOperationCanBeScopedToSourceRowSet() {
+        PrismSession session = PrismSession.from(smilesPack());
+        OclPrismEngineSupport.registerCapabilities(session);
+        session.addRowSet(new PrismRowSet("selected", "Selected", "", Set.of("CMPD-002", "CMPD-003"), Map.of()));
+
+        session.runOperation(OclCreateSubstructureRowSetOperation.ID, Map.of(
+                "structureColumn", "smiles",
+                "sourceRowSetId", "selected",
+                "query", "c1ccccc1",
+                "queryFormat", "SMILES",
+                "stereoMode", "IGNORE_STEREO",
+                "rowSetName", "Scoped Phenyl"
+        ));
+
+        assertEquals(Set.of("CMPD-002"), session.rowSet("ocl:substructure:scoped-phenyl").rowIds());
+    }
+
+    @Test
+    void structureGridOperationCreatesViewRecord() {
+        PrismSession session = PrismSession.from(smilesPack());
+        OclPrismEngineSupport.registerCapabilities(session);
+        session.addRowSet(new PrismRowSet("preferred", "Preferred", "", Set.of("CMPD-001", "CMPD-003"), Map.of()));
+
+        PrismOperationDescriptor descriptor = session.operationRegistry().operation(OclCreateStructureGridViewOperation.ID).descriptor();
+        assertEquals("Create structure grid view", descriptor.name());
+        assertTrue(descriptor.effects().contains(PrismOperationEffect.ADD_VIEWS));
+
+        PrismOperationResult result = session.runOperation(OclCreateStructureGridViewOperation.ID, Map.of(
+                "viewId", "grid:preferred",
+                "title", "Preferred Structures",
+                "rowSetId", "preferred",
+                "structureColumn", "smiles",
+                "endpointColumns", "compound_id",
+                "sortColumn", "compound_id",
+                "sortDirection", "DESCENDING",
+                "maxCompounds", "12",
+                "columns", "3"
+        ));
+
+        assertEquals(1, result.addedViews().size());
+        assertEquals(1, session.views().size());
+        StructureGridViewSpec spec = (StructureGridViewSpec) session.view("grid:preferred").specification();
+        assertEquals("Preferred Structures", spec.title());
+        assertEquals("preferred", spec.rowSetId());
+        assertEquals("smiles", spec.structureColumnId());
+        assertEquals(List.of("compound_id"), spec.endpointColumnIds());
+        assertEquals(3, spec.columns());
+    }
+
 
     @Test
     void substructureOperationReportsInvalidQueryAsParameterFailure() {

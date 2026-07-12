@@ -1,0 +1,66 @@
+package tech.molecules.structurized.prism.engine.ocl;
+
+import tech.molecules.structurized.prism.engine.PrismViewSpec;
+import tech.molecules.structurized.prism.engine.SortDirection;
+
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
+public record StructureGridViewSpec(
+        String viewId,
+        String title,
+        String rowSetId,
+        String structureColumnId,
+        List<String> endpointColumnIds,
+        String sortColumnId,
+        SortDirection sortDirection,
+        int maxCompounds,
+        int columns
+) implements PrismViewSpec {
+    public static final String VIEW_TYPE = "chemistry.structure-grid";
+
+    public StructureGridViewSpec {
+        if (viewId == null || viewId.isBlank()) {
+            throw new IllegalArgumentException("view id must not be blank");
+        }
+        if (structureColumnId == null || structureColumnId.isBlank()) {
+            throw new IllegalArgumentException("structure column id must not be blank");
+        }
+        viewId = viewId.trim();
+        title = title == null || title.isBlank() ? "Structure Grid" : title.trim();
+        rowSetId = rowSetId == null || rowSetId.isBlank() ? null : rowSetId.trim();
+        structureColumnId = structureColumnId.trim();
+        endpointColumnIds = endpointColumnIds == null ? List.of() : endpointColumnIds.stream()
+                .filter(column -> column != null && !column.isBlank())
+                .map(String::trim)
+                .distinct()
+                .toList();
+        sortColumnId = sortColumnId == null || sortColumnId.isBlank() ? null : sortColumnId.trim();
+        sortDirection = sortDirection == null ? SortDirection.ASCENDING : sortDirection;
+        maxCompounds = maxCompounds < 1 ? 24 : maxCompounds;
+        columns = Math.max(1, Math.min(columns < 1 ? 4 : columns, 8));
+    }
+
+    @Override
+    public String viewType() {
+        return VIEW_TYPE;
+    }
+
+    @Override
+    public Set<String> referencedRowSetIds() {
+        return rowSetId == null ? Set.of() : Set.of(rowSetId);
+    }
+
+    @Override
+    public Set<String> referencedColumnIds() {
+        LinkedHashSet<String> ids = new LinkedHashSet<>();
+        ids.add(structureColumnId);
+        ids.addAll(endpointColumnIds);
+        if (sortColumnId != null) {
+            ids.add(sortColumnId);
+        }
+        return Set.copyOf(new ArrayList<>(ids));
+    }
+}

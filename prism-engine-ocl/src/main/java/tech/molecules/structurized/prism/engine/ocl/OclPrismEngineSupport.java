@@ -19,6 +19,7 @@ public final class OclPrismEngineSupport {
     public static List<String> registerCapabilities(PrismSession session) {
         List<String> registeredColumns = registerAllStructureColumns(session);
         session.operationRegistry().register(new OclCreateSubstructureRowSetOperation());
+        session.operationRegistry().register(new OclCreateStructureGridViewOperation());
         return registeredColumns;
     }
 
