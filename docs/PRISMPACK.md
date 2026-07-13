@@ -211,3 +211,10 @@ Readers should fail on missing required files, malformed JSON, duplicate
 dataframe column names, or ambiguous TSV rows. Readers should tolerate missing
 optional files and ignore unknown JSON fields. Optional view references to
 unknown columns should produce warnings rather than failing the package.
+
+Advanced model
+--------------
+
+See [`PRISM_DATA_MODEL.md`](PRISM_DATA_MODEL.md) for the lifecycle of base,
+computed, and materialized columns and how endpoint, score, MPO, chemistry, row
+set, and view semantics relate to the persisted package.

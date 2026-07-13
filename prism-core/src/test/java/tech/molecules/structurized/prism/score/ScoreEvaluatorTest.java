@@ -33,7 +33,7 @@ class ScoreEvaluatorTest {
     }
 
     @Test
-    void matchesNeonMpoCoverageRequiredAndHardFailSemantics() {
+    void evaluatesMpoCoverageRequiredAndHardFailSemantics() {
         EndpointScoreDefinition potency = score("potency", "pIC50", EndpointScoreDefinition.LINEAR,
                 List.of(new ScorePoint(5.0, 0.0), new ScorePoint(9.0, 1.0)));
         EndpointScoreDefinition clearance = score("clearance", "clint", EndpointScoreDefinition.LINEAR,

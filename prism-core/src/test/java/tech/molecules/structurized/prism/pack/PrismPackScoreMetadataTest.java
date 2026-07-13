@@ -39,12 +39,12 @@ class PrismPackScoreMetadataTest {
     static PrismPack pack() {
         EndpointScoreDefinition score = new EndpointScoreDefinition(
                 "potency_score", "pIC50", "Potency", null, "line_segment_v1", "linear", true,
-                List.of(new ScorePoint(5.0, 0.0), new ScorePoint(9.0, 1.0)), Map.of("source", "neon"));
+                List.of(new ScorePoint(5.0, 0.0), new ScorePoint(9.0, 1.0)), Map.of("source", "external_system"));
         MpoDefinition mpo = new MpoDefinition("lead_mpo", "Lead MPO", List.of(
                 new MpoComponentDefinition("pIC50", "potency_score", "Potency", 1.0, true, 0.25)),
                 MpoAggregationDefinition.defaults());
         PropertyProfileDefinition profile = new PropertyProfileDefinition(
-                "lead_profile", "Lead profile", "Portable Neon-style profile",
+                "lead_profile", "Lead profile", "Portable property profile",
                 List.of(new PropertyProfileItem("pIC50", "potency_score", "Potency", "Activity", 0, true, Map.of())),
                 List.of(mpo), Map.of("sourceViewPath", "project/lead"));
         PrismPack.Manifest manifest = new PrismPack.Manifest(
