@@ -13,10 +13,12 @@ import tech.molecules.structurized.prismlite.swing.workspace.filters.FilterShelf
 import tech.molecules.structurized.prismlite.swing.workspace.inspector.ColumnInspectorPanel;
 import tech.molecules.structurized.prismlite.swing.workspace.inspector.RowInspectorPanel;
 import tech.molecules.structurized.prismlite.swing.workspace.navigator.ColumnNavigatorPanel;
+import tech.molecules.structurized.prismlite.swing.workspace.profile.PropertyProfilePanel;
 import tech.molecules.structurized.prismlite.swing.workspace.table.MoleculeColumnCellRendererProvider;
 import tech.molecules.structurized.prismlite.swing.workspace.table.PrismColumnCellRendererProvider;
 import tech.molecules.structurized.prismlite.swing.workspace.table.PrismColumnHeaderRenderer;
 import tech.molecules.structurized.prismlite.swing.workspace.table.PrismTableHeader;
+import tech.molecules.structurized.prismlite.swing.workspace.table.ScoreColumnCellRendererProvider;
 import tech.molecules.structurized.prismlite.swing.workspace.views.PrismSwingViewRendererRegistry;
 
 import javax.swing.Box;
@@ -64,6 +66,7 @@ public final class PrismLiteWorkspacePanel extends JPanel {
     private final ColumnInspectorPanel columnInspector;
     private final RowInspectorPanel rowInspector;
     private final FilterShelfPanel filterShelf;
+    private final PropertyProfilePanel propertyProfiles;
     private final JLabel status = new JLabel();
     private final JTabbedPane inspectorTabs = new JTabbedPane();
     private final JPanel inspectorContainer = new JPanel(new BorderLayout());
@@ -89,6 +92,7 @@ public final class PrismLiteWorkspacePanel extends JPanel {
         });
         ColumnSummaryService summaries = new ColumnSummaryService(session.table(), summaryExecutor);
         rendererProviders.add(new MoleculeColumnCellRendererProvider(new MoleculeRenderCache(session.table())));
+        rendererProviders.add(new ScoreColumnCellRendererProvider());
         initializeDefaultRowHeight();
 
         table.setAutoCreateRowSorter(false);
@@ -115,11 +119,13 @@ public final class PrismLiteWorkspacePanel extends JPanel {
         columnInspector = new ColumnInspectorPanel(model, controller, summaries, this::refreshDataWorkspace, this::refreshStructureWorkspace);
         rowInspector = new RowInspectorPanel(model);
         filterShelf = new FilterShelfPanel(model, controller, this::refreshDataWorkspace);
+        propertyProfiles = new PropertyProfilePanel(model, this::refreshStructureWorkspace);
 
         PrismLiteRowSetPanel rowSetPanel = new PrismLiteRowSetPanel(session, this::refreshDataWorkspace);
         JTabbedPane tools = new JTabbedPane();
         tools.addTab("Columns", navigator);
         tools.addTab("Row Sets", rowSetPanel);
+        tools.addTab("Profiles", propertyProfiles);
         tools.addTab("Operations", new PrismLiteOperationPanel(session, rowSetPanel, this::refreshWorkspace, this::selectedPhysicalRowsForOperations));
         sidePanel.add(tools, BorderLayout.CENTER);
 
@@ -272,7 +278,7 @@ public final class PrismLiteWorkspacePanel extends JPanel {
             return unsupportedView(view);
         }
         tech.molecules.structurized.prismlite.swing.workspace.views.PrismSwingViewRenderer viewRenderer = renderer.get();
-        javax.swing.JComponent content = viewRenderer.createComponent(view, model, controller, this::refreshViewTabs);
+        javax.swing.JComponent content = viewRenderer.createComponent(view, model, controller, this::refreshStructureWorkspace);
         javax.swing.JComponent configuration = viewRenderer.createConfigurationComponent(view, model, controller, this::refreshStructureWorkspace);
         if (configuration == null) {
             return content;
@@ -331,6 +337,7 @@ public final class PrismLiteWorkspacePanel extends JPanel {
         columnInspector.refresh();
         rowInspector.refresh();
         filterShelf.refresh();
+        propertyProfiles.refresh();
         updateStatus();
         if (table.getTableHeader() != null) {
             table.getTableHeader().repaint();
@@ -392,6 +399,10 @@ public final class PrismLiteWorkspacePanel extends JPanel {
             if (selectedRow >= 0 && selectedRow < session.visibleRowCount()) {
                 rows.add(session.physicalRowAtVisibleIndex(selectedRow));
             }
+        }
+        java.util.BitSet selected = session.viewState().selectionModel().selectedRows();
+        for (int row = selected.nextSetBit(0); row >= 0; row = selected.nextSetBit(row + 1)) {
+            rows.add(row);
         }
         return rows;
     }

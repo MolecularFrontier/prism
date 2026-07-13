@@ -1,4 +1,4 @@
-PrismPack v0.1
+PrismPack v0.2
 ===============
 
 PrismPack is a lightweight package format for one analysis-ready dataframe plus
@@ -30,6 +30,8 @@ Optional files:
 
 - `semantics/molecules.json`
 - `semantics/endpoints.json`
+- `semantics/scores.json`
+- `semantics/property-profiles.json`
 - `views/table-view.json`
 - `views/visualizations.json`
 - `attachments/attachments.json`
@@ -56,6 +58,8 @@ Manifest
   },
   "molecules": "semantics/molecules.json",
   "endpoints": "semantics/endpoints.json",
+  "scores": "semantics/scores.json",
+  "propertyProfiles": "semantics/property-profiles.json",
   "tableView": "views/table-view.json",
   "visualizations": "views/visualizations.json",
   "attachments": "attachments/attachments.json",
@@ -65,6 +69,8 @@ Manifest
 
 Only `prismPackVersion` and `dataframe.path` are required in v0.1. If
 `dataframe.schema` is absent, readers must use `schema/dataframe.schema.json`.
+PrismPack v0.2 adds only optional score and property-profile metadata; v0.1
+packages remain valid inputs.
 
 Dataframe TSV
 -------------
@@ -130,6 +136,20 @@ Optional metadata
 - `direction`
 - `assay`
 - `protocol`
+
+`semantics/scores.json` may define portable endpoint desirability functions.
+The initial `line_segment_v1` score contains an endpoint reference, linear or
+log10 x scale, clamping policy, and ordered `(x, score)` points. Scores use the
+normalized range `0` (undesirable) to `1` (desirable).
+
+`semantics/property-profiles.json` may define ordered endpoint profiles and MPO
+definitions. Profile items reference endpoints and optional score IDs. MPO v1
+uses a weighted mean with missing values ignored and supports required
+components, hard-fail thresholds, and a coverage warning threshold.
+
+Evaluated scores and MPO results may also be materialized as dataframe columns.
+Their schema metadata should use `endpoint_score`, `mpo_score`, `mpo_coverage`,
+or `mpo_status` semantic types and include the source definition fingerprint.
 
 `views/table-view.json` may define:
 

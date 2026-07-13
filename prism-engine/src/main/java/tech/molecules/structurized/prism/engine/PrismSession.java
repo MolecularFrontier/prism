@@ -2,6 +2,8 @@ package tech.molecules.structurized.prism.engine;
 
 import tech.molecules.structurized.prism.pack.PrismPack;
 import tech.molecules.structurized.prism.pack.PrismPackReader;
+import tech.molecules.structurized.prism.score.EndpointScoreDefinition;
+import tech.molecules.structurized.prism.score.PropertyProfileDefinition;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -27,10 +29,15 @@ public final class PrismSession {
     private final PrismViewState viewState;
     private final Map<String, PrismRowSet> rowSets = new LinkedHashMap<>();
     private final Map<String, PrismViewRecord> views = new LinkedHashMap<>();
+    private final Map<String, EndpointScoreDefinition> scoreDefinitions;
+    private final Map<String, PropertyProfileDefinition> propertyProfiles;
     private BitSet activeRows;
     private int[] visibleRows;
 
-    private PrismSession(PrismTable baseTable, PrismViewState viewState) {
+    private PrismSession(PrismTable baseTable,
+                         PrismViewState viewState,
+                         Collection<EndpointScoreDefinition> scores,
+                         Collection<PropertyProfileDefinition> profiles) {
         this.baseTable = Objects.requireNonNull(baseTable, "baseTable");
         this.rowIdIndex = RowIdIndex.forTable(baseTable);
         this.computedValues = new ComputedValueRegistry(baseTable);
@@ -38,6 +45,14 @@ public final class PrismSession {
         this.operationRegistry = new PrismOperationRegistry();
         this.table = new RuntimePrismTable(baseTable, computedValues, materializedColumns);
         this.viewState = Objects.requireNonNull(viewState, "viewState");
+        this.scoreDefinitions = indexScores(scores);
+        this.propertyProfiles = indexProfiles(profiles);
+        this.operationRegistry.register(new ListPropertyProfilesOperation());
+        this.operationRegistry.register(new DescribePropertyProfileOperation());
+        this.operationRegistry.register(new EvaluateEndpointScoreOperation());
+        this.operationRegistry.register(new EvaluatePropertyProfileOperation());
+        this.operationRegistry.register(new EvaluateMpoOperation());
+        this.operationRegistry.register(new MaterializePropertyProfileOperation());
         recompute();
     }
 
@@ -47,11 +62,14 @@ public final class PrismSession {
 
     public static PrismSession from(PrismPack pack) {
         PrismTable table = InMemoryPrismTable.from(pack);
-        return new PrismSession(table, PrismViewState.fromPack(pack, table));
+        Collection<EndpointScoreDefinition> scores = pack.scores() == null ? List.of() : pack.scores().scores();
+        Collection<PropertyProfileDefinition> profiles = pack.propertyProfiles() == null
+                ? List.of() : pack.propertyProfiles().profiles();
+        return new PrismSession(table, PrismViewState.fromPack(pack, table), scores, profiles);
     }
 
     public static PrismSession from(PrismTable table) {
-        return new PrismSession(table, PrismViewState.defaultFor(table));
+        return new PrismSession(table, PrismViewState.defaultFor(table), List.of(), List.of());
     }
 
     public PrismTable baseTable() {
@@ -84,6 +102,26 @@ public final class PrismSession {
 
     public PrismViewState viewState() {
         return viewState;
+    }
+
+    public List<EndpointScoreDefinition> scoreDefinitions() {
+        return List.copyOf(scoreDefinitions.values());
+    }
+
+    public EndpointScoreDefinition scoreDefinition(String scoreId) {
+        EndpointScoreDefinition definition = scoreDefinitions.get(scoreId);
+        if (definition == null) throw new IllegalArgumentException("unknown score definition '" + scoreId + "'");
+        return definition;
+    }
+
+    public List<PropertyProfileDefinition> propertyProfiles() {
+        return List.copyOf(propertyProfiles.values());
+    }
+
+    public PropertyProfileDefinition propertyProfile(String profileId) {
+        PropertyProfileDefinition definition = propertyProfiles.get(profileId);
+        if (definition == null) throw new IllegalArgumentException("unknown property profile '" + profileId + "'");
+        return definition;
     }
 
     public int totalRowCount() {
@@ -179,7 +217,7 @@ public final class PrismSession {
     }
 
     public PrismSessionSnapshot snapshot() {
-        return new PrismSessionSnapshot(table, computedValues, rowIdIndex, rowSets());
+        return new PrismSessionSnapshot(table, computedValues, rowIdIndex, rowSets(), scoreDefinitions, propertyProfiles);
     }
 
     public void applyOperationResult(PrismOperationResult result) {
@@ -476,6 +514,30 @@ public final class PrismSession {
             }
         }
         return sortKey.direction() == SortDirection.DESCENDING ? -comparison : comparison;
+    }
+
+    private static Map<String, EndpointScoreDefinition> indexScores(Collection<EndpointScoreDefinition> definitions) {
+        LinkedHashMap<String, EndpointScoreDefinition> indexed = new LinkedHashMap<>();
+        if (definitions != null) {
+            for (EndpointScoreDefinition definition : definitions) {
+                if (indexed.putIfAbsent(definition.id(), definition) != null) {
+                    throw new IllegalArgumentException("duplicate score definition '" + definition.id() + "'");
+                }
+            }
+        }
+        return Map.copyOf(indexed);
+    }
+
+    private static Map<String, PropertyProfileDefinition> indexProfiles(Collection<PropertyProfileDefinition> definitions) {
+        LinkedHashMap<String, PropertyProfileDefinition> indexed = new LinkedHashMap<>();
+        if (definitions != null) {
+            for (PropertyProfileDefinition definition : definitions) {
+                if (indexed.putIfAbsent(definition.id(), definition) != null) {
+                    throw new IllegalArgumentException("duplicate property profile '" + definition.id() + "'");
+                }
+            }
+        }
+        return Map.copyOf(indexed);
     }
 
     @Override

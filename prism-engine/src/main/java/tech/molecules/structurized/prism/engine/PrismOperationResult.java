@@ -13,6 +13,7 @@ public final class PrismOperationResult {
     private final List<PrismViewRecord> addedViews;
     private final List<PrismViewRecord> updatedViews;
     private final List<String> warnings;
+    private final Map<String, Object> output;
     private final Map<String, Object> provenance;
 
     private PrismOperationResult(Builder builder) {
@@ -22,6 +23,9 @@ public final class PrismOperationResult {
         this.addedViews = List.copyOf(builder.addedViews);
         this.updatedViews = List.copyOf(builder.updatedViews);
         this.warnings = List.copyOf(builder.warnings);
+        this.output = builder.output.isEmpty()
+                ? Map.of()
+                : Collections.unmodifiableMap(new LinkedHashMap<>(builder.output));
         this.provenance = builder.provenance.isEmpty()
                 ? Map.of()
                 : Collections.unmodifiableMap(new LinkedHashMap<>(builder.provenance));
@@ -55,6 +59,10 @@ public final class PrismOperationResult {
         return provenance;
     }
 
+    public Map<String, Object> output() {
+        return output;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -66,6 +74,7 @@ public final class PrismOperationResult {
         private final ArrayList<PrismViewRecord> addedViews = new ArrayList<>();
         private final ArrayList<PrismViewRecord> updatedViews = new ArrayList<>();
         private final ArrayList<String> warnings = new ArrayList<>();
+        private final LinkedHashMap<String, Object> output = new LinkedHashMap<>();
         private final LinkedHashMap<String, Object> provenance = new LinkedHashMap<>();
 
         public Builder addColumn(MaterializedColumnData column) {
@@ -103,6 +112,13 @@ public final class PrismOperationResult {
         public Builder provenance(String key, Object value) {
             if (key != null && !key.isBlank()) {
                 provenance.put(key, value);
+            }
+            return this;
+        }
+
+        public Builder output(String key, Object value) {
+            if (key != null && !key.isBlank()) {
+                output.put(key, value);
             }
             return this;
         }

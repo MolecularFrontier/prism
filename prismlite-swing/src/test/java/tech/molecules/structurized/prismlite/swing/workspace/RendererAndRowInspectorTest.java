@@ -2,6 +2,8 @@ package tech.molecules.structurized.prismlite.swing.workspace;
 
 import com.actelion.research.chem.StereoMolecule;
 import org.junit.jupiter.api.Test;
+import org.knowm.xchart.XChartPanel;
+import org.knowm.xchart.XYChart;
 import tech.molecules.structurized.prism.engine.PrismColumn;
 import tech.molecules.structurized.prism.engine.CreateScatterPlotViewOperation;
 import tech.molecules.structurized.prism.engine.PrismSession;
@@ -28,6 +30,8 @@ import java.awt.Dimension;
 import java.awt.Container;
 import java.awt.Component;
 import java.awt.Point;
+import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
@@ -108,6 +112,23 @@ class RendererAndRowInspectorTest {
         });
 
         assertEquals(yBefore.get(), yAfter.get());
+    }
+
+    @Test
+    void workspaceRestoresSelectionFromViewState() throws Exception {
+        PrismSession session = PrismSession.open(Path.of("..", "examples", "example.prismpack"));
+        AtomicInteger selectedRow = new AtomicInteger(-1);
+
+        SwingUtilities.invokeAndWait(() -> {
+            PrismLiteWorkspacePanel panel = new PrismLiteWorkspacePanel(session);
+            session.viewState().selectionModel().setSelected(2, true);
+
+            panel.refreshWorkspace();
+
+            selectedRow.set(panel.table().getSelectedRow());
+        });
+
+        assertEquals(2, selectedRow.get());
     }
 
     @Test
@@ -239,7 +260,84 @@ class RendererAndRowInspectorTest {
                 () -> { }
         );
 
-        assertTrue(component.getClass().getName().contains("XChartPanel"));
+        assertInstanceOf(XChartPanel.class, component);
+    }
+
+    @Test
+    void scatterPlotHoverAndClickSelectNearestPoint() throws Exception {
+        PrismSession session = PrismSession.open(Path.of("..", "examples", "example.prismpack"));
+        session.operationRegistry().register(new CreateScatterPlotViewOperation());
+        session.runOperation(CreateScatterPlotViewOperation.ID, Map.of(
+                "viewId", "scatter:click",
+                "title", "Clickable Scatter",
+                "xColumnId", "pIC50",
+                "yColumnId", "HLM_CLint",
+                "colorColumnId", "series"
+        ));
+        AtomicReference<String> tooltip = new AtomicReference<>();
+        AtomicReference<String> focusedRowId = new AtomicReference<>();
+        AtomicInteger selected = new AtomicInteger(0);
+        int physicalRow = firstPlottableRow(session);
+
+        SwingUtilities.invokeAndWait(() -> {
+            PrismLiteWorkspaceModel model = new PrismLiteWorkspaceModel(session);
+            JComponent component = new ScatterPlotViewRenderer().createComponent(
+                    session.view("scatter:click"),
+                    model,
+                    null,
+                    () -> { }
+            );
+            prepareChart(component);
+            Point point = screenPoint(component, session, physicalRow);
+
+            tooltip.set(component.getToolTipText(mouse(component, MouseEvent.MOUSE_MOVED, point, 0, MouseEvent.NOBUTTON)));
+            component.dispatchEvent(mouse(component, MouseEvent.MOUSE_PRESSED, point, 0, MouseEvent.BUTTON1));
+            component.dispatchEvent(mouse(component, MouseEvent.MOUSE_RELEASED, point, 0, MouseEvent.BUTTON1));
+
+            selected.set(session.viewState().selectionModel().isSelected(physicalRow) ? 1 : 0);
+            focusedRowId.set(model.focusedRowId());
+        });
+
+        assertTrue(tooltip.get().contains(session.rowIdForPhysicalRow(physicalRow)));
+        assertEquals(1, selected.get());
+        assertEquals(session.rowIdForPhysicalRow(physicalRow), focusedRowId.get());
+    }
+
+    @Test
+    void scatterPlotLassoSelectsContainedPoints() throws Exception {
+        PrismSession session = PrismSession.open(Path.of("..", "examples", "example.prismpack"));
+        session.operationRegistry().register(new CreateScatterPlotViewOperation());
+        session.runOperation(CreateScatterPlotViewOperation.ID, Map.of(
+                "viewId", "scatter:lasso",
+                "title", "Lasso Scatter",
+                "xColumnId", "pIC50",
+                "yColumnId", "HLM_CLint"
+        ));
+        AtomicInteger selected = new AtomicInteger(-1);
+
+        SwingUtilities.invokeAndWait(() -> {
+            JComponent component = new ScatterPlotViewRenderer().createComponent(
+                    session.view("scatter:lasso"),
+                    new PrismLiteWorkspaceModel(session),
+                    null,
+                    () -> { }
+            );
+            prepareChart(component);
+            Point topLeft = new Point(0, 0);
+            Point topRight = new Point(component.getWidth(), 0);
+            Point bottomRight = new Point(component.getWidth(), component.getHeight());
+            Point bottomLeft = new Point(0, component.getHeight());
+
+            component.dispatchEvent(mouse(component, MouseEvent.MOUSE_PRESSED, topLeft, 0, MouseEvent.BUTTON1));
+            component.dispatchEvent(mouse(component, MouseEvent.MOUSE_DRAGGED, topRight, 0, MouseEvent.NOBUTTON));
+            component.dispatchEvent(mouse(component, MouseEvent.MOUSE_DRAGGED, bottomRight, 0, MouseEvent.NOBUTTON));
+            component.dispatchEvent(mouse(component, MouseEvent.MOUSE_DRAGGED, bottomLeft, 0, MouseEvent.NOBUTTON));
+            component.dispatchEvent(mouse(component, MouseEvent.MOUSE_RELEASED, topLeft, 0, MouseEvent.BUTTON1));
+
+            selected.set(session.viewState().selectionModel().selectedRows().cardinality());
+        });
+
+        assertEquals(plottableRowCount(session), selected.get());
     }
 
     @Test
@@ -309,6 +407,60 @@ class RendererAndRowInspectorTest {
         JScrollPane scroll = (JScrollPane) component;
         JViewport viewport = scroll.getViewport();
         return ((Container) viewport.getView()).getComponentCount();
+    }
+
+    private static int firstPlottableRow(PrismSession session) {
+        PrismColumn x = session.table().column("pIC50");
+        PrismColumn y = session.table().column("HLM_CLint");
+        for (int row = 0; row < session.totalRowCount(); row++) {
+            if (!x.isMissing(row) && !y.isMissing(row)) {
+                return row;
+            }
+        }
+        throw new AssertionError("No plottable row found");
+    }
+
+    private static int plottableRowCount(PrismSession session) {
+        PrismColumn x = session.table().column("pIC50");
+        PrismColumn y = session.table().column("HLM_CLint");
+        int count = 0;
+        for (int row = 0; row < session.totalRowCount(); row++) {
+            if (!x.isMissing(row) && !y.isMissing(row)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private static void prepareChart(JComponent component) {
+        component.setSize(new Dimension(900, 640));
+        component.doLayout();
+        BufferedImage image = new BufferedImage(900, 640, BufferedImage.TYPE_INT_ARGB);
+        component.paint(image.createGraphics());
+    }
+
+    private static Point screenPoint(JComponent component, PrismSession session, int physicalRow) {
+        XYChart chart = (XYChart) ((XChartPanel<?>) component).getChart();
+        PrismColumn x = session.table().column("pIC50");
+        PrismColumn y = session.table().column("HLM_CLint");
+        return new Point(
+                (int) Math.round(chart.getScreenXFromChart(x.doubleValueAt(physicalRow))),
+                (int) Math.round(chart.getScreenYFromChart(y.doubleValueAt(physicalRow)))
+        );
+    }
+
+    private static MouseEvent mouse(JComponent component, int id, Point point, int modifiers, int button) {
+        return new MouseEvent(
+                component,
+                id,
+                System.currentTimeMillis(),
+                modifiers,
+                point.x,
+                point.y,
+                1,
+                false,
+                button
+        );
     }
 
 

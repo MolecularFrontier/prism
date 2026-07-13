@@ -23,11 +23,21 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import java.awt.AlphaComposite;
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.Point;
+import java.awt.Polygon;
+import java.awt.event.InputEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -49,6 +59,8 @@ public final class ScatterPlotViewRenderer implements PrismSwingViewRenderer {
             new Color(197, 70, 124)
     };
     private static final int NUMERIC_BUCKETS = 5;
+    private static final int HIT_RADIUS_PIXELS = 10;
+    private static final int DRAG_THRESHOLD_PIXELS = 4;
 
     @Override
     public String viewType() {
@@ -96,7 +108,16 @@ public final class ScatterPlotViewRenderer implements PrismSwingViewRenderer {
         chart.getStyler().setYAxisMax(spec.yMax());
 
         addSeries(chart, points, colorColumn);
-        JComponent component = new XChartPanel<>(chart);
+        JComponent component = new InteractiveScatterPlotPanel(
+                chart,
+                points,
+                session,
+                model,
+                xColumn.schema().displayName(),
+                yColumn.schema().displayName(),
+                colorColumn == null ? null : colorColumn.schema().displayName(),
+                refresh
+        );
         component.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         return component;
     }
@@ -235,7 +256,16 @@ public final class ScatterPlotViewRenderer implements PrismSwingViewRenderer {
             String colorLabel = colorColumn == null || colorColumn.isMissing(physicalRow)
                     ? "Missing"
                     : colorColumn.formattedValueAt(physicalRow);
-            points.add(new PointRow(xColumn.doubleValueAt(physicalRow), yColumn.doubleValueAt(physicalRow), colorValue, colorLabel));
+            points.add(new PointRow(
+                    physicalRow,
+                    session.rowIdForPhysicalRow(physicalRow),
+                    xColumn.doubleValueAt(physicalRow),
+                    yColumn.doubleValueAt(physicalRow),
+                    xColumn.formattedValueAt(physicalRow),
+                    yColumn.formattedValueAt(physicalRow),
+                    colorValue,
+                    colorLabel
+            ));
         }
         return points;
     }
@@ -333,6 +363,228 @@ public final class ScatterPlotViewRenderer implements PrismSwingViewRenderer {
         return panel;
     }
 
-    private record PointRow(double x, double y, Double colorValue, String colorLabel) {
+    private static final class InteractiveScatterPlotPanel extends XChartPanel<XYChart> {
+        private final List<PointRow> points;
+        private final PrismSession session;
+        private final PrismLiteWorkspaceModel model;
+        private final String xLabel;
+        private final String yLabel;
+        private final String colorLabel;
+        private final Runnable refresh;
+        private final ArrayList<Point> lasso = new ArrayList<>();
+        private Point dragStart;
+        private boolean dragging;
+
+        private InteractiveScatterPlotPanel(
+                XYChart chart,
+                List<PointRow> points,
+                PrismSession session,
+                PrismLiteWorkspaceModel model,
+                String xLabel,
+                String yLabel,
+                String colorLabel,
+                Runnable refresh
+        ) {
+            super(chart);
+            this.points = List.copyOf(points);
+            this.session = session;
+            this.model = model;
+            this.xLabel = xLabel;
+            this.yLabel = yLabel;
+            this.colorLabel = colorLabel;
+            this.refresh = refresh == null ? () -> { } : refresh;
+            setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
+            setToolTipText("");
+            ScatterMouseHandler handler = new ScatterMouseHandler();
+            addMouseListener(handler);
+            addMouseMotionListener(handler);
+        }
+
+        @Override
+        public String getToolTipText(MouseEvent event) {
+            PointRow point = nearestPoint(event.getPoint());
+            if (point == null) {
+                return null;
+            }
+            StringBuilder text = new StringBuilder("<html><b>")
+                    .append(escape(point.rowId()))
+                    .append("</b><br>")
+                    .append(escape(xLabel)).append(": ").append(escape(point.xText()))
+                    .append("<br>")
+                    .append(escape(yLabel)).append(": ").append(escape(point.yText()));
+            if (colorLabel != null) {
+                text.append("<br>").append(escape(colorLabel)).append(": ").append(escape(point.colorLabel()));
+            }
+            return text.append("</html>").toString();
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            super.paintComponent(graphics);
+            if (lasso.size() < 2) {
+                return;
+            }
+            Graphics2D g2 = (Graphics2D) graphics.create();
+            try {
+                Polygon polygon = polygon(lasso);
+                g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.12f));
+                g2.setColor(new Color(51, 102, 204));
+                g2.fillPolygon(polygon);
+                g2.setComposite(AlphaComposite.SrcOver);
+                g2.setColor(new Color(51, 102, 204));
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.drawPolyline(polygon.xpoints, polygon.ypoints, polygon.npoints);
+                if (lasso.size() > 2) {
+                    Point first = lasso.getFirst();
+                    Point last = lasso.getLast();
+                    g2.drawLine(last.x, last.y, first.x, first.y);
+                }
+            } finally {
+                g2.dispose();
+            }
+        }
+
+        private PointRow nearestPoint(Point mouse) {
+            PointRow best = null;
+            double bestDistance = HIT_RADIUS_PIXELS * HIT_RADIUS_PIXELS;
+            for (PointRow point : points) {
+                Point screen = screenPoint(point);
+                double distance = screen.distanceSq(mouse);
+                if (distance <= bestDistance) {
+                    best = point;
+                    bestDistance = distance;
+                }
+            }
+            return best;
+        }
+
+        private Point screenPoint(PointRow point) {
+            XYChart chart = getChart();
+            return new Point(
+                    (int) Math.round(chart.getScreenXFromChart(point.x())),
+                    (int) Math.round(chart.getScreenYFromChart(point.y()))
+            );
+        }
+
+        private void selectPoint(PointRow point, int modifiersEx) {
+            if (point == null) {
+                return;
+            }
+            boolean additive = additiveSelection(modifiersEx);
+            if (!additive) {
+                session.viewState().selectionModel().clear();
+            }
+            session.viewState().selectionModel().setSelected(point.physicalRow(), true);
+            model.setFocusedPhysicalRow(point.physicalRow());
+            refresh.run();
+        }
+
+        private void selectLasso(int modifiersEx) {
+            if (lasso.size() < 3) {
+                return;
+            }
+            Polygon polygon = polygon(lasso);
+            ArrayList<PointRow> selected = new ArrayList<>();
+            for (PointRow point : points) {
+                if (polygon.contains(screenPoint(point))) {
+                    selected.add(point);
+                }
+            }
+            if (selected.isEmpty()) {
+                return;
+            }
+            boolean additive = additiveSelection(modifiersEx);
+            if (!additive) {
+                session.viewState().selectionModel().clear();
+            }
+            for (PointRow point : selected) {
+                session.viewState().selectionModel().setSelected(point.physicalRow(), true);
+            }
+            model.setFocusedPhysicalRow(selected.getFirst().physicalRow());
+            refresh.run();
+        }
+
+        private static boolean additiveSelection(int modifiersEx) {
+            return (modifiersEx & (InputEvent.SHIFT_DOWN_MASK | InputEvent.CTRL_DOWN_MASK | InputEvent.META_DOWN_MASK)) != 0;
+        }
+
+        private static Polygon polygon(List<Point> points) {
+            Polygon polygon = new Polygon();
+            for (Point point : points) {
+                polygon.addPoint(point.x, point.y);
+            }
+            return polygon;
+        }
+
+        private static String escape(String text) {
+            if (text == null) {
+                return "";
+            }
+            return text.replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
+                    .replace("\"", "&quot;");
+        }
+
+        private final class ScatterMouseHandler extends MouseAdapter {
+            @Override
+            public void mousePressed(MouseEvent event) {
+                if (event.getButton() != MouseEvent.BUTTON1) {
+                    return;
+                }
+                dragStart = event.getPoint();
+                dragging = false;
+                lasso.clear();
+                lasso.add(event.getPoint());
+            }
+
+            @Override
+            public void mouseDragged(MouseEvent event) {
+                if (dragStart == null) {
+                    return;
+                }
+                if (!dragging && dragStart.distance(event.getPoint()) >= DRAG_THRESHOLD_PIXELS) {
+                    dragging = true;
+                }
+                if (dragging) {
+                    lasso.add(event.getPoint());
+                    repaint();
+                }
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent event) {
+                if (dragStart == null || event.getButton() != MouseEvent.BUTTON1) {
+                    clearDrag();
+                    return;
+                }
+                if (dragging) {
+                    lasso.add(event.getPoint());
+                    selectLasso(event.getModifiersEx());
+                } else {
+                    selectPoint(nearestPoint(event.getPoint()), event.getModifiersEx());
+                }
+                clearDrag();
+            }
+
+            private void clearDrag() {
+                dragStart = null;
+                dragging = false;
+                lasso.clear();
+                repaint();
+            }
+        }
+    }
+
+    private record PointRow(
+            int physicalRow,
+            String rowId,
+            double x,
+            double y,
+            String xText,
+            String yText,
+            Double colorValue,
+            String colorLabel
+    ) {
     }
 }

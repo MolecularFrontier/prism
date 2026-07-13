@@ -1,5 +1,8 @@
 package tech.molecules.structurized.prism.pack;
 
+import tech.molecules.structurized.prism.score.EndpointScoreDefinition;
+import tech.molecules.structurized.prism.score.PropertyProfileDefinition;
+
 import java.util.List;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -18,12 +21,28 @@ public record PrismPack(
         TableView tableView,
         VisualizationSet visualizations,
         AttachmentSet attachments,
+        ScoreMetadata scores,
+        PropertyProfileMetadata propertyProfiles,
         Map<String, Object> provenance,
         List<String> warnings
 ) {
     public PrismPack {
         warnings = warnings == null ? List.of() : List.copyOf(warnings);
         provenance = copyMapAllowingNulls(provenance);
+    }
+
+    public PrismPack(Manifest manifest,
+                     DataFrame dataFrame,
+                     DataFrameSchema schema,
+                     MoleculeMetadata molecules,
+                     EndpointMetadata endpoints,
+                     TableView tableView,
+                     VisualizationSet visualizations,
+                     AttachmentSet attachments,
+                     Map<String, Object> provenance,
+                     List<String> warnings) {
+        this(manifest, dataFrame, schema, molecules, endpoints, tableView, visualizations, attachments,
+                null, null, provenance, warnings);
     }
 
 
@@ -65,11 +84,32 @@ public record PrismPack(
             String tableViewPath,
             String visualizationsPath,
             String attachmentsPath,
+            String scoresPath,
+            String propertyProfilesPath,
             String provenancePath,
             Map<String, Object> raw
     ) {
         public Manifest {
             raw = copyMapAllowingNulls(raw);
+        }
+
+        public Manifest(String prismPackVersion,
+                        String id,
+                        String title,
+                        String description,
+                        String createdAt,
+                        String createdBy,
+                        DataframeRef dataframe,
+                        String moleculesPath,
+                        String endpointsPath,
+                        String tableViewPath,
+                        String visualizationsPath,
+                        String attachmentsPath,
+                        String provenancePath,
+                        Map<String, Object> raw) {
+            this(prismPackVersion, id, title, description, createdAt, createdBy, dataframe, moleculesPath,
+                    endpointsPath, tableViewPath, visualizationsPath, attachmentsPath, null, null,
+                    provenancePath, raw);
         }
     }
 
@@ -144,6 +184,20 @@ public record PrismPack(
     public record EndpointMetadata(List<Endpoint> endpoints, Map<String, Object> raw) {
         public EndpointMetadata {
             endpoints = endpoints == null ? List.of() : List.copyOf(endpoints);
+            raw = copyMapAllowingNulls(raw);
+        }
+    }
+
+    public record ScoreMetadata(List<EndpointScoreDefinition> scores, Map<String, Object> raw) {
+        public ScoreMetadata {
+            scores = scores == null ? List.of() : List.copyOf(scores);
+            raw = copyMapAllowingNulls(raw);
+        }
+    }
+
+    public record PropertyProfileMetadata(List<PropertyProfileDefinition> profiles, Map<String, Object> raw) {
+        public PropertyProfileMetadata {
+            profiles = profiles == null ? List.of() : List.copyOf(profiles);
             raw = copyMapAllowingNulls(raw);
         }
     }
