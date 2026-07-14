@@ -7,16 +7,20 @@ import tech.molecules.structurized.prism.io.PrismTsvDatasetLoader;
 import tech.molecules.structurized.prism.provider.inmemory.InMemoryPrismDataset;
 
 import javax.swing.JMenuBar;
+import java.awt.GraphicsEnvironment;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 class PrismLiteMenuAndImportTest {
     @Test
     void frameInstallsExpectedMenubar() throws Exception {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Test requires a graphical environment");
+
         PrismSession session = PrismSession.open(Path.of("..", "examples", "example.prismpack"));
         PrismLiteFrame frame = new PrismLiteFrame(session, Path.of("..", "examples", "example.prismpack"));
         try {

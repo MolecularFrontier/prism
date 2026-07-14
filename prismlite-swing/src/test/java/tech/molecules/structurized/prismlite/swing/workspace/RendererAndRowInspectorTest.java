@@ -27,6 +27,7 @@ import javax.swing.table.TableCellRenderer;
 import java.awt.Dimension;
 import java.awt.Container;
 import java.awt.Component;
+import java.awt.GraphicsEnvironment;
 import java.awt.Point;
 import java.nio.file.Path;
 import java.util.Map;
@@ -38,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 class RendererAndRowInspectorTest {
     @Test
@@ -222,6 +224,8 @@ class RendererAndRowInspectorTest {
 
     @Test
     void scatterPlotRendererCreatesChartComponent() throws Exception {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Test requires a graphical environment");
+
         PrismSession session = PrismSession.open(Path.of("..", "examples", "example.prismpack"));
         session.operationRegistry().register(new CreateScatterPlotViewOperation());
         session.runOperation(CreateScatterPlotViewOperation.ID, Map.of(
