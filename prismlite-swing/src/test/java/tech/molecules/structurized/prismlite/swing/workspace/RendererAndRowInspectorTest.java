@@ -160,6 +160,57 @@ class RendererAndRowInspectorTest {
         assertEquals("Test Grid", selectedTitle.get());
     }
 
+    @Test
+    void applicationTabSurvivesGeneratedViewRefresh() throws Exception {
+        PrismSession session = PrismSession.open(Path.of("..", "examples", "example.prismpack"));
+        session.operationRegistry().register(new OclCreateStructureGridViewOperation());
+        AtomicInteger tabCount = new AtomicInteger(-1);
+        AtomicReference<String> selectedTitle = new AtomicReference<>();
+
+        SwingUtilities.invokeAndWait(() -> {
+            PrismLiteWorkspacePanel panel = new PrismLiteWorkspacePanel(session);
+            panel.addApplicationTab("molecules", "Molecules", new javax.swing.JPanel());
+            panel.focusApplicationTab("molecules");
+            session.runOperation(OclCreateStructureGridViewOperation.ID, Map.of(
+                    "viewId", "grid:with-app",
+                    "title", "Generated Grid",
+                    "structureColumn", "smiles",
+                    "maxCompounds", "2",
+                    "columns", "2"
+            ));
+            panel.refreshWorkspace();
+
+            tabCount.set(panel.workspaceTabCount());
+            selectedTitle.set(panel.selectedWorkspaceTabTitle());
+        });
+
+        assertEquals(3, tabCount.get());
+        assertEquals("Molecules", selectedTitle.get());
+    }
+
+    @Test
+    void newGeneratedViewTakesFocusFromTableWhenApplicationTabExists() throws Exception {
+        PrismSession session = PrismSession.open(Path.of("..", "examples", "example.prismpack"));
+        session.operationRegistry().register(new OclCreateStructureGridViewOperation());
+        AtomicReference<String> selectedTitle = new AtomicReference<>();
+
+        SwingUtilities.invokeAndWait(() -> {
+            PrismLiteWorkspacePanel panel = new PrismLiteWorkspacePanel(session);
+            panel.addApplicationTab("molecules", "Molecules", new javax.swing.JPanel());
+            session.runOperation(OclCreateStructureGridViewOperation.ID, Map.of(
+                    "viewId", "grid:with-app",
+                    "title", "Generated Grid",
+                    "structureColumn", "smiles",
+                    "maxCompounds", "2",
+                    "columns", "2"
+            ));
+            panel.refreshWorkspace();
+            selectedTitle.set(panel.selectedWorkspaceTabTitle());
+        });
+
+        assertEquals("Generated Grid", selectedTitle.get());
+    }
+
 
 
 

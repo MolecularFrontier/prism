@@ -174,6 +174,31 @@ public final class PrismLiteWorkspacePanel extends JPanel {
         return selected < 0 ? null : mainTabs.getTitleAt(selected);
     }
 
+    public void addApplicationTab(String id, String title, javax.swing.JComponent component) {
+        String tabId = requireApplicationTabId(id);
+        Objects.requireNonNull(component, "component");
+        for (int index = 1; index < mainTabs.getTabCount(); index++) {
+            if (Objects.equals(tabId, applicationTabIdForTab(index))) {
+                mainTabs.setTitleAt(index, title == null || title.isBlank() ? tabId : title.trim());
+                mainTabs.setComponentAt(index, component);
+                component.putClientProperty("prismApplicationTabId", tabId);
+                return;
+            }
+        }
+        component.putClientProperty("prismApplicationTabId", tabId);
+        mainTabs.addTab(title == null || title.isBlank() ? tabId : title.trim(), component);
+    }
+
+    public void focusApplicationTab(String id) {
+        String tabId = requireApplicationTabId(id);
+        for (int index = 1; index < mainTabs.getTabCount(); index++) {
+            if (Objects.equals(tabId, applicationTabIdForTab(index))) {
+                mainTabs.setSelectedIndex(index);
+                return;
+            }
+        }
+    }
+
     public JPanel sidePanel() {
         return sidePanel;
     }
@@ -253,22 +278,28 @@ public final class PrismLiteWorkspacePanel extends JPanel {
 
     private void refreshViewTabs() {
         String selectedViewId = selectedViewId();
+        java.awt.Component selectedComponent = mainTabs.getSelectedComponent();
+        boolean selectedApplicationTab = selectedComponent instanceof javax.swing.JComponent jComponent
+                && jComponent.getClientProperty("prismApplicationTabId") != null;
         int previousViewCount = renderedViewCount;
-        while (mainTabs.getTabCount() > 1) {
-            mainTabs.removeTabAt(1);
+        for (int index = mainTabs.getTabCount() - 1; index >= 1; index--) {
+            if (viewIdForTab(index) != null) mainTabs.removeTabAt(index);
         }
+        int insertIndex = firstApplicationTabIndex();
         for (PrismViewRecord view : model.session().views()) {
             java.awt.Component component = createViewTabComponent(view);
             if (component instanceof javax.swing.JComponent jComponent) {
                 jComponent.putClientProperty("prismViewId", view.id());
             }
-            mainTabs.addTab(view.title(), component);
+            mainTabs.insertTab(view.title(), null, component, null, insertIndex++);
         }
         renderedViewCount = model.session().views().size();
-        if (selectedViewId != null) {
+        if (selectedApplicationTab && selectedComponent.getParent() == mainTabs) {
+            mainTabs.setSelectedComponent(selectedComponent);
+        } else if (selectedViewId != null) {
             focusView(selectedViewId);
-        } else if (renderedViewCount > previousViewCount && mainTabs.getTabCount() > 1) {
-            mainTabs.setSelectedIndex(mainTabs.getTabCount() - 1);
+        } else if (renderedViewCount > previousViewCount && !model.session().views().isEmpty()) {
+            focusView(model.session().views().getLast().id());
         }
     }
 
@@ -314,6 +345,27 @@ public final class PrismLiteWorkspacePanel extends JPanel {
             return value instanceof String text ? text : null;
         }
         return null;
+    }
+
+    private int firstApplicationTabIndex() {
+        for (int index = 1; index < mainTabs.getTabCount(); index++) {
+            if (applicationTabIdForTab(index) != null) return index;
+        }
+        return mainTabs.getTabCount();
+    }
+
+    private String applicationTabIdForTab(int index) {
+        java.awt.Component component = mainTabs.getComponentAt(index);
+        if (component instanceof javax.swing.JComponent jComponent) {
+            Object value = jComponent.getClientProperty("prismApplicationTabId");
+            return value instanceof String text ? text : null;
+        }
+        return null;
+    }
+
+    private static String requireApplicationTabId(String id) {
+        if (id == null || id.isBlank()) throw new IllegalArgumentException("application tab id must not be blank");
+        return id.trim();
     }
 
     private static JPanel unsupportedView(PrismViewRecord view) {

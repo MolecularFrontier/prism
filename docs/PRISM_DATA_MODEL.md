@@ -171,7 +171,7 @@ column ID is a compatibility fallback.
 Column lifecycles
 -----------------
 
-PrismEngine combines three kinds of columns into one `RuntimePrismTable`:
+PrismEngine combines four kinds of columns into one `RuntimePrismTable`:
 
 ```text
 base columns
@@ -182,6 +182,9 @@ computed columns
 
 materialized columns
     concrete values added to the current session by operations
+
+semantic facet columns
+    read-only scalar adapters over richer session resources
 ```
 
 They share the `PrismColumn` interface, so filtering, sorting, formatting,
@@ -259,6 +262,170 @@ Once written there, they are ordinary base columns in the next session.
 Use a computed value when a capability is cheap or naturally recreated by a
 plugin. Use a materialized column when users need a concrete analytical result,
 the calculation is expensive, or its provenance must travel with an export.
+
+Groupings and semantic facet columns
+------------------------------------
+
+`PrismGrouping` is the first generic semantic resource built directly into the
+session. It describes stable row-to-group membership without making Prism
+understand the algorithm that produced it. A grouping contains:
+
+* a stable grouping ID, title, source row-set scope, and provenance;
+* stable groups with labels, optional parent groups, representatives, and
+  metadata;
+* memberships keyed by stable row ID and group ID, with optional weight and
+  role;
+* either `EXCLUSIVE` or `OVERLAPPING` membership semantics.
+
+The engine validates hierarchy cycles, unknown groups, duplicate memberships,
+representative membership, stable row IDs, and source-scope containment before
+publishing a grouping. Groupings can be added together with columns, row sets,
+and views in one validated `PrismOperationResult`.
+
+Every exclusive grouping defines one categorical facet column. The facet stores
+the stable group ID as its value and formats it with the group label. It is a
+read-only adapter over the authoritative grouping, not copied membership data:
+
+```text
+PrismGrouping series-clusters
+    row CMPD-001 -> group series-3
+
+runtime facet series-clusters.cluster_id
+    value series-3 -> formatted value Aminopyridines
+```
+
+The facet is an ordinary runtime `PrismColumn`, so existing filtering, sorting,
+column visibility, view color channels, and PrismLite inspectors work without
+special clustering logic. An operation may initially keep the facet hidden;
+it remains addressable by ID. Overlapping groupings deliberately have no
+implicit scalar facet because selecting one membership would lose information.
+
+A group can be converted explicitly into a `PrismRowSet` when it becomes a
+named analysis scope. Prism does not create one row set per group automatically.
+Groupings and their facets are currently runtime-only and are not serialized
+back into PrismPack.
+
+Runtime workspace and row projection
+------------------------------------
+
+`PrismSession` owns one immutable base table and one runtime workspace over it:
+
+```text
+immutable base rows
+    + computed columns
+    + materialized columns
+            |
+            v
+    full RuntimePrismTable
+            |
+      filters and sorting
+            |
+            v
+    current row projection
+```
+
+The filtered table is not a copied dataframe. The runtime table always retains
+the complete physical row population and row alignment of the base table.
+Filtering produces an `activeRows` bit set, and sorting turns that set into an
+ordered `visibleRows` array. A visible table index is therefore only a mapping
+to an immutable physical row:
+
+```text
+visible row 0 -> physical row 14 -> stable row ID CMPD-015
+visible row 1 -> physical row 2  -> stable row ID CMPD-003
+```
+
+Column visibility is independent from row visibility. `PrismViewState` stores
+the visible column IDs, active filters, sort keys, current selection, and named
+row flags. All runtime columns can participate in filtering and sorting,
+whether their values are base, computed, or materialized.
+
+### Filter evaluation model
+
+`PrismFilter` is the engine contract for producing a row mask:
+
+```java
+interface PrismFilter {
+    BitSet evaluate(PrismTable table, PrismEvaluationContext context);
+    Set<String> referencedColumnIds();
+}
+```
+
+Each active filter evaluates against the full runtime table and returns the
+physical rows it accepts. `PrismSession.recompute()` starts with all rows and
+intersects every returned mask. Active filters therefore currently have flat
+logical `AND` semantics:
+
+```text
+all rows
+    AND numeric range mask
+    AND category mask
+    AND row-set mask
+        -> activeRows
+        -> sort
+        -> visibleRows
+```
+
+`PrismEvaluationContext` gives filters access to the current view state,
+computed-value registry, and stable row-ID index. The core engine currently
+provides:
+
+* `NumericRangeFilter` for inclusive optional lower and upper bounds;
+* `TextPatternFilter` for substring or regular-expression matching;
+* `CategoryIncludeFilter` for accepted categorical values;
+* `MissingValueFilter` for missing/present tests;
+* `RowSetFilter` for membership in a named stable row set.
+
+`prism-engine-ocl` adds `OclSubstructureFilter`. It uses lazily cached parsed
+molecules and FFP512 fingerprints through the evaluation context, but returns
+the same ordinary `BitSet` as every other filter. PrismSession does not need
+chemistry-specific projection logic.
+
+Changing applied filters calls `PrismSession.setFilters(...)`, recomputes the
+projection, and publishes a projection change. Changing sort keys also invokes
+the same recomputation pipeline and then changes the visible ordering of the
+accepted physical rows.
+
+### Selection, row sets, and filters
+
+These concepts all identify rows but serve different lifecycles:
+
+* `RowSelectionModel` is the current transient table selection, stored as a
+  physical-row bit set.
+* `PrismRowSet` is a named, reusable set of stable row IDs with provenance.
+* `PrismFilter` is an applied rule that affects the current row projection.
+
+A human selection can be materialized as a row set when it must be named,
+shared with an agent, or reused by an operation. A row set does not filter the
+table by itself; applying a `RowSetFilter` makes it part of the active
+projection. There can be many row sets but only one current table selection.
+
+### PrismLite filter drafts
+
+PrismLite deliberately keeps unfinished filter edits outside PrismEngine. A
+column filter editor owns a local draft containing the typed filter plus its
+enabled and inverted presentation state. Pressing Apply replaces the applied
+filter list through one `setFilters(...)` call. Disabled drafts are omitted;
+inversion is currently implemented by a PrismLite wrapper that complements the
+delegate mask.
+
+Consequently, engine state contains applied filters only. Unapplied slider and
+text edits do not change the session projection or session revision.
+
+### Current projection limitations
+
+The current design intentionally does not yet provide:
+
+* arbitrary nested `AND`/`OR` filter trees;
+* stable filter IDs or a persisted filter schema;
+* engine-level enabled/inverted filter metadata;
+* asynchronous filter execution;
+* per-filter row-mask caching;
+* view-dependent or incrementally maintained masks.
+
+The flat mask contract is nevertheless extensible: new scientific filters can
+evaluate any runtime capability and still compose through the same projection
+pipeline.
 
 Scores and desirability
 -----------------------
@@ -419,5 +586,6 @@ See also
 --------
 
 * [PRISM protocol](PRISM_PROTOCOL.md)
+* [Proposed smart-table semantic resources](SMART_TABLE_SEMANTIC_RESOURCES.md)
 * [PrismPack format](PRISMPACK.md)
 * [PRISM TSV bundle](PRISM_TSV_BUNDLE.md)
