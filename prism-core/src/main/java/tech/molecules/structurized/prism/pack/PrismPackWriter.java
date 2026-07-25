@@ -1,6 +1,7 @@
 package tech.molecules.structurized.prism.pack;
 
 import tech.molecules.structurized.prism.io.PrismTsvEscaper;
+import tech.molecules.structurized.prism.prediction.PredictionCapability;
 import tech.molecules.structurized.prism.score.EndpointScoreDefinition;
 import tech.molecules.structurized.prism.score.MpoComponentDefinition;
 import tech.molecules.structurized.prism.score.MpoDefinition;
@@ -33,6 +34,7 @@ public final class PrismPackWriter {
     public static final String ATTACHMENTS_PATH = "attachments/attachments.json";
     public static final String SCORES_PATH = "semantics/scores.json";
     public static final String PROPERTY_PROFILES_PATH = "semantics/property-profiles.json";
+    public static final String PREDICTIONS_PATH = "semantics/predictions.json";
     public static final String PROVENANCE_PATH = "provenance/provenance.json";
 
     private PrismPackWriter() {
@@ -74,6 +76,9 @@ public final class PrismPackWriter {
         if (pack.propertyProfiles() != null && !pack.propertyProfiles().profiles().isEmpty()) {
             writeFile(directory, propertyProfilesPath(pack), PrismPackJson.stringify(propertyProfilesMap(pack.propertyProfiles())));
         }
+        if (pack.predictions() != null && !pack.predictions().capabilities().isEmpty()) {
+            writeFile(directory, predictionsPath(pack), PrismPackJson.stringify(predictionsMap(pack.predictions())));
+        }
         if (pack.provenance() != null && !pack.provenance().isEmpty()) {
             writeFile(directory, provenancePath(pack), PrismPackJson.stringify(pack.provenance()));
         }
@@ -110,6 +115,9 @@ public final class PrismPackWriter {
             }
             if (pack.propertyProfiles() != null && !pack.propertyProfiles().profiles().isEmpty()) {
                 writeEntry(out, propertyProfilesPath(pack), PrismPackJson.stringify(propertyProfilesMap(pack.propertyProfiles())));
+            }
+            if (pack.predictions() != null && !pack.predictions().capabilities().isEmpty()) {
+                writeEntry(out, predictionsPath(pack), PrismPackJson.stringify(predictionsMap(pack.predictions())));
             }
             if (pack.provenance() != null && !pack.provenance().isEmpty()) {
                 writeEntry(out, provenancePath(pack), PrismPackJson.stringify(pack.provenance()));
@@ -163,6 +171,10 @@ public final class PrismPackWriter {
 
     private static String propertyProfilesPath(PrismPack pack) {
         return valueOrDefault(pack.manifest().propertyProfilesPath(), PROPERTY_PROFILES_PATH);
+    }
+
+    private static String predictionsPath(PrismPack pack) {
+        return valueOrDefault(pack.manifest().predictionsPath(), PREDICTIONS_PATH);
     }
 
     private static String provenancePath(PrismPack pack) {
@@ -227,6 +239,9 @@ public final class PrismPackWriter {
         }
         if (pack.propertyProfiles() != null && !pack.propertyProfiles().profiles().isEmpty()) {
             map.put("propertyProfiles", propertyProfilesPath(pack));
+        }
+        if (pack.predictions() != null && !pack.predictions().capabilities().isEmpty()) {
+            map.put("predictions", predictionsPath(pack));
         }
         if (pack.provenance() != null && !pack.provenance().isEmpty()) {
             map.put("provenance", provenancePath(pack));
@@ -318,6 +333,28 @@ public final class PrismPackWriter {
     private static Map<String, Object> propertyProfilesMap(PrismPack.PropertyProfileMetadata metadata) {
         LinkedHashMap<String, Object> map = copy(metadata.raw());
         map.put("profiles", metadata.profiles().stream().map(PrismPackWriter::propertyProfileMap).toList());
+        return map;
+    }
+
+    private static Map<String, Object> predictionsMap(tech.molecules.structurized.prism.prediction.PredictionMetadata metadata) {
+        LinkedHashMap<String, Object> map = copy(metadata.raw());
+        map.put("capabilities", metadata.capabilities().stream().map(PrismPackWriter::predictionCapabilityMap).toList());
+        return map;
+    }
+
+    private static Map<String, Object> predictionCapabilityMap(PredictionCapability capability) {
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>(capability.metadata().isEmpty() ? Map.of() : Map.of("metadata", capability.metadata()));
+        map.put("capabilityId", capability.capabilityId());
+        map.put("endpointId", capability.endpointId());
+        map.put("predictedEndpointId", capability.predictedEndpointId());
+        map.put("displayName", capability.displayName());
+        map.put("providerId", capability.providerId());
+        map.put("workflowId", capability.workflowId());
+        putIfNotNull(map, "workflowVersion", capability.workflowVersion());
+        map.put("status", capability.status());
+        map.put("priority", capability.priority());
+        putIfNotNull(map, "structureColumn", capability.structureColumn());
+        putIfNotNull(map, "structureFormat", capability.structureFormat());
         return map;
     }
 

@@ -1,6 +1,8 @@
 package tech.molecules.structurized.prism.pack;
 
 import tech.molecules.structurized.prism.io.PrismTsvEscaper;
+import tech.molecules.structurized.prism.prediction.PredictionCapability;
+import tech.molecules.structurized.prism.prediction.PredictionMetadata;
 import tech.molecules.structurized.prism.score.EndpointScoreDefinition;
 import tech.molecules.structurized.prism.score.MpoAggregationDefinition;
 import tech.molecules.structurized.prism.score.MpoComponentDefinition;
@@ -72,14 +74,17 @@ public final class PrismPackReader {
         PrismPack.PropertyProfileMetadata propertyProfiles = manifest.propertyProfilesPath() == null
                 ? null
                 : parsePropertyProfiles(readJsonObject(source, manifest.propertyProfilesPath(), false));
+        PredictionMetadata predictions = manifest.predictionsPath() == null
+                ? null
+                : parsePredictions(readJsonObject(source, manifest.predictionsPath(), false));
         Map<String, Object> provenance = manifest.provenancePath() == null
                 ? Map.of()
                 : readJsonObject(source, manifest.provenancePath(), false);
 
         validateReferences(dataframe, molecules, endpoints, tableView, visualizations, attachments,
-                scores, propertyProfiles, warnings);
+                scores, propertyProfiles, predictions, warnings);
         return new PrismPack(manifest, dataframe, schema, molecules, endpoints, tableView, visualizations,
-                attachments, scores, propertyProfiles, provenance, warnings);
+                attachments, scores, propertyProfiles, predictions, provenance, warnings);
     }
 
     private static PrismPack.Manifest parseManifest(Map<String, Object> json) {
@@ -105,6 +110,7 @@ public final class PrismPackReader {
                 string(json.get("attachments")),
                 string(json.get("scores")),
                 string(json.get("propertyProfiles")),
+                string(json.get("predictions")),
                 string(json.get("provenance")),
                 json);
     }
@@ -157,6 +163,28 @@ public final class PrismPackReader {
         }
         return new PrismPack.PropertyProfileMetadata(profiles, json);
     }
+
+    private static PredictionMetadata parsePredictions(Map<String, Object> json) {
+        if (json.isEmpty()) return null;
+        ArrayList<PredictionCapability> capabilities = new ArrayList<>();
+        for (Map<String, Object> item : objectList(json.get("capabilities"))) {
+            capabilities.add(new PredictionCapability(
+                    string(item.get("capabilityId")),
+                    string(item.get("endpointId")),
+                    string(item.get("predictedEndpointId")),
+                    string(item.get("displayName")),
+                    string(item.get("providerId")),
+                    string(item.get("workflowId")),
+                    string(item.get("workflowVersion")),
+                    string(item.get("status")),
+                    integer(item.get("priority"), 0),
+                    string(item.get("structureColumn")),
+                    string(item.get("structureFormat")),
+                    object(item.get("metadata"))));
+        }
+        return new PredictionMetadata(capabilities, json);
+    }
+
 
     private static PrismPack.DataFrameSchema parseSchema(Map<String, Object> json) {
         ArrayList<PrismPack.Column> columns = new ArrayList<>();
@@ -364,6 +392,7 @@ public final class PrismPackReader {
                                            PrismPack.AttachmentSet attachments,
                                            PrismPack.ScoreMetadata scores,
                                            PrismPack.PropertyProfileMetadata propertyProfiles,
+                                           PredictionMetadata predictions,
                                            List<String> warnings) {
         if (molecules != null) {
             warnIfMissing(dataframe, molecules.primaryStructureColumn(), "molecules.primaryStructureColumn", warnings);
@@ -437,6 +466,20 @@ public final class PrismPackReader {
                         }
                     }
                 }
+            }
+        }
+        if (predictions != null) {
+            Set<String> capabilityIds = new HashSet<>();
+            for (PredictionCapability capability : predictions.capabilities()) {
+                if (!capabilityIds.add(capability.capabilityId())) {
+                    warnings.add("duplicate prediction capability id '" + capability.capabilityId() + "'");
+                }
+                if (!endpointIds.isEmpty() && !endpointIds.contains(capability.endpointId())) {
+                    warnings.add("prediction capability '" + capability.capabilityId()
+                            + "' references unknown endpoint '" + capability.endpointId() + "'");
+                }
+                warnIfMissing(dataframe, capability.structureColumn(),
+                        "prediction capability '" + capability.capabilityId() + "' structureColumn", warnings);
             }
         }
     }

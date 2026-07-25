@@ -2,6 +2,7 @@ package tech.molecules.structurized.prism.pack;
 
 import tech.molecules.structurized.prism.score.EndpointScoreDefinition;
 import tech.molecules.structurized.prism.score.PropertyProfileDefinition;
+import tech.molecules.structurized.prism.prediction.PredictionMetadata;
 
 import java.util.List;
 import java.util.Collections;
@@ -23,6 +24,7 @@ public record PrismPack(
         AttachmentSet attachments,
         ScoreMetadata scores,
         PropertyProfileMetadata propertyProfiles,
+        PredictionMetadata predictions,
         Map<String, Object> provenance,
         List<String> warnings
 ) {
@@ -42,7 +44,23 @@ public record PrismPack(
                      Map<String, Object> provenance,
                      List<String> warnings) {
         this(manifest, dataFrame, schema, molecules, endpoints, tableView, visualizations, attachments,
-                null, null, provenance, warnings);
+                null, null, null, provenance, warnings);
+    }
+
+    public PrismPack(Manifest manifest,
+                     DataFrame dataFrame,
+                     DataFrameSchema schema,
+                     MoleculeMetadata molecules,
+                     EndpointMetadata endpoints,
+                     TableView tableView,
+                     VisualizationSet visualizations,
+                     AttachmentSet attachments,
+                     ScoreMetadata scores,
+                     PropertyProfileMetadata propertyProfiles,
+                     Map<String, Object> provenance,
+                     List<String> warnings) {
+        this(manifest, dataFrame, schema, molecules, endpoints, tableView, visualizations, attachments,
+                scores, propertyProfiles, null, provenance, warnings);
     }
 
 
@@ -86,6 +104,7 @@ public record PrismPack(
             String attachmentsPath,
             String scoresPath,
             String propertyProfilesPath,
+            String predictionsPath,
             String provenancePath,
             Map<String, Object> raw
     ) {
@@ -105,11 +124,32 @@ public record PrismPack(
                         String tableViewPath,
                         String visualizationsPath,
                         String attachmentsPath,
+                        String scoresPath,
+                        String propertyProfilesPath,
+                        String provenancePath,
+                        Map<String, Object> raw) {
+            this(prismPackVersion, id, title, description, createdAt, createdBy, dataframe, moleculesPath,
+                    endpointsPath, tableViewPath, visualizationsPath, attachmentsPath, scoresPath, propertyProfilesPath,
+                    null, provenancePath, raw);
+        }
+
+        public Manifest(String prismPackVersion,
+                        String id,
+                        String title,
+                        String description,
+                        String createdAt,
+                        String createdBy,
+                        DataframeRef dataframe,
+                        String moleculesPath,
+                        String endpointsPath,
+                        String tableViewPath,
+                        String visualizationsPath,
+                        String attachmentsPath,
                         String provenancePath,
                         Map<String, Object> raw) {
             this(prismPackVersion, id, title, description, createdAt, createdBy, dataframe, moleculesPath,
                     endpointsPath, tableViewPath, visualizationsPath, attachmentsPath, null, null,
-                    provenancePath, raw);
+                    null, provenancePath, raw);
         }
     }
 

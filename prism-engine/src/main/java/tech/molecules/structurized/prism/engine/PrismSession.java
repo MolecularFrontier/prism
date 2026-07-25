@@ -2,6 +2,9 @@ package tech.molecules.structurized.prism.engine;
 
 import tech.molecules.structurized.prism.pack.PrismPack;
 import tech.molecules.structurized.prism.pack.PrismPackReader;
+import tech.molecules.structurized.prism.prediction.InMemoryPredictionCapabilityCatalog;
+import tech.molecules.structurized.prism.prediction.PredictionCapability;
+import tech.molecules.structurized.prism.prediction.PredictionCapabilityCatalog;
 import tech.molecules.structurized.prism.score.EndpointScoreDefinition;
 import tech.molecules.structurized.prism.score.PropertyProfileDefinition;
 
@@ -35,6 +38,7 @@ public final class PrismSession {
     private final Map<String, PrismViewRecord> views = new LinkedHashMap<>();
     private final Map<String, EndpointScoreDefinition> scoreDefinitions;
     private final Map<String, PropertyProfileDefinition> propertyProfiles;
+    private final PredictionCapabilityCatalog predictionCapabilities;
     private final CopyOnWriteArrayList<Consumer<PrismSessionChange>> changeListeners = new CopyOnWriteArrayList<>();
     private BitSet activeRows;
     private int[] visibleRows;
@@ -42,7 +46,8 @@ public final class PrismSession {
     private PrismSession(PrismTable baseTable,
                          PrismViewState viewState,
                          Collection<EndpointScoreDefinition> scores,
-                         Collection<PropertyProfileDefinition> profiles) {
+                         Collection<PropertyProfileDefinition> profiles,
+                         Collection<PredictionCapability> predictionCapabilities) {
         this.baseTable = Objects.requireNonNull(baseTable, "baseTable");
         this.rowIdIndex = RowIdIndex.forTable(baseTable);
         this.computedValues = new ComputedValueRegistry(baseTable);
@@ -53,6 +58,8 @@ public final class PrismSession {
         this.viewState = Objects.requireNonNull(viewState, "viewState");
         this.scoreDefinitions = indexScores(scores);
         this.propertyProfiles = indexProfiles(profiles);
+        this.predictionCapabilities = new InMemoryPredictionCapabilityCatalog(
+                predictionCapabilities == null ? List.of() : List.copyOf(predictionCapabilities));
         this.operationRegistry.register(new ListPropertyProfilesOperation());
         this.operationRegistry.register(new DescribePropertyProfileOperation());
         this.operationRegistry.register(new EvaluateEndpointScoreOperation());
@@ -71,11 +78,13 @@ public final class PrismSession {
         Collection<EndpointScoreDefinition> scores = pack.scores() == null ? List.of() : pack.scores().scores();
         Collection<PropertyProfileDefinition> profiles = pack.propertyProfiles() == null
                 ? List.of() : pack.propertyProfiles().profiles();
-        return new PrismSession(table, PrismViewState.fromPack(pack, table), scores, profiles);
+        Collection<PredictionCapability> predictionCapabilities = pack.predictions() == null
+                ? List.of() : pack.predictions().capabilities();
+        return new PrismSession(table, PrismViewState.fromPack(pack, table), scores, profiles, predictionCapabilities);
     }
 
     public static PrismSession from(PrismTable table) {
-        return new PrismSession(table, PrismViewState.defaultFor(table), List.of(), List.of());
+        return new PrismSession(table, PrismViewState.defaultFor(table), List.of(), List.of(), List.of());
     }
 
     public PrismTable baseTable() {
@@ -128,6 +137,23 @@ public final class PrismSession {
         PropertyProfileDefinition definition = propertyProfiles.get(profileId);
         if (definition == null) throw new IllegalArgumentException("unknown property profile '" + profileId + "'");
         return definition;
+    }
+
+    public List<PredictionCapability> predictionCapabilities() {
+        return predictionCapabilities.capabilities();
+    }
+
+    public List<PredictionCapability> predictionCapabilitiesFor(String endpointId) {
+        return predictionCapabilities.capabilitiesForEndpoint(endpointId);
+    }
+
+    public PredictionCapability predictionCapability(String capabilityId) {
+        return predictionCapabilities.findCapability(capabilityId)
+                .orElseThrow(() -> new IllegalArgumentException("unknown prediction capability '" + capabilityId + "'"));
+    }
+
+    public PredictionCapabilityCatalog predictionCapabilityCatalog() {
+        return predictionCapabilities;
     }
 
     public int totalRowCount() {

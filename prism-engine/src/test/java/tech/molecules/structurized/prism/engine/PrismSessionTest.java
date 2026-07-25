@@ -1,7 +1,9 @@
 package tech.molecules.structurized.prism.engine;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.BitSet;
 import java.util.List;
@@ -14,6 +16,36 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PrismSessionTest {
+    @Test
+    void indexesPredictionCapabilitiesFromPack(@TempDir Path tempDir) throws Exception {
+        Files.createDirectories(tempDir.resolve("data"));
+        Files.createDirectories(tempDir.resolve("schema"));
+        Files.createDirectories(tempDir.resolve("semantics"));
+        Files.writeString(tempDir.resolve("prism-pack.json"), """
+                {"prismPackVersion":"0.2","dataframe":{"path":"data/dataframe.tsv","schema":"schema/dataframe.schema.json"},"endpoints":"semantics/endpoints.json","predictions":"semantics/predictions.json"}
+                """);
+        Files.writeString(tempDir.resolve("schema/dataframe.schema.json"), """
+                {"columns":[{"name":"compound_id","type":"string"},{"name":"smiles","type":"string","semanticType":"chemical_structure"},{"name":"hlm_clint","type":"number","endpointId":"hlm_clint"}]}
+                """);
+        Files.writeString(tempDir.resolve("data/dataframe.tsv"), """
+                compound_id	smiles	hlm_clint
+                CMP-1	CCN	12.0
+                """);
+        Files.writeString(tempDir.resolve("semantics/endpoints.json"), """
+                {"endpoints":[{"id":"hlm_clint","column":"hlm_clint","displayName":"HLM CLint"}]}
+                """);
+        Files.writeString(tempDir.resolve("semantics/predictions.json"), """
+                {"capabilities":[{"capabilityId":"apy.hlm.production","endpointId":"hlm_clint","predictedEndpointId":"hlm_clint.predicted","displayName":"APY HLM production","providerId":"apy","workflowId":"apy://hlm-production","priority":100}]}
+                """);
+
+        PrismSession session = PrismSession.open(tempDir);
+
+        assertEquals(1, session.predictionCapabilities().size());
+        assertEquals("apy.hlm.production", session.predictionCapabilitiesFor("hlm_clint").getFirst().capabilityId());
+        assertEquals("hlm_clint.predicted", session.predictionCapability("apy.hlm.production").predictedEndpointId());
+        assertTrue(session.predictionCapabilitiesFor("unknown").isEmpty());
+    }
+
     @Test
     void loadsExamplePackWithSchemaAndDefaultView() throws Exception {
         PrismSession session = exampleSession();

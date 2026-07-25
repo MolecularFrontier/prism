@@ -2,6 +2,7 @@ package tech.molecules.structurized.prism.pack;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import tech.molecules.structurized.prism.prediction.PredictionCapability;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -178,6 +179,46 @@ class PrismPackReaderTest {
         assertEquals("ACT-1", attachment.target().rowKey());
         assertEquals("pIC50", attachment.target().column());
         assertEquals("Raw values: 7.1, 7.2", attachment.content().text());
+        assertTrue(written.warnings().isEmpty());
+    }
+
+    @Test
+    void readsWritesAndIndexesPredictionCapabilities(@TempDir Path tempDir) throws IOException {
+        Files.createDirectories(tempDir.resolve("data"));
+        Files.createDirectories(tempDir.resolve("schema"));
+        Files.createDirectories(tempDir.resolve("semantics"));
+        Files.writeString(tempDir.resolve("prism-pack.json"), """
+                {"prismPackVersion":"0.2","dataframe":{"path":"data/dataframe.tsv","schema":"schema/dataframe.schema.json"},"molecules":"semantics/molecules.json","endpoints":"semantics/endpoints.json","predictions":"semantics/predictions.json"}
+                """);
+        Files.writeString(tempDir.resolve("schema/dataframe.schema.json"), """
+                {"columns":[{"name":"compound_id","type":"string"},{"name":"smiles","type":"string","semanticType":"chemical_structure"},{"name":"hlm_clint","type":"number","endpointId":"hlm_clint"}]}
+                """);
+        Files.writeString(tempDir.resolve("data/dataframe.tsv"), """
+                compound_id	smiles	hlm_clint
+                CMP-1	CCN	12.0
+                """);
+        Files.writeString(tempDir.resolve("semantics/molecules.json"), """
+                {"primaryStructureColumn":"smiles","structureFormat":"smiles","compoundIdColumn":"compound_id"}
+                """);
+        Files.writeString(tempDir.resolve("semantics/endpoints.json"), """
+                {"endpoints":[{"id":"hlm_clint","column":"hlm_clint","displayName":"HLM CLint","unit":"uL/min/mg","direction":"lower_is_better"}]}
+                """);
+        Files.writeString(tempDir.resolve("semantics/predictions.json"), """
+                {"capabilities":[{"capabilityId":"apy.hlm.production","endpointId":"hlm_clint","predictedEndpointId":"hlm_clint.predicted","displayName":"APY HLM production","providerId":"apy","workflowId":"apy://hlm-production","workflowVersion":"production","status":"available","priority":100,"structureColumn":"smiles","structureFormat":"smiles","metadata":{"assay":"HLM"}}]}
+                """);
+
+        PrismPack pack = PrismPackReader.read(tempDir);
+        PredictionCapability capability = pack.predictions().capabilities().getFirst();
+        Path zip = tempDir.resolve("with-predictions.prismpack");
+        PrismPackWriter.writeZip(zip, pack);
+        PrismPack written = PrismPackReader.read(zip);
+
+        assertEquals("apy.hlm.production", capability.capabilityId());
+        assertEquals("hlm_clint", capability.endpointId());
+        assertEquals("apy://hlm-production", capability.workflowId());
+        assertEquals("HLM", capability.metadata().get("assay"));
+        assertEquals("semantics/predictions.json", written.manifest().predictionsPath());
+        assertEquals("apy.hlm.production", written.predictions().capabilities().getFirst().capabilityId());
         assertTrue(written.warnings().isEmpty());
     }
 
