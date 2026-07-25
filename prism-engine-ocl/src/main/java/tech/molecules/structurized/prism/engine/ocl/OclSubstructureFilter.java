@@ -4,17 +4,16 @@ import com.actelion.research.chem.SSSearcher;
 import com.actelion.research.chem.SSSearcherWithIndex;
 import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.chem.descriptor.DescriptorHandlerLongFFP512;
+import tech.molecules.structurized.prism.engine.ColumnFilter;
 import tech.molecules.structurized.prism.engine.PrismEvaluationContext;
-import tech.molecules.structurized.prism.engine.PrismFilter;
 import tech.molecules.structurized.prism.engine.PrismTable;
 
 import java.util.BitSet;
 import java.util.Objects;
-import java.util.Set;
 
-public final class OclSubstructureFilter implements PrismFilter {
-    private final String structureColumnId;
+public final class OclSubstructureFilter extends ColumnFilter {
     private final StereoMolecule query;
+    private final StereoMolecule matchingQuery;
     private final long[] queryFfp512;
     private final OclStereoMode stereoMode;
     private final int countMode;
@@ -33,19 +32,21 @@ public final class OclSubstructureFilter implements PrismFilter {
                                  OclStereoMode stereoMode,
                                  int countMode,
                                  int matchMode) {
-        if (structureColumnId == null || structureColumnId.isBlank()) {
-            throw new IllegalArgumentException("structureColumnId must not be blank");
-        }
-        this.structureColumnId = structureColumnId;
+        super(structureColumnId);
         this.stereoMode = stereoMode == null ? OclStereoMode.IGNORE_STEREO : stereoMode;
         this.countMode = countMode;
         this.matchMode = matchMode;
-        this.query = normalizeQuery(Objects.requireNonNull(query, "query"), this.stereoMode);
-        this.queryFfp512 = DescriptorHandlerLongFFP512.getDefaultInstance().createDescriptor(this.query);
+        this.query = new StereoMolecule(Objects.requireNonNull(query, "query"));
+        this.matchingQuery = normalizeQuery(this.query, this.stereoMode);
+        this.queryFfp512 = DescriptorHandlerLongFFP512.getDefaultInstance().createDescriptor(this.matchingQuery);
     }
 
     public String structureColumnId() {
-        return structureColumnId;
+        return columnId();
+    }
+
+    public StereoMolecule query() {
+        return new StereoMolecule(query);
     }
 
     public OclStereoMode stereoMode() {
@@ -59,9 +60,9 @@ public final class OclSubstructureFilter implements PrismFilter {
         }
         BitSet result = new BitSet(table.rowCount());
         SSSearcherWithIndex searcher = new SSSearcherWithIndex();
-        searcher.setFragment(query, queryFfp512);
-        String moleculeValueId = OclComputedValueIds.molecule(structureColumnId);
-        String ffpValueId = OclComputedValueIds.ffp512(structureColumnId);
+        searcher.setFragment(matchingQuery, queryFfp512);
+        String moleculeValueId = OclComputedValueIds.molecule(columnId());
+        String ffpValueId = OclComputedValueIds.ffp512(columnId());
         for (int row = 0; row < table.rowCount(); row++) {
             StereoMolecule molecule = context.computedValues().value(moleculeValueId, row, StereoMolecule.class);
             long[] ffp = context.computedValues().value(ffpValueId, row, long[].class);
@@ -75,11 +76,6 @@ public final class OclSubstructureFilter implements PrismFilter {
             }
         }
         return result;
-    }
-
-    @Override
-    public Set<String> referencedColumnIds() {
-        return Set.of(structureColumnId);
     }
 
     private static StereoMolecule normalizeQuery(StereoMolecule query, OclStereoMode stereoMode) {

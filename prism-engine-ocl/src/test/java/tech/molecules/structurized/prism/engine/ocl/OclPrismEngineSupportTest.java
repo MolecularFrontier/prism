@@ -76,6 +76,45 @@ class OclPrismEngineSupportTest {
     }
 
     @Test
+    void similarityFilterUsesCachedFfpAndKeepsAnIndependentQuerySnapshot() throws Exception {
+        PrismSession session = PrismSession.from(smilesPack());
+        OclPrismEngineSupport.registerStructureColumn(session, "smiles");
+        StereoMolecule source = query("CCCl");
+        source.setFragment(false);
+        OclSimilarityFilter filter = new OclSimilarityFilter("smiles", source, 1.0);
+
+        source.clear();
+        session.setFilters(List.of(filter));
+
+        assertEquals(1, session.visibleRowCount());
+        assertEquals("CMPD-003", session.table().formattedValueAt(session.physicalRowAtVisibleIndex(0), "compound_id"));
+        StereoMolecule returned = filter.query();
+        returned.clear();
+        session.recompute();
+        assertEquals(1, session.visibleRowCount());
+    }
+
+    @Test
+    void similarityFilterRejectsInvalidThresholdsAndMissingStructures() throws Exception {
+        PrismSession session = PrismSession.from(smilesPack());
+        OclPrismEngineSupport.registerStructureColumn(session, "smiles");
+        StereoMolecule source = query("CCCl");
+        source.setFragment(false);
+
+        assertThrows(IllegalArgumentException.class, () -> new OclSimilarityFilter("smiles", source, -0.01));
+        assertThrows(IllegalArgumentException.class, () -> new OclSimilarityFilter("smiles", source, 1.01));
+
+        session.setFilters(List.of(new OclSimilarityFilter("smiles", source, 0.0)));
+        assertEquals(3, session.visibleRowCount());
+    }
+
+    @Test
+    void substructureFilterIsAColumnFilter() throws Exception {
+        assertTrue(new OclSubstructureFilter("smiles", query("c1ccccc1"))
+                instanceof tech.molecules.structurized.prism.engine.ColumnFilter);
+    }
+
+    @Test
     void substructureOperationCreatesNamedRowSet() {
         PrismSession session = PrismSession.from(smilesPack());
         OclPrismEngineSupport.registerCapabilities(session);

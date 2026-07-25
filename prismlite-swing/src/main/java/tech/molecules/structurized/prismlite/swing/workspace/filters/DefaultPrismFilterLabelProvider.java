@@ -9,6 +9,8 @@ import tech.molecules.structurized.prism.engine.PrismFilter;
 import tech.molecules.structurized.prism.engine.PrismTable;
 import tech.molecules.structurized.prism.engine.RowSetFilter;
 import tech.molecules.structurized.prism.engine.TextPatternFilter;
+import tech.molecules.structurized.prism.engine.ocl.OclSimilarityFilter;
+import tech.molecules.structurized.prism.engine.ocl.OclSubstructureFilter;
 
 public final class DefaultPrismFilterLabelProvider implements PrismFilterLabelProvider {
     @Override
@@ -31,6 +33,13 @@ public final class DefaultPrismFilterLabelProvider implements PrismFilterLabelPr
         }
         if (unwrapped instanceof MissingValueFilter missing) {
             return prefix + columnName(table, missing.columnId()) + ": missing/value";
+        }
+        if (unwrapped instanceof OclSubstructureFilter substructure) {
+            return prefix + columnName(table, substructure.columnId()) + ": substructure";
+        }
+        if (unwrapped instanceof OclSimilarityFilter similarity) {
+            return prefix + columnName(table, similarity.columnId()) + ": similarity >= "
+                    + trim(similarity.minimumSimilarity());
         }
         if (unwrapped instanceof RowSetFilter rowSet) {
             return "Row set: " + rowSet.rowSetId();

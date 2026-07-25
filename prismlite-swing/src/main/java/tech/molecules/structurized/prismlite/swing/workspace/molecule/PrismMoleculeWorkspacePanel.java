@@ -11,8 +11,11 @@ import tech.molecules.structurized.prism.engine.PrismMoleculeList;
 import tech.molecules.structurized.prism.engine.PrismMoleculeWorkspace;
 import tech.molecules.structurized.prism.engine.PrismMoleculeWorkspaceSubscription;
 import tech.molecules.structurized.prism.engine.ocl.OclMoleculeDocumentCodec;
+import tech.molecules.structurized.prism.engine.ocl.OclSimilarityFilter;
+import tech.molecules.structurized.prism.engine.ocl.OclSubstructureFilter;
 import tech.molecules.structurized.prismlite.swing.workspace.PrismLiteWorkspaceModel;
 import tech.molecules.structurized.prismlite.swing.workspace.chem.MoleculeRenderUtil;
+import tech.molecules.structurized.prismlite.swing.workspace.chem.MoleculeViewPanel;
 import tech.molecules.structurized.prismlite.swing.workspace.chem.StructureCoordinateResolver;
 
 import javax.swing.BorderFactory;
@@ -26,13 +29,25 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JToolBar;
+import javax.swing.SwingConstants;
+import javax.swing.UIManager;
+import javax.swing.ListCellRenderer;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Consumer;
 
 public final class PrismMoleculeWorkspacePanel extends JPanel implements AutoCloseable {
     private final PrismMoleculeWorkspace workspace;
@@ -42,30 +57,44 @@ public final class PrismMoleculeWorkspacePanel extends JPanel implements AutoClo
     private final DefaultListModel<MoleculeDocumentItem> documentModel = new DefaultListModel<>();
     private final JList<MoleculeListItem> lists = new JList<>(listModel);
     private final JList<MoleculeDocumentItem> documents = new JList<>(documentModel);
+    private final JTabbedPane documentTabs = new JTabbedPane();
     private final SwingEditorPanel editor = new SwingEditorPanel(new StereoMolecule());
     private final JCheckBox fragmentMode = new JCheckBox("Fragment");
     private final javax.swing.JLabel status = new javax.swing.JLabel(" ");
     private final Timer commitTimer;
     private final PrismMoleculeWorkspaceSubscription subscription;
+    private final Consumer<String> filterTargetFocused;
     private boolean suppressUiEvents;
     private String activeDocumentId;
     private long loadedDocumentRevision;
 
     public PrismMoleculeWorkspacePanel(PrismMoleculeWorkspace workspace,
                                        PrismLiteWorkspaceModel tableWorkspace) {
+        this(workspace, tableWorkspace, columnId -> { });
+    }
+
+    public PrismMoleculeWorkspacePanel(PrismMoleculeWorkspace workspace,
+                                       PrismLiteWorkspaceModel tableWorkspace,
+                                       Consumer<String> filterTargetFocused) {
         super(new BorderLayout());
         this.workspace = Objects.requireNonNull(workspace, "workspace");
         this.tableWorkspace = Objects.requireNonNull(tableWorkspace, "tableWorkspace");
+        this.filterTargetFocused = filterTargetFocused == null ? columnId -> { } : filterTargetFocused;
         this.commitTimer = new Timer(250, event -> commitEditor());
         this.commitTimer.setRepeats(false);
         this.subscription = workspace.subscribe(change -> SwingUtilities.invokeLater(this::refreshFromWorkspace));
 
         lists.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        documents.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        documents.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        documents.setLayoutOrientation(JList.HORIZONTAL_WRAP);
+        documents.setVisibleRowCount(-1);
+        documents.setFixedCellWidth(190);
+        documents.setFixedCellHeight(160);
+        documents.setCellRenderer(new MoleculeDocumentTileRenderer(codec));
         lists.addListSelectionListener(event -> {
             if (!event.getValueIsAdjusting() && !suppressUiEvents) {
                 commitPending();
-                refreshDocuments(null);
+                refreshDocuments(Set.of(), null);
             }
         });
         documents.addListSelectionListener(event -> {
@@ -74,6 +103,14 @@ public final class PrismMoleculeWorkspacePanel extends JPanel implements AutoClo
                 MoleculeDocumentItem selected = documents.getSelectedValue();
                 activeDocumentId = selected == null ? null : selected.document().id();
                 loadActiveDocument();
+            }
+        });
+        documents.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent event) {
+                if (event.getClickCount() == 2 && documents.locationToIndex(event.getPoint()) >= 0) {
+                    documentTabs.setSelectedIndex(1);
+                }
             }
         });
         editor.getDrawArea().addDrawAreaListener(event -> {
@@ -108,6 +145,7 @@ public final class PrismMoleculeWorkspacePanel extends JPanel implements AutoClo
         JButton rename = button("Rename", this::renameDocument);
         JButton move = button("Move", this::moveDocument);
         JButton remove = button("Delete", this::deleteDocument);
+        JButton useAsFilter = button("Use as filter...", this::useAsFilter);
         toolbar.add(create);
         toolbar.add(openRow);
         toolbar.addSeparator();
@@ -115,29 +153,32 @@ public final class PrismMoleculeWorkspacePanel extends JPanel implements AutoClo
         toolbar.add(rename);
         toolbar.add(move);
         toolbar.add(remove);
+        toolbar.addSeparator();
+        toolbar.add(useAsFilter);
         toolbar.add(Box.createHorizontalGlue());
         toolbar.add(fragmentMode);
         return toolbar;
     }
 
     private JSplitPane content() {
-        JPanel navigation = new JPanel();
-        navigation.setLayout(new BoxLayout(navigation, BoxLayout.Y_AXIS));
+        JPanel navigation = new JPanel(new BorderLayout(0, 4));
         navigation.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
-        navigation.setPreferredSize(new Dimension(260, 400));
-        navigation.add(sectionHeader("Lists", listActions()));
-        JScrollPane listScroll = new JScrollPane(lists);
-        listScroll.setAlignmentX(LEFT_ALIGNMENT);
-        navigation.add(listScroll);
-        navigation.add(Box.createVerticalStrut(8));
-        navigation.add(sectionHeader("Molecules", documentOrderActions()));
-        JScrollPane documentScroll = new JScrollPane(documents);
-        documentScroll.setAlignmentX(LEFT_ALIGNMENT);
-        navigation.add(documentScroll);
+        navigation.setPreferredSize(new Dimension(210, 400));
+        navigation.add(sectionHeader("Lists", listActions()), BorderLayout.NORTH);
+        navigation.add(new JScrollPane(lists), BorderLayout.CENTER);
 
-        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, navigation, editor);
-        split.setResizeWeight(0.2);
-        split.setDividerLocation(260);
+        JPanel overview = new JPanel(new BorderLayout());
+        overview.add(sectionHeader("Molecules", documentOrderActions()), BorderLayout.NORTH);
+        JScrollPane documentScroll = new JScrollPane(documents);
+        documentScroll.getVerticalScrollBar().setUnitIncrement(16);
+        overview.add(documentScroll, BorderLayout.CENTER);
+
+        documentTabs.addTab("Overview", overview);
+        documentTabs.addTab("Editor", editor);
+
+        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, navigation, documentTabs);
+        split.setResizeWeight(0.15);
+        split.setDividerLocation(210);
         return split;
     }
 
@@ -205,6 +246,7 @@ public final class PrismMoleculeWorkspacePanel extends JPanel implements AutoClo
                 PrismMoleculeDocumentMode.MOLECULE, "", ""
         );
         refreshFromWorkspace(selectedList.list().id(), created.id());
+        documentTabs.setSelectedIndex(1);
     }
 
     private void openFocusedRow() {
@@ -239,6 +281,7 @@ public final class PrismMoleculeWorkspacePanel extends JPanel implements AutoClo
                 encoded.idcode(), encoded.coordinates()
         );
         refreshFromWorkspace(target.list().id(), created.id());
+        documentTabs.setSelectedIndex(1);
     }
 
     private PrismColumn focusedStructureColumn() {
@@ -254,11 +297,13 @@ public final class PrismMoleculeWorkspacePanel extends JPanel implements AutoClo
     }
 
     private void duplicateDocument() {
-        MoleculeDocumentItem selected = documents.getSelectedValue();
+        List<String> selectedIds = selectedDocumentIds();
         MoleculeListItem target = lists.getSelectedValue();
-        if (selected == null || target == null) return;
-        PrismMoleculeDocument duplicate = workspace.duplicateDocument(selected.document().id(), target.list().id());
-        refreshFromWorkspace(target.list().id(), duplicate.id());
+        if (selectedIds.isEmpty() || target == null) return;
+        List<PrismMoleculeDocument> duplicates = workspace.duplicateDocuments(selectedIds, target.list().id());
+        refreshFromWorkspace(target.list().id(),
+                duplicates.stream().map(PrismMoleculeDocument::id).collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)),
+                duplicates.isEmpty() ? null : duplicates.getFirst().id());
     }
 
     private void renameDocument() {
@@ -271,57 +316,122 @@ public final class PrismMoleculeWorkspacePanel extends JPanel implements AutoClo
     }
 
     private void moveDocument() {
-        MoleculeDocumentItem selected = documents.getSelectedValue();
-        if (selected == null || workspace.lists().size() < 2) return;
+        List<String> selectedIds = selectedDocumentIds();
+        if (selectedIds.isEmpty() || workspace.lists().size() < 2) return;
         MoleculeListItem[] choices = workspace.lists().stream().map(MoleculeListItem::new).toArray(MoleculeListItem[]::new);
         MoleculeListItem target = (MoleculeListItem) JOptionPane.showInputDialog(
-                this, "Move to list:", "Move molecule",
+                this, "Move to list:", "Move molecules",
                 JOptionPane.PLAIN_MESSAGE, null, choices, choices[0]
         );
         if (target == null) return;
-        workspace.moveDocument(selected.document().id(), target.list().id(), target.list().documents().size());
-        refreshFromWorkspace(target.list().id(), selected.document().id());
+        workspace.moveDocuments(selectedIds, target.list().id(), target.list().documents().size());
+        refreshFromWorkspace(target.list().id(), new LinkedHashSet<>(selectedIds), selectedIds.getFirst());
     }
 
     private void moveDocumentBy(int offset) {
-        MoleculeDocumentItem selected = documents.getSelectedValue();
-        int index = documents.getSelectedIndex();
-        if (selected == null || index < 0) return;
-        int target = Math.max(0, Math.min(documentModel.size() - 1, index + offset));
-        if (target == index) return;
-        workspace.reorderDocument(selected.document().id(), target);
-        refreshFromWorkspace(selectedListId(), selected.document().id());
+        List<String> selectedIds = selectedDocumentIds();
+        int firstIndex = documents.getMinSelectionIndex();
+        if (selectedIds.isEmpty() || firstIndex < 0) return;
+        int target = Math.max(0, Math.min(documentModel.size() - selectedIds.size(), firstIndex + offset));
+        if (target == firstIndex) return;
+        workspace.reorderDocuments(selectedIds, target);
+        refreshFromWorkspace(selectedListId(), new LinkedHashSet<>(selectedIds), activeDocumentId);
     }
 
     private void deleteDocument() {
-        MoleculeDocumentItem selected = documents.getSelectedValue();
-        if (selected == null) return;
-        int choice = JOptionPane.showConfirmDialog(this,
-                "Delete '" + selected.document().title() + "'?",
-                "Delete molecule",
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.WARNING_MESSAGE);
+        List<String> selectedIds = selectedDocumentIds();
+        if (selectedIds.isEmpty()) return;
+        String message = selectedIds.size() == 1
+                ? "Delete '" + documents.getSelectedValue().document().title() + "'?"
+                : "Delete " + selectedIds.size() + " selected molecules?";
+        int choice = JOptionPane.showConfirmDialog(this, message, "Delete molecules",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
         if (choice == JOptionPane.OK_OPTION) {
             commitTimer.stop();
             activeDocumentId = null;
-            workspace.deleteDocument(selected.document().id());
+            workspace.deleteDocuments(selectedIds);
         }
     }
 
+    private void useAsFilter() {
+        commitPending();
+        PrismMoleculeDocument document = activeDocumentId == null
+                ? null
+                : workspace.findDocument(activeDocumentId).orElse(null);
+        if (document == null || document.idcode().isBlank()) {
+            showMessage("Select a non-empty molecule first.");
+            return;
+        }
+        PrismColumn target = chooseStructureColumn();
+        if (target == null) return;
+        StereoMolecule query;
+        try {
+            query = codec.decode(document);
+        } catch (RuntimeException exception) {
+            showMessage("The selected molecule could not be parsed.");
+            return;
+        }
+        if (query.getAllAtoms() == 0) {
+            showMessage("Select a non-empty molecule first.");
+            return;
+        }
+        if (document.mode() == PrismMoleculeDocumentMode.FRAGMENT) {
+            tableWorkspace.setDraftFilter(target.id(), new OclSubstructureFilter(target.id(), query));
+        } else {
+            tableWorkspace.setDraftFilter(target.id(), new OclSimilarityFilter(target.id(), query, 0.70));
+        }
+        tableWorkspace.setFocusedColumn(target.id());
+        filterTargetFocused.accept(target.id());
+        status.setText("Filter draft created for " + target.schema().displayName());
+    }
+
+    private PrismColumn chooseStructureColumn() {
+        List<PrismColumn> columns = tableWorkspace.table().columns().stream()
+                .filter(column -> column.type() == PrismColumnType.MOLECULE)
+                .toList();
+        if (columns.isEmpty()) {
+            showMessage("This dataset has no molecule column.");
+            return null;
+        }
+        if (columns.size() == 1) return columns.getFirst();
+        ColumnChoice[] choices = columns.stream().map(ColumnChoice::new).toArray(ColumnChoice[]::new);
+        ColumnChoice initial = java.util.Arrays.stream(choices)
+                .filter(choice -> Objects.equals(choice.column().id(), tableWorkspace.focusedColumnId()))
+                .findFirst()
+                .orElse(choices[0]);
+        ColumnChoice selected = (ColumnChoice) JOptionPane.showInputDialog(
+                this, "Target structure column:", "Use as filter",
+                JOptionPane.PLAIN_MESSAGE, null, choices, initial
+        );
+        return selected == null ? null : selected.column();
+    }
+
+    private List<String> selectedDocumentIds() {
+        return documents.getSelectedValuesList().stream()
+                .map(item -> item.document().id())
+                .toList();
+    }
+
     private void refreshFromWorkspace() {
-        refreshFromWorkspace(selectedListId(), activeDocumentId);
+        refreshFromWorkspace(selectedListId(), new LinkedHashSet<>(selectedDocumentIds()), activeDocumentId);
     }
 
     private void refreshFromWorkspace(String preferredListId, String preferredDocumentId) {
+        Set<String> selectedIds = preferredDocumentId == null ? Set.of() : Set.of(preferredDocumentId);
+        refreshFromWorkspace(preferredListId, selectedIds, preferredDocumentId);
+    }
+
+    private void refreshFromWorkspace(String preferredListId,
+                                      Set<String> preferredDocumentIds,
+                                      String preferredActiveDocumentId) {
         suppressUiEvents = true;
         try {
-            String listId = preferredListId;
             listModel.clear();
             for (PrismMoleculeList list : workspace.lists()) listModel.addElement(new MoleculeListItem(list));
-            int listIndex = indexOfList(listId);
+            int listIndex = indexOfList(preferredListId);
             if (listIndex < 0) listIndex = indexOfList(PrismMoleculeWorkspace.SCRATCHPAD_ID);
             if (listIndex >= 0) lists.setSelectedIndex(listIndex);
-            refreshDocumentsWhileSuppressed(preferredDocumentId);
+            refreshDocumentsWhileSuppressed(preferredDocumentIds, preferredActiveDocumentId);
         } finally {
             suppressUiEvents = false;
         }
@@ -335,17 +445,18 @@ public final class PrismMoleculeWorkspacePanel extends JPanel implements AutoClo
         }
     }
 
-    private void refreshDocuments(String preferredDocumentId) {
+    private void refreshDocuments(Set<String> preferredDocumentIds, String preferredActiveDocumentId) {
         suppressUiEvents = true;
         try {
-            refreshDocumentsWhileSuppressed(preferredDocumentId);
+            refreshDocumentsWhileSuppressed(preferredDocumentIds, preferredActiveDocumentId);
         } finally {
             suppressUiEvents = false;
         }
         loadActiveDocument();
     }
 
-    private void refreshDocumentsWhileSuppressed(String preferredDocumentId) {
+    private void refreshDocumentsWhileSuppressed(Set<String> preferredDocumentIds,
+                                                 String preferredActiveDocumentId) {
         PrismMoleculeList selectedList = selectedList();
         documentModel.clear();
         if (selectedList != null) {
@@ -353,14 +464,18 @@ public final class PrismMoleculeWorkspacePanel extends JPanel implements AutoClo
                 documentModel.addElement(new MoleculeDocumentItem(document));
             }
         }
-        int documentIndex = indexOfDocument(preferredDocumentId);
-        if (documentIndex < 0 && !documentModel.isEmpty()) documentIndex = 0;
-        if (documentIndex >= 0) {
-            documents.setSelectedIndex(documentIndex);
-            activeDocumentId = documentModel.get(documentIndex).document().id();
-        } else {
-            activeDocumentId = null;
+        documents.clearSelection();
+        for (String documentId : preferredDocumentIds == null ? Set.<String>of() : preferredDocumentIds) {
+            int index = indexOfDocument(documentId);
+            if (index >= 0) documents.addSelectionInterval(index, index);
         }
+        int activeIndex = indexOfDocument(preferredActiveDocumentId);
+        if (documents.isSelectionEmpty() && !documentModel.isEmpty()) {
+            activeIndex = activeIndex < 0 ? 0 : activeIndex;
+            documents.setSelectedIndex(activeIndex);
+        }
+        if (activeIndex < 0 && !documents.isSelectionEmpty()) activeIndex = documents.getLeadSelectionIndex();
+        activeDocumentId = activeIndex < 0 ? null : documentModel.get(activeIndex).document().id();
     }
 
     private void loadActiveDocument() {
@@ -477,6 +592,79 @@ public final class PrismMoleculeWorkspacePanel extends JPanel implements AutoClo
     public void close() {
         commitPending();
         subscription.close();
+    }
+
+    private record ColumnChoice(PrismColumn column) {
+        @Override
+        public String toString() {
+            return column.schema().displayName();
+        }
+    }
+
+    private static final class MoleculeDocumentTileRenderer extends JPanel
+            implements ListCellRenderer<MoleculeDocumentItem> {
+        private final OclMoleculeDocumentCodec codec;
+        private final MoleculeViewPanel moleculeView = new MoleculeViewPanel();
+        private final javax.swing.JLabel title = new javax.swing.JLabel();
+        private final javax.swing.JLabel mode = new javax.swing.JLabel();
+
+        private MoleculeDocumentTileRenderer(OclMoleculeDocumentCodec codec) {
+            super(new BorderLayout(4, 4));
+            this.codec = codec;
+            setOpaque(true);
+            moleculeView.setPreferredSize(new Dimension(176, 112));
+            title.setHorizontalAlignment(SwingConstants.CENTER);
+            mode.setHorizontalAlignment(SwingConstants.CENTER);
+            JPanel labels = new JPanel(new BorderLayout());
+            labels.setOpaque(false);
+            labels.add(title, BorderLayout.CENTER);
+            labels.add(mode, BorderLayout.SOUTH);
+            add(moleculeView, BorderLayout.CENTER);
+            add(labels, BorderLayout.SOUTH);
+        }
+
+        @Override
+        public Component getListCellRendererComponent(JList<? extends MoleculeDocumentItem> list,
+                                                      MoleculeDocumentItem value,
+                                                      int index,
+                                                      boolean selected,
+                                                      boolean focused) {
+            PrismMoleculeDocument document = value.document();
+            Color background = selected
+                    ? UIManager.getColor("List.selectionBackground")
+                    : UIManager.getColor("List.background");
+            Color foreground = selected
+                    ? UIManager.getColor("List.selectionForeground")
+                    : UIManager.getColor("List.foreground");
+            setBackground(background);
+            moleculeView.setBackground(background);
+            title.setForeground(foreground);
+            mode.setForeground(foreground);
+            title.setText(abbreviate(document.title(), 28));
+            title.setToolTipText(document.title());
+            mode.setText(document.mode() == PrismMoleculeDocumentMode.FRAGMENT ? "Fragment" : "Molecule");
+            try {
+                StereoMolecule molecule = codec.decode(document);
+                moleculeView.setMolecule(molecule.getAllAtoms() == 0 ? null : molecule);
+            } catch (RuntimeException exception) {
+                moleculeView.setMolecule(null);
+                mode.setText("Invalid structure");
+            }
+            Color borderColor = selected
+                    ? UIManager.getColor("List.selectionForeground")
+                    : UIManager.getColor("Component.borderColor");
+            if (borderColor == null) borderColor = Color.GRAY;
+            setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(borderColor),
+                    BorderFactory.createEmptyBorder(5, 5, 5, 5)
+            ));
+            return this;
+        }
+
+        private static String abbreviate(String value, int maximumLength) {
+            if (value == null || value.length() <= maximumLength) return value;
+            return value.substring(0, maximumLength - 3) + "...";
+        }
     }
 
     private record MoleculeListItem(PrismMoleculeList list) {

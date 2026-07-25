@@ -1,6 +1,8 @@
 package tech.molecules.structurized.prism.engine;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -116,12 +118,45 @@ public final class PrismMoleculeWorkspace {
         );
     }
 
+    public synchronized List<PrismMoleculeDocument> duplicateDocuments(Collection<String> documentIds,
+                                                                        String targetListId) {
+        List<LocatedDocument> sources = requireDocuments(documentIds);
+        MutableList target = requireList(targetListId);
+        ArrayList<PrismMoleculeDocument> duplicates = new ArrayList<>(sources.size());
+        for (LocatedDocument located : sources) {
+            PrismMoleculeDocument source = located.document();
+            String id = nextDocumentId();
+            PrismMoleculeDocument duplicate = new PrismMoleculeDocument(
+                    id, source.title() + " copy", source.mode(), source.idcode(), source.coordinates(), 1
+            );
+            target.documents.put(id, duplicate);
+            duplicates.add(duplicate);
+        }
+        if (!duplicates.isEmpty()) publish(target.id, null);
+        return List.copyOf(duplicates);
+    }
+
     public synchronized void moveDocument(String documentId, String targetListId, int targetIndex) {
         LocatedDocument located = requireDocument(documentId);
         MutableList target = requireList(targetListId);
         located.list().documents.remove(documentId);
         insert(target.documents, documentId, located.document(), targetIndex);
         publish(target.id, documentId);
+    }
+
+    public synchronized void moveDocuments(Collection<String> documentIds, String targetListId, int targetIndex) {
+        List<LocatedDocument> locatedDocuments = requireDocuments(documentIds);
+        MutableList target = requireList(targetListId);
+        ArrayList<PrismMoleculeDocument> moving = new ArrayList<>(locatedDocuments.size());
+        for (LocatedDocument located : locatedDocuments) {
+            located.list().documents.remove(located.document().id());
+            moving.add(located.document());
+        }
+        int index = Math.max(0, Math.min(targetIndex, target.documents.size()));
+        for (PrismMoleculeDocument document : moving) {
+            insert(target.documents, document.id(), document, index++);
+        }
+        if (!moving.isEmpty()) publish(target.id, null);
     }
 
     public synchronized void reorderDocument(String documentId, int targetIndex) {
@@ -131,10 +166,39 @@ public final class PrismMoleculeWorkspace {
         publish(located.list().id, documentId);
     }
 
+    public synchronized void reorderDocuments(Collection<String> documentIds, int targetIndex) {
+        List<LocatedDocument> locatedDocuments = requireDocuments(documentIds);
+        if (locatedDocuments.isEmpty()) return;
+        MutableList list = locatedDocuments.getFirst().list();
+        for (LocatedDocument located : locatedDocuments) {
+            if (located.list() != list) {
+                throw new IllegalArgumentException("documents must belong to the same molecule list");
+            }
+        }
+        ArrayList<PrismMoleculeDocument> moving = new ArrayList<>(locatedDocuments.size());
+        for (LocatedDocument located : locatedDocuments) {
+            list.documents.remove(located.document().id());
+            moving.add(located.document());
+        }
+        int index = Math.max(0, Math.min(targetIndex, list.documents.size()));
+        for (PrismMoleculeDocument document : moving) {
+            insert(list.documents, document.id(), document, index++);
+        }
+        publish(list.id, null);
+    }
+
     public synchronized void deleteDocument(String documentId) {
         LocatedDocument located = requireDocument(documentId);
         located.list().documents.remove(documentId);
         publish(located.list().id, documentId);
+    }
+
+    public synchronized void deleteDocuments(Collection<String> documentIds) {
+        List<LocatedDocument> locatedDocuments = requireDocuments(documentIds);
+        for (LocatedDocument located : locatedDocuments) {
+            located.list().documents.remove(located.document().id());
+        }
+        if (!locatedDocuments.isEmpty()) publish(null, null);
     }
 
     public PrismMoleculeWorkspaceSubscription subscribe(Consumer<PrismMoleculeWorkspaceChange> listener) {
@@ -188,6 +252,17 @@ public final class PrismMoleculeWorkspace {
         entries.add(index, Map.entry(key, value));
         values.clear();
         for (Map.Entry<K, V> entry : entries) values.put(entry.getKey(), entry.getValue());
+    }
+
+    private List<LocatedDocument> requireDocuments(Collection<String> documentIds) {
+        if (documentIds == null || documentIds.isEmpty()) return List.of();
+        ArrayList<LocatedDocument> result = new ArrayList<>();
+        HashSet<String> seen = new HashSet<>();
+        for (String documentId : documentIds) {
+            String id = requireText(documentId, "molecule document id");
+            if (seen.add(id)) result.add(requireDocument(id));
+        }
+        return List.copyOf(result);
     }
 
     private static String requireText(String value, String name) {

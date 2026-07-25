@@ -532,15 +532,52 @@ structure-grid view creation. Both preserve stable row identity. A structure
 grid references a source row set and endpoint columns instead of copying their
 values into the view specification.
 
+`prism-engine-ocl` also provides ordinary structure filters. Substructure and
+similarity filters are normal `ColumnFilter`s over a molecule column, so they
+compose with numeric, categorical, text, row-set, enabled/disabled, and inverted
+filter behavior in PrismLite. They do not create analysis objects, row sets, or
+materialized score columns by themselves.
+
 Future descriptors such as molecular weight or cLogP can follow either model:
 
 * computed values for session-local, reproducible plugin capabilities;
 * materialized numeric columns when values should be filtered, exported, or
   consumed without OpenChemLib.
 
-A future query-similarity operation can reuse cached fingerprints and return a
-materialized similarity column or a ranked row set. The query structure,
-fingerprint implementation version, and parameters belong in provenance.
+An operation can still reuse cached fingerprints and return a materialized
+similarity column or a ranked row set when the similarity result itself should
+become a reusable artifact. That is a separate publishing step from interactive
+filtering.
+
+Molecule workspace
+------------------
+
+`PrismMoleculeWorkspace` is a lightweight session resource for molecules that
+are not rows in the immutable dataframe. It owns molecule lists and molecule
+documents:
+
+```text
+molecule workspace
+    -> Scratchpad
+    -> Candidate list A
+        -> molecule document 1
+        -> molecule document 2
+```
+
+A document stores a title, molecule-or-fragment mode, IDCode, 2D coordinates,
+and its own document revision. Lists are simple ordered collections. Batch
+duplicate, move, reorder, and delete operations publish one workspace revision
+so UI and agent clients can refresh coherently.
+
+The workspace is deliberately not a row-set model. Row sets name subsets of the
+existing Prism table; molecule documents can represent scratch structures,
+queries, proposed compounds, fragments, or generated design candidates that do
+not exist in the source dataset.
+
+PrismLite can copy a molecule document into a table filter. Fragment documents
+become substructure filter drafts, and ordinary molecule documents become
+similarity filter drafts. This is a copy operation, not a live link: editing the
+document later does not silently change an applied or unapplied filter.
 
 Operations, row sets, and views
 -------------------------------

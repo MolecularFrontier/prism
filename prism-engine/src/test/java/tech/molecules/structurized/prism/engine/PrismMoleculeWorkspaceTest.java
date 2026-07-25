@@ -42,6 +42,36 @@ class PrismMoleculeWorkspaceTest {
     }
 
     @Test
+    void batchOperationsPublishOnceAndPreserveOrder() {
+        PrismMoleculeWorkspace workspace = new PrismMoleculeWorkspace();
+        workspace.createList("ideas", "Ideas");
+        PrismMoleculeDocument first = workspace.addDocument("ideas", null, "First",
+                PrismMoleculeDocumentMode.MOLECULE, "a", "");
+        PrismMoleculeDocument second = workspace.addDocument("ideas", null, "Second",
+                PrismMoleculeDocumentMode.MOLECULE, "b", "");
+        PrismMoleculeDocument third = workspace.addDocument("ideas", null, "Third",
+                PrismMoleculeDocumentMode.MOLECULE, "c", "");
+        ArrayList<PrismMoleculeWorkspaceChange> changes = new ArrayList<>();
+        workspace.subscribe(changes::add);
+
+        workspace.reorderDocuments(java.util.List.of(second.id(), third.id()), 0);
+
+        assertEquals(1, changes.size());
+        assertEquals(java.util.List.of(second.id(), third.id(), first.id()), workspace.findList("ideas").orElseThrow()
+                .documents().stream().map(PrismMoleculeDocument::id).toList());
+
+        java.util.List<PrismMoleculeDocument> copies =
+                workspace.duplicateDocuments(java.util.List.of(second.id(), third.id()), PrismMoleculeWorkspace.SCRATCHPAD_ID);
+        assertEquals(2, changes.size());
+        assertEquals(java.util.List.of("Second copy", "Third copy"),
+                copies.stream().map(PrismMoleculeDocument::title).toList());
+
+        workspace.deleteDocuments(copies.stream().map(PrismMoleculeDocument::id).toList());
+        assertEquals(3, changes.size());
+        assertEquals(0, workspace.findList(PrismMoleculeWorkspace.SCRATCHPAD_ID).orElseThrow().documents().size());
+    }
+
+    @Test
     void protectsScratchpadAndGlobalDocumentIdentity() {
         PrismMoleculeWorkspace workspace = new PrismMoleculeWorkspace();
         workspace.addDocument(PrismMoleculeWorkspace.SCRATCHPAD_ID, "same", "One",

@@ -267,6 +267,13 @@ public final class PrismLiteWorkspacePanel extends JPanel {
     }
 
 
+    public void focusColumnInspector(String columnId) {
+        mainTabs.setSelectedIndex(0);
+        inspectorContainer.setVisible(true);
+        inspectorTabs.setSelectedIndex(0);
+        controller.focusColumn(columnId);
+    }
+
     public void focusView(String viewId) {
         for (int index = 1; index < mainTabs.getTabCount(); index++) {
             if (Objects.equals(viewId, viewIdForTab(index))) {

@@ -1,5 +1,6 @@
 package tech.molecules.structurized.prismlite.swing.workspace.inspector;
 
+import com.actelion.research.chem.StereoMolecule;
 import tech.molecules.structurized.prism.engine.CategoryIncludeFilter;
 import tech.molecules.structurized.prism.engine.MissingValueFilter;
 import tech.molecules.structurized.prism.engine.MissingValueMode;
@@ -10,6 +11,9 @@ import tech.molecules.structurized.prism.engine.PrismColumnType;
 import tech.molecules.structurized.prism.engine.PrismFilter;
 import tech.molecules.structurized.prism.engine.TextPatternFilter;
 import tech.molecules.structurized.prism.engine.TextPatternMode;
+import tech.molecules.structurized.prism.engine.ocl.OclSimilarityFilter;
+import tech.molecules.structurized.prism.engine.ocl.OclStereoMode;
+import tech.molecules.structurized.prism.engine.ocl.OclSubstructureFilter;
 import tech.molecules.structurized.prismlite.swing.workspace.PrismLiteWorkspaceController;
 import tech.molecules.structurized.prismlite.swing.workspace.PrismLiteWorkspaceModel;
 import tech.molecules.structurized.prismlite.swing.workspace.analysis.CategoricalColumnSummary;
@@ -18,6 +22,9 @@ import tech.molecules.structurized.prismlite.swing.workspace.analysis.ColumnSumm
 import tech.molecules.structurized.prismlite.swing.workspace.analysis.ColumnSummaryService;
 import tech.molecules.structurized.prismlite.swing.workspace.analysis.HistogramStrip;
 import tech.molecules.structurized.prismlite.swing.workspace.analysis.NumericColumnSummary;
+import tech.molecules.structurized.prismlite.swing.workspace.chem.MoleculeRenderUtil;
+import tech.molecules.structurized.prismlite.swing.workspace.chem.MoleculeViewPanel;
+import tech.molecules.structurized.prismlite.swing.workspace.chem.StructureCoordinateResolver;
 import tech.molecules.structurized.prismlite.swing.workspace.filters.FilterDraftState;
 
 import javax.swing.BorderFactory;
@@ -31,6 +38,7 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSlider;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
@@ -103,6 +111,8 @@ public final class ColumnInspectorPanel extends JPanel {
             numericFilter(column, panel);
         } else if (column.type() == PrismColumnType.CATEGORICAL || column.type() == PrismColumnType.BOOLEAN) {
             categoricalFilter(column, panel);
+        } else if (column.type() == PrismColumnType.MOLECULE) {
+            structureFilter(column, panel);
         } else {
             textFilter(column, panel);
         }
@@ -212,6 +222,108 @@ public final class ColumnInspectorPanel extends JPanel {
             panel.repaint();
         }));
         missing.addActionListener(event -> model.setDraftFilter(column.id(), categoryDraft(column.id(), Set.of(), missing.isSelected())));
+    }
+
+    private void structureFilter(PrismColumn column, JPanel panel) {
+        PrismFilter current = model.draftFilter(column.id());
+        StereoMolecule initialQuery = current instanceof OclSubstructureFilter substructure
+                ? substructure.query()
+                : current instanceof OclSimilarityFilter similarity ? similarity.query() : null;
+        String initialMode = current instanceof OclSubstructureFilter ? "Substructure" : "Similarity";
+        double initialThreshold = current instanceof OclSimilarityFilter similarity
+                ? similarity.minimumSimilarity()
+                : 0.70;
+        OclStereoMode initialStereo = current instanceof OclSubstructureFilter substructure
+                ? substructure.stereoMode()
+                : OclStereoMode.IGNORE_STEREO;
+
+        StereoMolecule[] query = { initialQuery };
+        MoleculeViewPanel preview = new MoleculeViewPanel();
+        preview.setPreferredSize(new java.awt.Dimension(220, 145));
+        preview.setMolecule(initialQuery);
+        panel.add(preview);
+
+        JComboBox<String> mode = new JComboBox<>(new String[]{"Similarity", "Substructure"});
+        mode.setSelectedItem(initialMode);
+        JSlider threshold = new JSlider(0, 100, (int) Math.round(initialThreshold * 100.0));
+        threshold.setPreferredSize(new java.awt.Dimension(145, threshold.getPreferredSize().height));
+        JLabel thresholdValue = new JLabel(String.format(java.util.Locale.ROOT, "%.2f", initialThreshold));
+        JComboBox<OclStereoMode> stereo = new JComboBox<>(OclStereoMode.values());
+        stereo.setSelectedItem(initialStereo);
+        JLabel state = dirtyLabel(column.id());
+
+        JPanel modeRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        modeRow.add(new JLabel("Mode"));
+        modeRow.add(mode);
+        panel.add(modeRow);
+        JPanel thresholdRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        thresholdRow.add(new JLabel("Threshold"));
+        thresholdRow.add(threshold);
+        thresholdRow.add(thresholdValue);
+        panel.add(thresholdRow);
+        JPanel stereoRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        stereoRow.add(new JLabel("Stereo"));
+        stereoRow.add(stereo);
+        panel.add(stereoRow);
+
+        Runnable updateAvailability = () -> {
+            boolean similarity = "Similarity".equals(mode.getSelectedItem());
+            threshold.setEnabled(similarity);
+            thresholdValue.setEnabled(similarity);
+            stereo.setEnabled(!similarity);
+        };
+        Runnable updateDraft = () -> {
+            updateAvailability.run();
+            if (query[0] == null || query[0].getAllAtoms() == 0) {
+                state.setText("No query structure");
+                return;
+            }
+            PrismFilter filter = "Substructure".equals(mode.getSelectedItem())
+                    ? new OclSubstructureFilter(column.id(), query[0], (OclStereoMode) stereo.getSelectedItem())
+                    : new OclSimilarityFilter(column.id(), query[0], threshold.getValue() / 100.0);
+            model.setDraftFilter(column.id(), filter);
+            state.setText("Unapplied changes");
+        };
+
+        JButton focusedRow = new JButton("Use focused row");
+        focusedRow.addActionListener(event -> {
+            Integer physicalRow = model.focusedPhysicalRow();
+            if (physicalRow == null || column.isMissing(physicalRow)) {
+                state.setText("Focused row has no structure");
+                return;
+            }
+            String coordinates = StructureCoordinateResolver.coordinateValue(model.table(), column, physicalRow);
+            StereoMolecule molecule = MoleculeRenderUtil.parse(column, column.valueAt(physicalRow), coordinates);
+            if (molecule == null || molecule.getAllAtoms() == 0) {
+                state.setText("Focused row structure is invalid");
+                return;
+            }
+            query[0] = molecule;
+            preview.setMolecule(molecule);
+            mode.setSelectedItem("Similarity");
+            updateDraft.run();
+        });
+        JButton clear = new JButton("Clear query");
+        clear.addActionListener(event -> {
+            query[0] = null;
+            preview.setMolecule(null);
+            model.setDraftFilter(column.id(), null);
+            state.setText("Unapplied changes");
+        });
+        JPanel sourceRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        sourceRow.add(focusedRow);
+        sourceRow.add(clear);
+        panel.add(sourceRow);
+        panel.add(state);
+        panel.add(buttons(column.id()));
+
+        mode.addActionListener(event -> updateDraft.run());
+        threshold.addChangeListener(event -> {
+            thresholdValue.setText(String.format(java.util.Locale.ROOT, "%.2f", threshold.getValue() / 100.0));
+            updateDraft.run();
+        });
+        stereo.addActionListener(event -> updateDraft.run());
+        updateAvailability.run();
     }
 
     private void textFilter(PrismColumn column, JPanel panel) {
