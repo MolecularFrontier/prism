@@ -3,25 +3,35 @@ package tech.molecules.structurized.prism.engine;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class PrismOperationResult {
     private final List<MaterializedColumnData> addedColumns;
     private final List<RowIdMaterializedColumnData> addedColumnsByRowId;
+    private final List<PrismGrouping> addedGroupings;
+    private final Set<String> visibleGroupingFacetIds;
     private final List<PrismRowSet> addedRowSets;
     private final List<PrismViewRecord> addedViews;
     private final List<PrismViewRecord> updatedViews;
     private final List<String> warnings;
+    private final Map<String, Object> output;
     private final Map<String, Object> provenance;
 
     private PrismOperationResult(Builder builder) {
         this.addedColumns = List.copyOf(builder.addedColumns);
         this.addedColumnsByRowId = List.copyOf(builder.addedColumnsByRowId);
+        this.addedGroupings = List.copyOf(builder.addedGroupings);
+        this.visibleGroupingFacetIds = Set.copyOf(builder.visibleGroupingFacetIds);
         this.addedRowSets = List.copyOf(builder.addedRowSets);
         this.addedViews = List.copyOf(builder.addedViews);
         this.updatedViews = List.copyOf(builder.updatedViews);
         this.warnings = List.copyOf(builder.warnings);
+        this.output = builder.output.isEmpty()
+                ? Map.of()
+                : Collections.unmodifiableMap(new LinkedHashMap<>(builder.output));
         this.provenance = builder.provenance.isEmpty()
                 ? Map.of()
                 : Collections.unmodifiableMap(new LinkedHashMap<>(builder.provenance));
@@ -33,6 +43,14 @@ public final class PrismOperationResult {
 
     public List<RowIdMaterializedColumnData> addedColumnsByRowId() {
         return addedColumnsByRowId;
+    }
+
+    public List<PrismGrouping> addedGroupings() {
+        return addedGroupings;
+    }
+
+    public Set<String> visibleGroupingFacetIds() {
+        return visibleGroupingFacetIds;
     }
 
     public List<PrismRowSet> addedRowSets() {
@@ -55,6 +73,10 @@ public final class PrismOperationResult {
         return provenance;
     }
 
+    public Map<String, Object> output() {
+        return output;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -62,10 +84,13 @@ public final class PrismOperationResult {
     public static final class Builder {
         private final ArrayList<MaterializedColumnData> addedColumns = new ArrayList<>();
         private final ArrayList<RowIdMaterializedColumnData> addedColumnsByRowId = new ArrayList<>();
+        private final ArrayList<PrismGrouping> addedGroupings = new ArrayList<>();
+        private final LinkedHashSet<String> visibleGroupingFacetIds = new LinkedHashSet<>();
         private final ArrayList<PrismRowSet> addedRowSets = new ArrayList<>();
         private final ArrayList<PrismViewRecord> addedViews = new ArrayList<>();
         private final ArrayList<PrismViewRecord> updatedViews = new ArrayList<>();
         private final ArrayList<String> warnings = new ArrayList<>();
+        private final LinkedHashMap<String, Object> output = new LinkedHashMap<>();
         private final LinkedHashMap<String, Object> provenance = new LinkedHashMap<>();
 
         public Builder addColumn(MaterializedColumnData column) {
@@ -75,6 +100,18 @@ public final class PrismOperationResult {
 
         public Builder addColumnByRowId(RowIdMaterializedColumnData column) {
             addedColumnsByRowId.add(column);
+            return this;
+        }
+
+        public Builder addGrouping(PrismGrouping grouping) {
+            return addGrouping(grouping, true);
+        }
+
+        public Builder addGrouping(PrismGrouping grouping, boolean facetVisible) {
+            addedGroupings.add(grouping);
+            if (facetVisible && grouping.facetColumnId() != null) {
+                visibleGroupingFacetIds.add(grouping.facetColumnId());
+            }
             return this;
         }
 
@@ -103,6 +140,13 @@ public final class PrismOperationResult {
         public Builder provenance(String key, Object value) {
             if (key != null && !key.isBlank()) {
                 provenance.put(key, value);
+            }
+            return this;
+        }
+
+        public Builder output(String key, Object value) {
+            if (key != null && !key.isBlank()) {
+                output.put(key, value);
             }
             return this;
         }

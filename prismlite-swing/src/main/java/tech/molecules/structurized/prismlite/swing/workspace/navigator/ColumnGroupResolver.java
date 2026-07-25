@@ -11,11 +11,14 @@ public final class ColumnGroupResolver {
     }
 
     public static String groupFor(PrismLiteWorkspaceModel model, PrismColumn column) {
+        String role = normalize(column.schema().role());
+        String semantic = normalize(column.schema().semanticType());
+        if (role.contains("grouping_facet") || semantic.contains("group_membership")) {
+            return "Groupings";
+        }
         if (model.isComputedColumn(column.id())) {
             return "Computed";
         }
-        String role = normalize(column.schema().role());
-        String semantic = normalize(column.schema().semanticType());
         if (role.contains("identifier") || semantic.contains("compound_id") || semantic.contains("external_id")) {
             return "Identity";
         }

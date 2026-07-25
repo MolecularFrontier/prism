@@ -41,29 +41,31 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public final class PrismLiteFrame extends JFrame {
     private final PrismLiteWorkspacePanel workspace;
+    private final List<PrismLiteSwingExtension> extensions;
 
     public PrismLiteFrame(PrismSession session, Path sourcePath) {
         this(session, sourcePath, PrismLiteSwingExtensions.load());
     }
 
-    PrismLiteFrame(PrismSession session, Path sourcePath, List<PrismLiteSwingExtension> extensions) {
+    public PrismLiteFrame(PrismSession session, Path sourcePath, List<PrismLiteSwingExtension> extensions) {
         super(titleFor(sourcePath));
         configureChemistry(session);
-        List<PrismLiteSwingExtension> loadedExtensions = List.copyOf(extensions);
-        loadedExtensions.forEach(extension -> extension.configureSession(session));
+        this.extensions = List.copyOf(extensions);
+        this.extensions.forEach(extension -> extension.configureSession(session, sourcePath));
         this.workspace = new PrismLiteWorkspacePanel(session);
         setJMenuBar(menuBar());
         setContentPane(workspace);
         setSize(1240, 760);
         setLocationByPlatform(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        loadedExtensions.forEach(extension -> extension.configureSwing(new PrismLiteSwingContext(
+        this.extensions.forEach(extension -> extension.configureSwing(new PrismLiteSwingContext(
                 session,
                 this,
                 workspace.table(),
                 workspace.tableModel(),
                 workspace.sidePanel(),
-                workspace::refreshWorkspace
+                workspace::refreshWorkspace,
+                workspace
         )));
         workspace.refreshWorkspace();
     }
@@ -232,7 +234,7 @@ public final class PrismLiteFrame extends JFrame {
     }
 
     private void replaceSession(PrismSession session, Path sourcePath) {
-        PrismLiteFrame frame = new PrismLiteFrame(session, sourcePath);
+        PrismLiteFrame frame = new PrismLiteFrame(session, sourcePath, extensions);
         frame.setSize(getSize());
         frame.setLocation(getLocation());
         frame.setExtendedState(getExtendedState());
@@ -294,15 +296,21 @@ public final class PrismLiteFrame extends JFrame {
     }
 
     public static PrismLiteFrame open(PrismSession session, Path sourcePath) {
+        return open(session, sourcePath, PrismLiteSwingExtensions.load());
+    }
+
+    public static PrismLiteFrame open(PrismSession session,
+                                      Path sourcePath,
+                                      List<PrismLiteSwingExtension> extensions) {
         if (SwingUtilities.isEventDispatchThread()) {
-            PrismLiteFrame frame = new PrismLiteFrame(session, sourcePath);
+            PrismLiteFrame frame = new PrismLiteFrame(session, sourcePath, extensions);
             frame.setVisible(true);
             return frame;
         }
         AtomicReference<PrismLiteFrame> frame = new AtomicReference<>();
         try {
             SwingUtilities.invokeAndWait(() -> {
-                PrismLiteFrame created = new PrismLiteFrame(session, sourcePath);
+                PrismLiteFrame created = new PrismLiteFrame(session, sourcePath, extensions);
                 created.setVisible(true);
                 frame.set(created);
             });

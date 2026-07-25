@@ -8,13 +8,16 @@ final class RuntimePrismTable implements PrismTable {
     private final PrismTable baseTable;
     private final ComputedValueRegistry computedValues;
     private final MaterializedColumnRegistry materializedColumns;
+    private final PrismGroupingRegistry groupings;
 
     RuntimePrismTable(PrismTable baseTable,
                       ComputedValueRegistry computedValues,
-                      MaterializedColumnRegistry materializedColumns) {
+                      MaterializedColumnRegistry materializedColumns,
+                      PrismGroupingRegistry groupings) {
         this.baseTable = baseTable;
         this.computedValues = computedValues;
         this.materializedColumns = materializedColumns;
+        this.groupings = groupings;
     }
 
     @Override
@@ -31,6 +34,7 @@ final class RuntimePrismTable implements PrismTable {
         for (MaterializedColumnData column : materializedColumns.columns()) {
             columns.add(materializedColumns.asColumn(column.schema().id()));
         }
+        columns.addAll(groupings.facetColumns());
         return List.copyOf(columns);
     }
 
@@ -50,7 +54,12 @@ final class RuntimePrismTable implements PrismTable {
         if (computedColumn.isPresent()) {
             return computedColumn;
         }
-        return materializedColumns.find(columnId).map(column -> materializedColumns.asColumn(column.schema().id()));
+        Optional<PrismColumn> materializedColumn = materializedColumns.find(columnId)
+                .map(column -> materializedColumns.asColumn(column.schema().id()));
+        if (materializedColumn.isPresent()) {
+            return materializedColumn;
+        }
+        return groupings.findByFacetColumnId(columnId).map(ignored -> groupings.facetColumn(columnId));
     }
 
     @Override
@@ -68,6 +77,12 @@ final class RuntimePrismTable implements PrismTable {
         }
         for (MaterializedColumnData column : materializedColumns.columns()) {
             if (column.schema().id().equals(columnId)) {
+                return index;
+            }
+            index++;
+        }
+        for (PrismColumn column : groupings.facetColumns()) {
+            if (column.id().equals(columnId)) {
                 return index;
             }
             index++;

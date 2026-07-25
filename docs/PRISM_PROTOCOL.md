@@ -181,3 +181,10 @@ It does not yet include:
 - remote provider implementations
 
 Those can be added on top without changing the current core model.
+
+Advanced model
+--------------
+
+See [`PRISM_DATA_MODEL.md`](PRISM_DATA_MODEL.md) for the relationship between
+protocol endpoint results, PrismPack columns, computed and materialized runtime
+values, scoring, MPOs, chemistry operations, row sets, and views.

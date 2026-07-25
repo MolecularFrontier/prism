@@ -1,6 +1,12 @@
 package tech.molecules.structurized.prism.pack;
 
 import tech.molecules.structurized.prism.io.PrismTsvEscaper;
+import tech.molecules.structurized.prism.score.EndpointScoreDefinition;
+import tech.molecules.structurized.prism.score.MpoComponentDefinition;
+import tech.molecules.structurized.prism.score.MpoDefinition;
+import tech.molecules.structurized.prism.score.PropertyProfileDefinition;
+import tech.molecules.structurized.prism.score.PropertyProfileItem;
+import tech.molecules.structurized.prism.score.ScorePoint;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -14,7 +20,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
- * Writer for PrismPack v0.1 directory and ZIP packages.
+ * Writer for PrismPack v0.1 and v0.2 directory and ZIP packages.
  */
 public final class PrismPackWriter {
     public static final String MANIFEST_PATH = "prism-pack.json";
@@ -25,6 +31,8 @@ public final class PrismPackWriter {
     public static final String TABLE_VIEW_PATH = "views/table-view.json";
     public static final String VISUALIZATIONS_PATH = "views/visualizations.json";
     public static final String ATTACHMENTS_PATH = "attachments/attachments.json";
+    public static final String SCORES_PATH = "semantics/scores.json";
+    public static final String PROPERTY_PROFILES_PATH = "semantics/property-profiles.json";
     public static final String PROVENANCE_PATH = "provenance/provenance.json";
 
     private PrismPackWriter() {
@@ -60,6 +68,12 @@ public final class PrismPackWriter {
         if (pack.attachments() != null && !pack.attachments().attachments().isEmpty()) {
             writeFile(directory, attachmentsPath(pack), PrismPackJson.stringify(attachmentsMap(pack.attachments())));
         }
+        if (pack.scores() != null && !pack.scores().scores().isEmpty()) {
+            writeFile(directory, scoresPath(pack), PrismPackJson.stringify(scoresMap(pack.scores())));
+        }
+        if (pack.propertyProfiles() != null && !pack.propertyProfiles().profiles().isEmpty()) {
+            writeFile(directory, propertyProfilesPath(pack), PrismPackJson.stringify(propertyProfilesMap(pack.propertyProfiles())));
+        }
         if (pack.provenance() != null && !pack.provenance().isEmpty()) {
             writeFile(directory, provenancePath(pack), PrismPackJson.stringify(pack.provenance()));
         }
@@ -90,6 +104,12 @@ public final class PrismPackWriter {
             }
             if (pack.attachments() != null && !pack.attachments().attachments().isEmpty()) {
                 writeEntry(out, attachmentsPath(pack), PrismPackJson.stringify(attachmentsMap(pack.attachments())));
+            }
+            if (pack.scores() != null && !pack.scores().scores().isEmpty()) {
+                writeEntry(out, scoresPath(pack), PrismPackJson.stringify(scoresMap(pack.scores())));
+            }
+            if (pack.propertyProfiles() != null && !pack.propertyProfiles().profiles().isEmpty()) {
+                writeEntry(out, propertyProfilesPath(pack), PrismPackJson.stringify(propertyProfilesMap(pack.propertyProfiles())));
             }
             if (pack.provenance() != null && !pack.provenance().isEmpty()) {
                 writeEntry(out, provenancePath(pack), PrismPackJson.stringify(pack.provenance()));
@@ -135,6 +155,14 @@ public final class PrismPackWriter {
 
     private static String attachmentsPath(PrismPack pack) {
         return valueOrDefault(pack.manifest().attachmentsPath(), ATTACHMENTS_PATH);
+    }
+
+    private static String scoresPath(PrismPack pack) {
+        return valueOrDefault(pack.manifest().scoresPath(), SCORES_PATH);
+    }
+
+    private static String propertyProfilesPath(PrismPack pack) {
+        return valueOrDefault(pack.manifest().propertyProfilesPath(), PROPERTY_PROFILES_PATH);
     }
 
     private static String provenancePath(PrismPack pack) {
@@ -193,6 +221,12 @@ public final class PrismPackWriter {
         }
         if (pack.attachments() != null && !pack.attachments().attachments().isEmpty()) {
             map.put("attachments", attachmentsPath(pack));
+        }
+        if (pack.scores() != null && !pack.scores().scores().isEmpty()) {
+            map.put("scores", scoresPath(pack));
+        }
+        if (pack.propertyProfiles() != null && !pack.propertyProfiles().profiles().isEmpty()) {
+            map.put("propertyProfiles", propertyProfilesPath(pack));
         }
         if (pack.provenance() != null && !pack.provenance().isEmpty()) {
             map.put("provenance", provenancePath(pack));
@@ -254,6 +288,82 @@ public final class PrismPackWriter {
         putIfNotNull(map, "direction", endpoint.direction());
         putIfNotNull(map, "assay", endpoint.assay());
         putIfNotNull(map, "protocol", endpoint.protocol());
+        return map;
+    }
+
+    private static Map<String, Object> scoresMap(PrismPack.ScoreMetadata metadata) {
+        LinkedHashMap<String, Object> map = copy(metadata.raw());
+        map.put("scores", metadata.scores().stream().map(PrismPackWriter::scoreMap).toList());
+        return map;
+    }
+
+    private static Map<String, Object> scoreMap(EndpointScoreDefinition score) {
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+        map.put("id", score.id());
+        map.put("endpointId", score.endpointId());
+        map.put("displayName", score.displayName());
+        putIfNotNull(map, "description", score.description());
+        map.put("scoreType", score.scoreType());
+        map.put("xScale", score.xScale());
+        map.put("clampOutsideRange", score.clampOutsideRange());
+        map.put("points", score.points().stream().map(PrismPackWriter::scorePointMap).toList());
+        if (!score.metadata().isEmpty()) map.put("metadata", score.metadata());
+        return map;
+    }
+
+    private static Map<String, Object> scorePointMap(ScorePoint point) {
+        return Map.of("x", point.x(), "score", point.score());
+    }
+
+    private static Map<String, Object> propertyProfilesMap(PrismPack.PropertyProfileMetadata metadata) {
+        LinkedHashMap<String, Object> map = copy(metadata.raw());
+        map.put("profiles", metadata.profiles().stream().map(PrismPackWriter::propertyProfileMap).toList());
+        return map;
+    }
+
+    private static Map<String, Object> propertyProfileMap(PropertyProfileDefinition profile) {
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+        map.put("id", profile.id());
+        map.put("title", profile.title());
+        putIfNotNull(map, "description", profile.description());
+        map.put("items", profile.items().stream().map(PrismPackWriter::profileItemMap).toList());
+        map.put("mpos", profile.mpos().stream().map(PrismPackWriter::mpoMap).toList());
+        if (!profile.metadata().isEmpty()) map.put("metadata", profile.metadata());
+        return map;
+    }
+
+    private static Map<String, Object> profileItemMap(PropertyProfileItem item) {
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+        map.put("endpointId", item.endpointId());
+        putIfNotNull(map, "scoreId", item.scoreId());
+        putIfNotNull(map, "label", item.label());
+        putIfNotNull(map, "group", item.group());
+        map.put("order", item.order());
+        map.put("visible", item.visible());
+        if (!item.metadata().isEmpty()) map.put("metadata", item.metadata());
+        return map;
+    }
+
+    private static Map<String, Object> mpoMap(MpoDefinition mpo) {
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+        map.put("id", mpo.id());
+        map.put("displayName", mpo.displayName());
+        map.put("components", mpo.components().stream().map(PrismPackWriter::mpoComponentMap).toList());
+        map.put("aggregation", Map.of(
+                "type", mpo.aggregation().type(),
+                "missing", mpo.aggregation().missing(),
+                "warningCoverageBelow", mpo.aggregation().warningCoverageBelow()));
+        return map;
+    }
+
+    private static Map<String, Object> mpoComponentMap(MpoComponentDefinition component) {
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+        map.put("endpointId", component.endpointId());
+        map.put("scoreId", component.scoreId());
+        map.put("label", component.label());
+        map.put("weight", component.weight());
+        map.put("required", component.required());
+        putIfNotNull(map, "hardFailBelow", component.hardFailBelow());
         return map;
     }
 

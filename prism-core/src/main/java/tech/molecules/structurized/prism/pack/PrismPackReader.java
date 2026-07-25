@@ -1,6 +1,13 @@
 package tech.molecules.structurized.prism.pack;
 
 import tech.molecules.structurized.prism.io.PrismTsvEscaper;
+import tech.molecules.structurized.prism.score.EndpointScoreDefinition;
+import tech.molecules.structurized.prism.score.MpoAggregationDefinition;
+import tech.molecules.structurized.prism.score.MpoComponentDefinition;
+import tech.molecules.structurized.prism.score.MpoDefinition;
+import tech.molecules.structurized.prism.score.PropertyProfileDefinition;
+import tech.molecules.structurized.prism.score.PropertyProfileItem;
+import tech.molecules.structurized.prism.score.ScorePoint;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -16,7 +23,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 /**
- * Reader for PrismPack v0.1 directory and ZIP packages.
+ * Reader for PrismPack v0.1 and v0.2 directory and ZIP packages.
  */
 public final class PrismPackReader {
     private static final String MANIFEST_PATH = "prism-pack.json";
@@ -59,12 +66,20 @@ public final class PrismPackReader {
         PrismPack.AttachmentSet attachments = manifest.attachmentsPath() == null
                 ? null
                 : parseAttachments(readJsonObject(source, manifest.attachmentsPath(), false));
+        PrismPack.ScoreMetadata scores = manifest.scoresPath() == null
+                ? null
+                : parseScores(readJsonObject(source, manifest.scoresPath(), false));
+        PrismPack.PropertyProfileMetadata propertyProfiles = manifest.propertyProfilesPath() == null
+                ? null
+                : parsePropertyProfiles(readJsonObject(source, manifest.propertyProfilesPath(), false));
         Map<String, Object> provenance = manifest.provenancePath() == null
                 ? Map.of()
                 : readJsonObject(source, manifest.provenancePath(), false);
 
-        validateReferences(dataframe, molecules, endpoints, tableView, visualizations, attachments, warnings);
-        return new PrismPack(manifest, dataframe, schema, molecules, endpoints, tableView, visualizations, attachments, provenance, warnings);
+        validateReferences(dataframe, molecules, endpoints, tableView, visualizations, attachments,
+                scores, propertyProfiles, warnings);
+        return new PrismPack(manifest, dataframe, schema, molecules, endpoints, tableView, visualizations,
+                attachments, scores, propertyProfiles, provenance, warnings);
     }
 
     private static PrismPack.Manifest parseManifest(Map<String, Object> json) {
@@ -88,8 +103,59 @@ public final class PrismPackReader {
                 string(json.get("tableView")),
                 string(json.get("visualizations")),
                 string(json.get("attachments")),
+                string(json.get("scores")),
+                string(json.get("propertyProfiles")),
                 string(json.get("provenance")),
                 json);
+    }
+
+    private static PrismPack.ScoreMetadata parseScores(Map<String, Object> json) {
+        if (json.isEmpty()) return null;
+        ArrayList<EndpointScoreDefinition> definitions = new ArrayList<>();
+        for (Map<String, Object> item : objectList(json.get("scores"))) {
+            ArrayList<ScorePoint> points = new ArrayList<>();
+            for (Map<String, Object> point : objectList(item.get("points"))) {
+                points.add(new ScorePoint(number(point.get("x")), number(point.get("score"))));
+            }
+            definitions.add(new EndpointScoreDefinition(
+                    string(item.get("id")), string(item.get("endpointId")), string(item.get("displayName")),
+                    string(item.get("description")), string(item.get("scoreType")), string(item.get("xScale")),
+                    bool(item.get("clampOutsideRange"), true), points, object(item.get("metadata"))));
+        }
+        return new PrismPack.ScoreMetadata(definitions, json);
+    }
+
+    private static PrismPack.PropertyProfileMetadata parsePropertyProfiles(Map<String, Object> json) {
+        if (json.isEmpty()) return null;
+        ArrayList<PropertyProfileDefinition> profiles = new ArrayList<>();
+        for (Map<String, Object> item : objectList(json.get("profiles"))) {
+            ArrayList<PropertyProfileItem> profileItems = new ArrayList<>();
+            int fallbackOrder = 0;
+            for (Map<String, Object> profileItem : objectList(item.get("items"))) {
+                profileItems.add(new PropertyProfileItem(
+                        string(profileItem.get("endpointId")), string(profileItem.get("scoreId")),
+                        string(profileItem.get("label")), string(profileItem.get("group")),
+                        integer(profileItem.get("order"), fallbackOrder++ * 10),
+                        bool(profileItem.get("visible"), true), object(profileItem.get("metadata"))));
+            }
+            ArrayList<MpoDefinition> mpos = new ArrayList<>();
+            for (Map<String, Object> mpo : objectList(item.get("mpos"))) {
+                ArrayList<MpoComponentDefinition> components = new ArrayList<>();
+                for (Map<String, Object> component : objectList(mpo.get("components"))) {
+                    components.add(new MpoComponentDefinition(
+                            string(component.get("endpointId")), string(component.get("scoreId")),
+                            string(component.get("label")), number(component.getOrDefault("weight", 1.0)),
+                            bool(component.get("required"), false), nullableNumber(component.get("hardFailBelow"))));
+                }
+                Map<String, Object> aggregation = object(mpo.get("aggregation"));
+                mpos.add(new MpoDefinition(string(mpo.get("id")), string(mpo.get("displayName")), components,
+                        new MpoAggregationDefinition(string(aggregation.get("type")), string(aggregation.get("missing")),
+                                number(aggregation.getOrDefault("warningCoverageBelow", 0.5)))));
+            }
+            profiles.add(new PropertyProfileDefinition(string(item.get("id")), string(item.get("title")),
+                    string(item.get("description")), profileItems, mpos, object(item.get("metadata"))));
+        }
+        return new PrismPack.PropertyProfileMetadata(profiles, json);
     }
 
     private static PrismPack.DataFrameSchema parseSchema(Map<String, Object> json) {
@@ -296,6 +362,8 @@ public final class PrismPackReader {
                                            PrismPack.TableView tableView,
                                            PrismPack.VisualizationSet visualizations,
                                            PrismPack.AttachmentSet attachments,
+                                           PrismPack.ScoreMetadata scores,
+                                           PrismPack.PropertyProfileMetadata propertyProfiles,
                                            List<String> warnings) {
         if (molecules != null) {
             warnIfMissing(dataframe, molecules.primaryStructureColumn(), "molecules.primaryStructureColumn", warnings);
@@ -339,6 +407,38 @@ public final class PrismPackReader {
                 }
             }
         }
+        Set<String> endpointIds = new HashSet<>();
+        if (endpoints != null) endpoints.endpoints().forEach(endpoint -> endpointIds.add(endpoint.id()));
+        Set<String> scoreIds = new HashSet<>();
+        if (scores != null) {
+            for (EndpointScoreDefinition score : scores.scores()) {
+                if (!scoreIds.add(score.id())) warnings.add("duplicate score id '" + score.id() + "'");
+                if (!endpointIds.isEmpty() && !endpointIds.contains(score.endpointId())) {
+                    warnings.add("score '" + score.id() + "' references unknown endpoint '" + score.endpointId() + "'");
+                }
+            }
+        }
+        if (propertyProfiles != null) {
+            Set<String> profileIds = new HashSet<>();
+            for (PropertyProfileDefinition profile : propertyProfiles.profiles()) {
+                if (!profileIds.add(profile.id())) warnings.add("duplicate property profile id '" + profile.id() + "'");
+                for (PropertyProfileItem item : profile.items()) {
+                    if (!endpointIds.isEmpty() && !endpointIds.contains(item.endpointId())) {
+                        warnings.add("property profile '" + profile.id() + "' references unknown endpoint '" + item.endpointId() + "'");
+                    }
+                    if (item.scoreId() != null && !scoreIds.contains(item.scoreId())) {
+                        warnings.add("property profile '" + profile.id() + "' references unknown score '" + item.scoreId() + "'");
+                    }
+                }
+                for (MpoDefinition mpo : profile.mpos()) {
+                    for (MpoComponentDefinition component : mpo.components()) {
+                        if (!scoreIds.contains(component.scoreId())) {
+                            warnings.add("MPO '" + mpo.id() + "' references unknown score '" + component.scoreId() + "'");
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private static void warnIfMissing(PrismPack.DataFrame dataframe, String column, String context, List<String> warnings) {
@@ -374,6 +474,28 @@ public final class PrismPackReader {
 
     private static String string(Object value) {
         return value == null ? null : String.valueOf(value);
+    }
+
+    private static double number(Object value) {
+        if (value instanceof Number number) return number.doubleValue();
+        try {
+            return Double.parseDouble(String.valueOf(value));
+        } catch (RuntimeException exception) {
+            throw new PrismPackException("expected numeric JSON value but found: " + value);
+        }
+    }
+
+    private static Double nullableNumber(Object value) {
+        return value == null ? null : number(value);
+    }
+
+    private static int integer(Object value, int fallback) {
+        return value == null ? fallback : (int) number(value);
+    }
+
+    private static boolean bool(Object value, boolean fallback) {
+        return value == null ? fallback : value instanceof Boolean booleanValue
+                ? booleanValue : Boolean.parseBoolean(String.valueOf(value));
     }
 
     private static Map<String, Object> object(Object value) {
