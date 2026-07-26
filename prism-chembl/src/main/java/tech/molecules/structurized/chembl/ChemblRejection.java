@@ -1,0 +1,17 @@
+package tech.molecules.structurized.chembl;
+
+public enum ChemblRejection {
+    NO_USABLE_STRUCTURE,
+    WRONG_MOLECULE_TYPE,
+    WRONG_STRUCTURE_TYPE,
+    POLYMER,
+    INORGANIC,
+    MULTIPLE_ORGANIC_COMPONENTS,
+    DISALLOWED_ELEMENT,
+    RADICAL,
+    HEAVY_ATOM_LIMIT,
+    CHARGE_LIMIT,
+    INVALID_VALENCE,
+    PARSE_FAILURE,
+    DUPLICATE
+}

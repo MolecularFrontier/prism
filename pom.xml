@@ -37,6 +37,7 @@
         <module>prism-core</module>
         <module>prism-engine</module>
         <module>prism-engine-ocl</module>
+        <module>prism-chembl</module>
         <module>prismlite-swing</module>
     </modules>
 
