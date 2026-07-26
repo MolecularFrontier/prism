@@ -35,6 +35,7 @@ public final class PrismSession {
     private final PrismTable table;
     private final PrismViewState viewState;
     private final Map<String, PrismRowSet> rowSets = new LinkedHashMap<>();
+    private final Map<String, PrismRowGraph> graphs = new LinkedHashMap<>();
     private final Map<String, PrismViewRecord> views = new LinkedHashMap<>();
     private final Map<String, EndpointScoreDefinition> scoreDefinitions;
     private final Map<String, PropertyProfileDefinition> propertyProfiles;
@@ -221,6 +222,22 @@ public final class PrismSession {
         return groupingRegistry.findByFacetColumnId(columnId).isPresent();
     }
 
+    public List<PrismRowGraph> graphs() {
+        return List.copyOf(graphs.values());
+    }
+
+    public List<PrismRowGraphSummary> graphSummaries() {
+        return graphs.values().stream().map(PrismRowGraphSummary::from).toList();
+    }
+
+    public PrismRowGraph graph(String graphId) {
+        PrismRowGraph graph = graphs.get(graphId);
+        if (graph == null) {
+            throw new IllegalArgumentException("unknown graph '" + graphId + "'");
+        }
+        return graph;
+    }
+
     public List<PrismViewRecord> views() {
         return List.copyOf(views.values());
     }
@@ -249,6 +266,10 @@ public final class PrismSession {
 
     public void addRowSet(PrismRowSet rowSet) {
         applyOperationResult(PrismOperationResult.builder().addRowSet(rowSet).build());
+    }
+
+    public void addGraph(PrismRowGraph graph) {
+        applyOperationResult(PrismOperationResult.builder().addGraph(graph).build());
     }
 
     public void addView(PrismViewRecord view) {
@@ -283,6 +304,7 @@ public final class PrismSession {
                 rowIdIndex,
                 rowSets(),
                 groupings(),
+                graphs(),
                 scoreDefinitions,
                 propertyProfiles
         );
@@ -299,6 +321,7 @@ public final class PrismSession {
                 columns,
                 result.addedGroupings(),
                 result.addedRowSets(),
+                result.addedGraphs(),
                 result.addedViews(),
                 result.updatedViews()
         );
@@ -308,6 +331,9 @@ public final class PrismSession {
         }
         for (PrismGrouping grouping : result.addedGroupings()) {
             groupingRegistry.add(grouping);
+        }
+        for (PrismRowGraph graph : result.addedGraphs()) {
+            graphs.put(graph.id(), graph);
         }
         for (MaterializedColumnData column : columns) {
             materializedColumns.add(column);
@@ -362,6 +388,7 @@ public final class PrismSession {
     private void validateOperationResult(Collection<MaterializedColumnData> columns,
                                          Collection<PrismGrouping> newGroupings,
                                          Collection<PrismRowSet> newRowSets,
+                                         Collection<PrismRowGraph> newGraphs,
                                          Collection<PrismViewRecord> newViews,
                                          Collection<PrismViewRecord> updatedViews) {
         HashSet<String> newRowSetIds = new HashSet<>();
@@ -407,6 +434,18 @@ public final class PrismSession {
                 validateNewColumnId(grouping.facetColumnId(), newColumnIds);
             }
             validateGrouping(grouping, newRowSetsById);
+        }
+
+        HashSet<String> newGraphIds = new HashSet<>();
+        for (PrismRowGraph graph : newGraphs) {
+            Objects.requireNonNull(graph, "graph");
+            if (!newGraphIds.add(graph.id())) {
+                throw new PrismOperationException("DUPLICATE_GRAPH", "operation result contains duplicate graph '" + graph.id() + "'");
+            }
+            if (graphs.containsKey(graph.id())) {
+                throw new PrismOperationException("GRAPH_EXISTS", "graph already exists: " + graph.id());
+            }
+            validateGraph(graph, newRowSetsById);
         }
 
         HashSet<String> newViewIds = new HashSet<>();
@@ -483,6 +522,51 @@ public final class PrismSession {
                         )
                 );
             }
+        }
+    }
+
+    private void validateGraph(PrismRowGraph graph, Map<String, PrismRowSet> newRowSets) {
+        PrismRowSet source = null;
+        if (graph.sourceRowSetId() != null) {
+            source = newRowSets.get(graph.sourceRowSetId());
+            if (source == null) {
+                source = rowSets.get(graph.sourceRowSetId());
+            }
+            if (source == null) {
+                throw new PrismOperationException(
+                        "UNKNOWN_ROW_SET",
+                        "graph '" + graph.id() + "' references unknown source row set '" + graph.sourceRowSetId() + "'",
+                        null,
+                        Map.of("graphId", graph.id(), "sourceRowSetId", graph.sourceRowSetId())
+                );
+            }
+        }
+        for (PrismRowGraphEdge edge : graph.edges()) {
+            validateGraphEdgeRow(graph, edge, edge.sourceRowId(), source);
+            validateGraphEdgeRow(graph, edge, edge.targetRowId(), source);
+        }
+    }
+
+    private void validateGraphEdgeRow(PrismRowGraph graph,
+                                      PrismRowGraphEdge edge,
+                                      String rowId,
+                                      PrismRowSet source) {
+        if (physicalRowForRowId(rowId).isEmpty()) {
+            throw new PrismOperationException(
+                    "UNKNOWN_ROW_ID",
+                    "graph '" + graph.id() + "' edge '" + edge.id() + "' references unknown row ID '" + rowId + "'",
+                    null,
+                    Map.of("graphId", graph.id(), "edgeId", edge.id(), "rowId", rowId)
+            );
+        }
+        if (source != null && !source.rowIds().contains(rowId)) {
+            throw new PrismOperationException(
+                    "GRAPH_ROW_OUTSIDE_SCOPE",
+                    "graph '" + graph.id() + "' edge '" + edge.id() + "' references row '" + rowId
+                            + "' outside source row set '" + source.id() + "'",
+                    null,
+                    Map.of("graphId", graph.id(), "edgeId", edge.id(), "rowId", rowId, "sourceRowSetId", source.id())
+            );
         }
     }
 
@@ -636,7 +720,8 @@ public final class PrismSession {
 
     private PrismSessionChangeType operationResultChangeType(List<MaterializedColumnData> columns,
                                                               PrismOperationResult result) {
-        if (!columns.isEmpty() || !result.addedRowSets().isEmpty() || !result.addedGroupings().isEmpty()) {
+        if (!columns.isEmpty() || !result.addedRowSets().isEmpty()
+                || !result.addedGroupings().isEmpty() || !result.addedGraphs().isEmpty()) {
             return PrismSessionChangeType.STRUCTURE;
         }
         return PrismSessionChangeType.VIEWS;

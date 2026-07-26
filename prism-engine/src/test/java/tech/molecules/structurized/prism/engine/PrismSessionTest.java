@@ -264,6 +264,63 @@ class PrismSessionTest {
 
 
     @Test
+    void operationResultsCanAddRowGraphs() throws Exception {
+        PrismSession session = exampleSession();
+        session.addRowSet(new PrismRowSet("preferred", "Preferred", "", Set.of("CMPD-001", "CMPD-002"), Map.of()));
+        PrismRowGraph graph = new PrismRowGraph(
+                "mmp:test",
+                "Test MMP Graph",
+                "",
+                "chemistry.mmp",
+                "test",
+                1,
+                true,
+                "preferred",
+                List.of(new PrismRowGraphEdge(
+                        "edge-1",
+                        "CMPD-001",
+                        "CMPD-002",
+                        "A to B",
+                        Map.of("cutCount", 1, "delta", 1.5)
+                )),
+                Map.of("edgeCount", 1),
+                Map.of("source", "test")
+        );
+
+        session.applyOperationResult(PrismOperationResult.builder().addGraph(graph).build());
+
+        assertEquals(1, session.graphs().size());
+        assertEquals("chemistry.mmp", session.graph("mmp:test").graphType());
+        assertEquals(Set.of("CMPD-002"), session.graph("mmp:test").neighborRowIds("CMPD-001"));
+        assertEquals(1, session.graphSummaries().getFirst().edgeCount());
+        assertEquals(1, session.snapshot().graph("mmp:test").orElseThrow().degree("CMPD-001"));
+    }
+
+    @Test
+    void rowGraphsRejectUnknownRowsAtomically() throws Exception {
+        PrismSession session = exampleSession();
+        PrismRowGraph invalid = new PrismRowGraph(
+                "bad-graph",
+                "Bad Graph",
+                "",
+                "generic.row_graph",
+                null,
+                1,
+                true,
+                null,
+                List.of(new PrismRowGraphEdge("edge-1", "CMPD-001", "NOT-A-ROW", "", Map.of())),
+                Map.of(),
+                Map.of()
+        );
+
+        PrismOperationException exception = assertThrows(PrismOperationException.class,
+                () -> session.applyOperationResult(PrismOperationResult.builder().addGraph(invalid).build()));
+
+        assertEquals("UNKNOWN_ROW_ID", exception.errorCode());
+        assertTrue(session.graphs().isEmpty());
+    }
+
+    @Test
     void materializedColumnsAreVisibleThroughRuntimeTable() throws Exception {
         PrismSession session = exampleSession();
         MaterializedColumnData score = new MaterializedColumnData(

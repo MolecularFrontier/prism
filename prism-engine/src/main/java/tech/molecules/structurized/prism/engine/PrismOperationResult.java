@@ -14,6 +14,7 @@ public final class PrismOperationResult {
     private final List<PrismGrouping> addedGroupings;
     private final Set<String> visibleGroupingFacetIds;
     private final List<PrismRowSet> addedRowSets;
+    private final List<PrismRowGraph> addedGraphs;
     private final List<PrismViewRecord> addedViews;
     private final List<PrismViewRecord> updatedViews;
     private final List<String> warnings;
@@ -26,6 +27,7 @@ public final class PrismOperationResult {
         this.addedGroupings = List.copyOf(builder.addedGroupings);
         this.visibleGroupingFacetIds = Set.copyOf(builder.visibleGroupingFacetIds);
         this.addedRowSets = List.copyOf(builder.addedRowSets);
+        this.addedGraphs = List.copyOf(builder.addedGraphs);
         this.addedViews = List.copyOf(builder.addedViews);
         this.updatedViews = List.copyOf(builder.updatedViews);
         this.warnings = List.copyOf(builder.warnings);
@@ -55,6 +57,10 @@ public final class PrismOperationResult {
 
     public List<PrismRowSet> addedRowSets() {
         return addedRowSets;
+    }
+
+    public List<PrismRowGraph> addedGraphs() {
+        return addedGraphs;
     }
 
     public List<PrismViewRecord> addedViews() {
@@ -87,6 +93,7 @@ public final class PrismOperationResult {
         private final ArrayList<PrismGrouping> addedGroupings = new ArrayList<>();
         private final LinkedHashSet<String> visibleGroupingFacetIds = new LinkedHashSet<>();
         private final ArrayList<PrismRowSet> addedRowSets = new ArrayList<>();
+        private final ArrayList<PrismRowGraph> addedGraphs = new ArrayList<>();
         private final ArrayList<PrismViewRecord> addedViews = new ArrayList<>();
         private final ArrayList<PrismViewRecord> updatedViews = new ArrayList<>();
         private final ArrayList<String> warnings = new ArrayList<>();
@@ -117,6 +124,11 @@ public final class PrismOperationResult {
 
         public Builder addRowSet(PrismRowSet rowSet) {
             addedRowSets.add(rowSet);
+            return this;
+        }
+
+        public Builder addGraph(PrismRowGraph graph) {
+            addedGraphs.add(graph);
             return this;
         }
 

@@ -13,12 +13,14 @@ public record PrismSessionSnapshot(
         RowIdIndex rowIdIndex,
         List<PrismRowSet> rowSets,
         List<PrismGrouping> groupings,
+        List<PrismRowGraph> graphs,
         Map<String, EndpointScoreDefinition> scoreDefinitions,
         Map<String, PropertyProfileDefinition> propertyProfiles
 ) {
     public PrismSessionSnapshot {
         rowSets = rowSets == null ? List.of() : List.copyOf(rowSets);
         groupings = groupings == null ? List.of() : List.copyOf(groupings);
+        graphs = graphs == null ? List.of() : List.copyOf(graphs);
         scoreDefinitions = scoreDefinitions == null ? Map.of() : Map.copyOf(scoreDefinitions);
         propertyProfiles = propertyProfiles == null ? Map.of() : Map.copyOf(propertyProfiles);
     }
@@ -27,7 +29,7 @@ public record PrismSessionSnapshot(
                                 ComputedValueRegistry computedValues,
                                 RowIdIndex rowIdIndex,
                                 List<PrismRowSet> rowSets) {
-        this(table, computedValues, rowIdIndex, rowSets, List.of(), Map.of(), Map.of());
+        this(table, computedValues, rowIdIndex, rowSets, List.of(), List.of(), Map.of(), Map.of());
     }
 
     public PrismSessionSnapshot(PrismTable table,
@@ -36,7 +38,7 @@ public record PrismSessionSnapshot(
                                 List<PrismRowSet> rowSets,
                                 Map<String, EndpointScoreDefinition> scoreDefinitions,
                                 Map<String, PropertyProfileDefinition> propertyProfiles) {
-        this(table, computedValues, rowIdIndex, rowSets, List.of(), scoreDefinitions, propertyProfiles);
+        this(table, computedValues, rowIdIndex, rowSets, List.of(), List.of(), scoreDefinitions, propertyProfiles);
     }
 
     public Optional<PrismRowSet> rowSet(String rowSetId) {
@@ -51,5 +53,12 @@ public record PrismSessionSnapshot(
             return Optional.empty();
         }
         return groupings.stream().filter(grouping -> grouping.id().equals(groupingId)).findFirst();
+    }
+
+    public Optional<PrismRowGraph> graph(String graphId) {
+        if (graphId == null || graphId.isBlank()) {
+            return Optional.empty();
+        }
+        return graphs.stream().filter(graph -> graph.id().equals(graphId)).findFirst();
     }
 }
