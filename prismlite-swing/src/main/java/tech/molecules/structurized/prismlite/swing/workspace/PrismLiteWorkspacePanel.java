@@ -19,6 +19,7 @@ import tech.molecules.structurized.prismlite.swing.workspace.table.PrismColumnCe
 import tech.molecules.structurized.prismlite.swing.workspace.table.PrismColumnHeaderRenderer;
 import tech.molecules.structurized.prismlite.swing.workspace.table.PrismTableHeader;
 import tech.molecules.structurized.prismlite.swing.workspace.table.ScoreColumnCellRendererProvider;
+import tech.molecules.structurized.prismlite.swing.workspace.views.PrismSwingViewRenderer;
 import tech.molecules.structurized.prismlite.swing.workspace.views.PrismSwingViewRendererRegistry;
 
 import javax.swing.Box;
@@ -238,6 +239,11 @@ public final class PrismLiteWorkspacePanel extends JPanel {
     public void registerRendererProvider(PrismColumnCellRendererProvider provider) {
         rendererProviders.add(Objects.requireNonNull(provider, "provider"));
         installColumnRenderers();
+    }
+
+    public void registerViewRenderer(PrismSwingViewRenderer renderer) {
+        viewRenderers.register(Objects.requireNonNull(renderer, "renderer"));
+        refreshViewTabs();
     }
 
     public void refreshWorkspace() {
