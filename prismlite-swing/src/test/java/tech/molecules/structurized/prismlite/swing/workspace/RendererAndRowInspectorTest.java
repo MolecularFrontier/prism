@@ -320,6 +320,8 @@ class RendererAndRowInspectorTest {
 
     @Test
     void scatterPlotHoverAndClickSelectNearestPoint() throws Exception {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Test requires a graphical environment");
+
         PrismSession session = PrismSession.open(Path.of("..", "examples", "example.prismpack"));
         session.operationRegistry().register(new CreateScatterPlotViewOperation());
         session.runOperation(CreateScatterPlotViewOperation.ID, Map.of(
@@ -360,6 +362,8 @@ class RendererAndRowInspectorTest {
 
     @Test
     void scatterPlotLassoSelectsContainedPoints() throws Exception {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Test requires a graphical environment");
+
         PrismSession session = PrismSession.open(Path.of("..", "examples", "example.prismpack"));
         session.operationRegistry().register(new CreateScatterPlotViewOperation());
         session.runOperation(CreateScatterPlotViewOperation.ID, Map.of(
