@@ -104,6 +104,10 @@
                 <configuration>
                     <source>${maven.compiler.release}</source>
                     <doclint>none</doclint>
+                    <notimestamp>true</notimestamp>
+                    <additionalJOptions>
+                        <additionalJOption>--no-fonts</additionalJOption>
+                    </additionalJOptions>
                 </configuration>
                 <executions>
                     <execution>
