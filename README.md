@@ -33,9 +33,12 @@ Notes
 - Core module POM: [`prism-core/pom.xml`](/home/lithom/dev_chem/prism/prism-core/pom.xml)
 - Protocol notes: [`docs/PRISM_PROTOCOL.md`](/home/lithom/dev_chem/prism/docs/PRISM_PROTOCOL.md)
 - Advanced data model: [`docs/PRISM_DATA_MODEL.md`](/home/lithom/dev_chem/prism/docs/PRISM_DATA_MODEL.md)
-- Proposed smart-table semantic resources: [`docs/SMART_TABLE_SEMANTIC_RESOURCES.md`](docs/SMART_TABLE_SEMANTIC_RESOURCES.md)
+- Smart-table semantic resources: [`docs/SMART_TABLE_SEMANTIC_RESOURCES.md`](docs/SMART_TABLE_SEMANTIC_RESOURCES.md)
 - PrismPack format: [`docs/PRISMPACK.md`](/home/lithom/dev_chem/prism/docs/PRISMPACK.md)
 - TSV bundle notes: [`docs/PRISM_TSV_BUNDLE.md`](/home/lithom/dev_chem/prism/docs/PRISM_TSV_BUNDLE.md)
+- PrismLite Web architecture: [`docs/web/PRISMLITE_WEB_ARCHITECTURE.md`](docs/web/PRISMLITE_WEB_ARCHITECTURE.md)
+- Interactive workspace model: [`docs/web/INTERACTIVE_PRISM_WORKSPACES.md`](docs/web/INTERACTIVE_PRISM_WORKSPACES.md)
+- Local and remote clients: [`docs/web/LOCAL_AND_REMOTE_CLIENTS.md`](docs/web/LOCAL_AND_REMOTE_CLIENTS.md)
 
 Releases
 --------

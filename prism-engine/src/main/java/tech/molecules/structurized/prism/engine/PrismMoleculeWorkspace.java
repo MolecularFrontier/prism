@@ -96,8 +96,29 @@ public final class PrismMoleculeWorkspace {
                                                               PrismMoleculeDocumentMode mode,
                                                               String idcode,
                                                               String coordinates) {
+        return updateDocument(documentId, null, title, mode, idcode, coordinates);
+    }
+
+    public synchronized PrismMoleculeDocument updateDocument(String documentId,
+                                                              long expectedRevision,
+                                                              String title,
+                                                              PrismMoleculeDocumentMode mode,
+                                                              String idcode,
+                                                              String coordinates) {
+        return updateDocument(documentId, Long.valueOf(expectedRevision), title, mode, idcode, coordinates);
+    }
+
+    private PrismMoleculeDocument updateDocument(String documentId,
+                                                 Long expectedRevision,
+                                                 String title,
+                                                 PrismMoleculeDocumentMode mode,
+                                                 String idcode,
+                                                 String coordinates) {
         LocatedDocument located = requireDocument(documentId);
         PrismMoleculeDocument current = located.document();
+        if (expectedRevision != null && current.revision() != expectedRevision) {
+            throw new PrismMoleculeDocumentConflictException(current.id(), expectedRevision, current.revision());
+        }
         PrismMoleculeDocument updated = new PrismMoleculeDocument(
                 current.id(), title, mode, idcode, coordinates, current.revision() + 1
         );

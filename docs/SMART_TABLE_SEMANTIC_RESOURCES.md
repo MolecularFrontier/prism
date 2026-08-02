@@ -4,13 +4,14 @@ Prism smart-table semantic resources
 Status
 ------
 
-This document is a proposed architecture. The current implemented model is
 This document is an incremental architecture. `PrismGrouping`, exclusive and
-overlapping memberships, hierarchy metadata, runtime grouping facets, session
-validation, and operation publication are implemented. Similarity spaces, row
-graphs, generic resource-aware views, and additional semantic facets remain
-proposed APIs. The surrounding implemented model is described in
+overlapping memberships, hierarchy metadata, runtime grouping facets,
+`PrismRowGraph`, session validation, graph/grouping publication through
+operations, and row-graph views are implemented. Similarity spaces, generic
+resource-aware view validation, and additional semantic facets remain proposed
+APIs. The surrounding implemented model is described in
 [Prism advanced data model](PRISM_DATA_MODEL.md).
+
 Design goal
 -----------
 

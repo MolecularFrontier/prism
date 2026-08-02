@@ -42,6 +42,19 @@ class PrismMoleculeWorkspaceTest {
     }
 
     @Test
+    void guardedUpdateRejectsStaleDocumentRevision() {
+        PrismMoleculeWorkspace workspace = new PrismMoleculeWorkspace();
+        PrismMoleculeDocument created = workspace.addDocument(PrismMoleculeWorkspace.SCRATCHPAD_ID, null,
+                "Example", PrismMoleculeDocumentMode.MOLECULE, "idcode-a", "");
+        workspace.updateDocument(created.id(), created.revision(), "Edited",
+                PrismMoleculeDocumentMode.MOLECULE, "idcode-b", "");
+
+        assertThrows(PrismMoleculeDocumentConflictException.class, () ->
+                workspace.updateDocument(created.id(), created.revision(), "Stale",
+                        PrismMoleculeDocumentMode.MOLECULE, "idcode-c", ""));
+    }
+
+    @Test
     void batchOperationsPublishOnceAndPreserveOrder() {
         PrismMoleculeWorkspace workspace = new PrismMoleculeWorkspace();
         workspace.createList("ideas", "Ideas");
