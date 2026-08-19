@@ -2,6 +2,7 @@ package tech.molecules.structurized.prismlite.swing;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import tech.molecules.structurized.prism.engine.PrismColumnType;
 import tech.molecules.structurized.prism.engine.PrismSession;
 import tech.molecules.structurized.prism.io.PrismTsvDatasetLoader;
 import tech.molecules.structurized.prism.provider.inmemory.InMemoryPrismDataset;
@@ -51,6 +52,7 @@ class PrismLiteMenuAndImportTest {
         assertEquals(1, session.totalRowCount());
         assertEquals("cmp-1", session.valueAtVisible(0, 0));
         assertEquals(7, session.visibleColumnCount());
+        assertEquals(PrismColumnType.NUMERIC, session.table().column("ic50").type());
         assertEquals("6.5", session.table().formattedValueAt(0, "ic50"));
         assertEquals(1, session.rowSets().size());
         assertEquals("project:Project A", session.rowSets().getFirst().id());
