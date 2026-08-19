@@ -6,7 +6,7 @@
     <parent>
         <groupId>tech.molecules</groupId>
         <artifactId>prism</artifactId>
-        <version>0.6.2</version>
+        <version>0.6.3</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>prism-chembl</artifactId>
