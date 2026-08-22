@@ -29,7 +29,8 @@ class PrismLiteMenuAndImportTest {
 
             assertNotNull(menubar);
             assertEquals("File", menubar.getMenu(0).getText());
-            assertEquals("Import ChEMBL Publication...", menubar.getMenu(0).getItem(2).getText());
+            assertEquals("Open Prism Report...", menubar.getMenu(0).getItem(1).getText());
+            assertEquals("Import ChEMBL Publication...", menubar.getMenu(0).getItem(3).getText());
             assertEquals("View", menubar.getMenu(1).getText());
             assertEquals("Data", menubar.getMenu(2).getText());
             assertEquals("Help", menubar.getMenu(3).getText());

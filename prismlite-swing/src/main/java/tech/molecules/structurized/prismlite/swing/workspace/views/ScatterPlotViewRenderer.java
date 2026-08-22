@@ -471,10 +471,11 @@ public final class ScatterPlotViewRenderer implements PrismSwingViewRenderer {
                 return;
             }
             boolean additive = additiveSelection(modifiersEx);
-            if (!additive) {
-                session.viewState().selectionModel().clear();
-            }
-            session.viewState().selectionModel().setSelected(point.physicalRow(), true);
+            BitSet selectedRows = additive
+                    ? session.viewState().selectionModel().selectedRows()
+                    : new BitSet(session.totalRowCount());
+            selectedRows.set(point.physicalRow());
+            session.viewState().selectionModel().replace(selectedRows);
             model.setFocusedPhysicalRow(point.physicalRow());
             refresh.run();
         }
@@ -494,12 +495,13 @@ public final class ScatterPlotViewRenderer implements PrismSwingViewRenderer {
                 return;
             }
             boolean additive = additiveSelection(modifiersEx);
-            if (!additive) {
-                session.viewState().selectionModel().clear();
-            }
+            BitSet selectedRows = additive
+                    ? session.viewState().selectionModel().selectedRows()
+                    : new BitSet(session.totalRowCount());
             for (PointRow point : selected) {
-                session.viewState().selectionModel().setSelected(point.physicalRow(), true);
+                selectedRows.set(point.physicalRow());
             }
+            session.viewState().selectionModel().replace(selectedRows);
             model.setFocusedPhysicalRow(selected.getFirst().physicalRow());
             refresh.run();
         }

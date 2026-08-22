@@ -262,8 +262,9 @@ public final class StructureGridViewRenderer implements PrismSwingViewRenderer {
         card.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent event) {
-                session.viewState().selectionModel().clear();
-                session.viewState().selectionModel().setSelected(physicalRow, true);
+                BitSet selectedRows = new BitSet(session.totalRowCount());
+                selectedRows.set(physicalRow);
+                session.viewState().selectionModel().replace(selectedRows);
                 model.setFocusedPhysicalRow(physicalRow);
                 refresh.run();
             }

@@ -4,6 +4,7 @@ import tech.molecules.structurized.prism.engine.PrismColumn;
 import tech.molecules.structurized.prism.engine.PrismColumnType;
 import tech.molecules.structurized.prism.engine.PrismSession;
 import tech.molecules.structurized.prism.engine.PrismViewRecord;
+import tech.molecules.structurized.prism.engine.RowSelectionSubscription;
 import tech.molecules.structurized.prismlite.swing.PrismLiteOperationPanel;
 import tech.molecules.structurized.prismlite.swing.PrismLiteRowSetPanel;
 import tech.molecules.structurized.prismlite.swing.PrismLiteTableModel;
@@ -74,6 +75,7 @@ public final class PrismLiteWorkspacePanel extends JPanel {
     private final ExecutorService summaryExecutor;
     private final PrismSwingViewRendererRegistry viewRenderers = PrismSwingViewRendererRegistry.defaults();
     private final List<PrismColumnCellRendererProvider> rendererProviders = new ArrayList<>();
+    private RowSelectionSubscription selectionSubscription;
     private int renderedViewCount;
     private boolean restoringSelection;
     private boolean restoringColumnWidths;
@@ -115,6 +117,7 @@ public final class PrismLiteWorkspacePanel extends JPanel {
                 this::refreshStructureWorkspace,
                 this::refreshChrome));
         controller.attachTable(table);
+        subscribeToSelection();
 
         navigator = new ColumnNavigatorPanel(model, controller);
         columnInspector = new ColumnInspectorPanel(model, controller, summaries, this::refreshDataWorkspace, this::refreshStructureWorkspace);
@@ -429,12 +432,13 @@ public final class PrismLiteWorkspacePanel extends JPanel {
     private void syncSelection() {
         Point viewPosition = tableScrollPane.getViewport().getViewPosition();
         PrismSession session = model.session();
-        session.viewState().selectionModel().clear();
+        java.util.BitSet selectedRows = new java.util.BitSet(session.totalRowCount());
         for (int selectedRow : table.getSelectedRows()) {
             if (selectedRow >= 0 && selectedRow < session.visibleRowCount()) {
-                session.viewState().selectionModel().setSelected(session.physicalRowAtVisibleIndex(selectedRow), true);
+                selectedRows.set(session.physicalRowAtVisibleIndex(selectedRow));
             }
         }
+        session.viewState().selectionModel().replace(selectedRows);
         Integer oldFocusedRow = model.focusedPhysicalRow();
         int lead = table.getSelectionModel().getLeadSelectionIndex();
         if (lead >= 0 && lead < session.visibleRowCount()) {
@@ -446,6 +450,39 @@ public final class PrismLiteWorkspacePanel extends JPanel {
             refreshRowFocus();
         }
         restoreTableViewPosition(viewPosition);
+    }
+
+    private void restoreSelectionFromModel(java.util.BitSet selectedRows) {
+        LinkedHashSet<Integer> physicalRows = new LinkedHashSet<>();
+        for (int row = selectedRows.nextSetBit(0); row >= 0; row = selectedRows.nextSetBit(row + 1)) {
+            physicalRows.add(row);
+        }
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+            restoreSelection(physicalRows);
+        } else {
+            javax.swing.SwingUtilities.invokeLater(() -> restoreSelection(physicalRows));
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        if (selectionSubscription != null) {
+            selectionSubscription.close();
+            selectionSubscription = null;
+        }
+        super.removeNotify();
+    }
+
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        subscribeToSelection();
+    }
+
+    private void subscribeToSelection() {
+        if (selectionSubscription == null) {
+            selectionSubscription = model.session().viewState().selectionModel().subscribe(this::restoreSelectionFromModel);
+        }
     }
 
     private Set<Integer> selectedPhysicalRowsForOperations() {

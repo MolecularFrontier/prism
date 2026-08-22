@@ -5,6 +5,7 @@ import tech.molecules.structurized.prism.engine.CreateScatterPlotViewOperation;
 import tech.molecules.structurized.prism.engine.PrismColumn;
 import tech.molecules.structurized.prism.engine.PrismColumnType;
 import tech.molecules.structurized.prism.engine.PrismSession;
+import tech.molecules.structurized.prism.engine.PrismRowSet;
 import tech.molecules.structurized.prism.io.PrismTsvDatasetLoader;
 import tech.molecules.structurized.prism.provider.inmemory.InMemoryPrismDataset;
 import tech.molecules.structurized.prism.engine.ocl.OclCreateStructureGridViewOperation;
@@ -17,6 +18,8 @@ import tech.molecules.structurized.prismlite.swing.chembl.ChemblPublicationImpor
 import tech.molecules.structurized.prismlite.swing.chembl.ChemblPublicationImporter;
 import tech.molecules.structurized.prismlite.swing.workspace.chem.StructureCoordinateResolver;
 import tech.molecules.structurized.prismlite.swing.workspace.PrismLiteWorkspacePanel;
+import tech.molecules.structurized.prismlite.swing.report.PrismReportLoader;
+import tech.molecules.structurized.prismlite.swing.report.PrismReportValidationException;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -36,12 +39,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class PrismLiteFrame extends JFrame {
     private final PrismLiteWorkspacePanel workspace;
     private final List<PrismLiteSwingExtension> extensions;
+    private final Path sourcePath;
 
     public PrismLiteFrame(PrismSession session, Path sourcePath) {
         this(session, sourcePath, PrismLiteSwingExtensions.load());
@@ -50,6 +56,7 @@ public final class PrismLiteFrame extends JFrame {
     public PrismLiteFrame(PrismSession session, Path sourcePath, List<PrismLiteSwingExtension> extensions) {
         super(titleFor(sourcePath));
         configureChemistry(session);
+        this.sourcePath = sourcePath;
         this.extensions = List.copyOf(extensions);
         this.extensions.forEach(extension -> extension.configureSession(session, sourcePath));
         this.workspace = new PrismLiteWorkspacePanel(session);
@@ -84,6 +91,8 @@ public final class PrismLiteFrame extends JFrame {
         JMenu menu = new JMenu("File");
         JMenuItem openPack = new JMenuItem("Open PrismPack...");
         openPack.addActionListener(event -> openPrismPack());
+        JMenuItem openReport = new JMenuItem("Open Prism Report...");
+        openReport.addActionListener(event -> openPrismReport());
         JMenuItem importDataset = new JMenuItem("Import PRISM TSV Dataset...");
         importDataset.addActionListener(event -> importPrismTsvDataset());
         JMenuItem importChembl = new JMenuItem("Import ChEMBL Publication...");
@@ -93,6 +102,7 @@ public final class PrismLiteFrame extends JFrame {
         JMenuItem exit = new JMenuItem("Exit");
         exit.addActionListener(event -> System.exit(0));
         menu.add(openPack);
+        menu.add(openReport);
         menu.add(importDataset);
         menu.add(importChembl);
         menu.addSeparator();
@@ -160,6 +170,27 @@ public final class PrismLiteFrame extends JFrame {
             replaceSession(PrismSession.open(path), path);
         } catch (IOException | RuntimeException exception) {
             showLoadError("Open PrismPack", exception);
+        }
+    }
+
+    private void openPrismReport() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        chooser.setFileFilter(new FileNameExtensionFilter("Prism Report (*.prism.md)", "md"));
+        int result = chooser.showOpenDialog(this);
+        if (result != JFileChooser.APPROVE_OPTION) return;
+        Path path = chooser.getSelectedFile().toPath();
+        if (!path.getFileName().toString().toLowerCase().endsWith(".prism.md")) {
+            showLoadError("Open Prism Report", new IllegalArgumentException("Report filename must end in .prism.md"));
+            return;
+        }
+        try {
+            var report = PrismReportLoader.load(path, sourcePath, workspace.model().session());
+            workspace.model().session().addView(report);
+            workspace.refreshWorkspace();
+            workspace.focusView(report.id());
+        } catch (IOException | PrismReportValidationException | RuntimeException exception) {
+            showLoadError("Open Prism Report", exception);
         }
     }
 
@@ -252,6 +283,7 @@ public final class PrismLiteFrame extends JFrame {
     }
 
     private static void configureChemistry(PrismSession session) {
+        ensureAllRows(session);
         for (PrismColumn column : session.baseTable().columns()) {
             if (column.type() != PrismColumnType.MOLECULE) {
                 continue;
@@ -281,6 +313,18 @@ public final class PrismLiteFrame extends JFrame {
         } catch (IllegalArgumentException ignored) {
             // A plugin or caller may already have registered the same OCL operation.
         }
+    }
+
+    private static void ensureAllRows(PrismSession session) {
+        if (session.rowSets().stream().anyMatch(rowSet -> rowSet.id().equals("all"))) return;
+        LinkedHashSet<String> rowIds = new LinkedHashSet<>();
+        for (int row = 0; row < session.totalRowCount(); row++) {
+            rowIds.add(session.rowIdForPhysicalRow(row));
+        }
+        session.addRowSet(new PrismRowSet(
+                "all", "All rows", "All rows in the current Prism dataset.", rowIds,
+                Map.of("source", "prismlite")
+        ));
     }
 
     private static String titleFor(Path sourcePath) {
