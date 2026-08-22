@@ -3,6 +3,8 @@ package tech.molecules.structurized.prism.pack;
 import tech.molecules.structurized.prism.score.EndpointScoreDefinition;
 import tech.molecules.structurized.prism.score.PropertyProfileDefinition;
 import tech.molecules.structurized.prism.prediction.PredictionMetadata;
+import tech.molecules.structurized.prism.model.EndpointDefinition;
+import tech.molecules.structurized.prism.result.EndpointResult;
 
 import java.util.List;
 import java.util.Collections;
@@ -11,7 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Immutable in-memory representation of a PrismPack v0.1 package.
+ * Immutable in-memory representation of a PrismPack package.
  */
 public record PrismPack(
         Manifest manifest,
@@ -19,6 +21,8 @@ public record PrismPack(
         DataFrameSchema schema,
         MoleculeMetadata molecules,
         EndpointMetadata endpoints,
+        EndpointResultSet endpointResults,
+        RowSetMetadata rowSets,
         TableView tableView,
         VisualizationSet visualizations,
         AttachmentSet attachments,
@@ -63,6 +67,24 @@ public record PrismPack(
                 scores, propertyProfiles, null, provenance, warnings);
     }
 
+    /** Backwards-compatible source constructor for PrismPack v0.1/v0.2 producers. */
+    public PrismPack(Manifest manifest,
+                     DataFrame dataFrame,
+                     DataFrameSchema schema,
+                     MoleculeMetadata molecules,
+                     EndpointMetadata endpoints,
+                     TableView tableView,
+                     VisualizationSet visualizations,
+                     AttachmentSet attachments,
+                     ScoreMetadata scores,
+                     PropertyProfileMetadata propertyProfiles,
+                     PredictionMetadata predictions,
+                     Map<String, Object> provenance,
+                     List<String> warnings) {
+        this(manifest, dataFrame, schema, molecules, endpoints, null, null, tableView, visualizations, attachments,
+                scores, propertyProfiles, predictions, provenance, warnings);
+    }
+
 
     private static Map<String, Object> copyMapAllowingNulls(Map<String, Object> map) {
         if (map == null || map.isEmpty()) {
@@ -99,6 +121,8 @@ public record PrismPack(
             DataframeRef dataframe,
             String moleculesPath,
             String endpointsPath,
+            EndpointResultsRef endpointResults,
+            String rowSetsPath,
             String tableViewPath,
             String visualizationsPath,
             String attachmentsPath,
@@ -129,7 +153,7 @@ public record PrismPack(
                         String provenancePath,
                         Map<String, Object> raw) {
             this(prismPackVersion, id, title, description, createdAt, createdBy, dataframe, moleculesPath,
-                    endpointsPath, tableViewPath, visualizationsPath, attachmentsPath, scoresPath, propertyProfilesPath,
+                    endpointsPath, null, null, tableViewPath, visualizationsPath, attachmentsPath, scoresPath, propertyProfilesPath,
                     null, provenancePath, raw);
         }
 
@@ -148,9 +172,36 @@ public record PrismPack(
                         String provenancePath,
                         Map<String, Object> raw) {
             this(prismPackVersion, id, title, description, createdAt, createdBy, dataframe, moleculesPath,
-                    endpointsPath, tableViewPath, visualizationsPath, attachmentsPath, null, null,
+                    endpointsPath, null, null, tableViewPath, visualizationsPath, attachmentsPath, null, null,
                     null, provenancePath, raw);
         }
+
+        /** Backwards-compatible source constructor including predictions. */
+        public Manifest(String prismPackVersion,
+                        String id,
+                        String title,
+                        String description,
+                        String createdAt,
+                        String createdBy,
+                        DataframeRef dataframe,
+                        String moleculesPath,
+                        String endpointsPath,
+                        String tableViewPath,
+                        String visualizationsPath,
+                        String attachmentsPath,
+                        String scoresPath,
+                        String propertyProfilesPath,
+                        String predictionsPath,
+                        String provenancePath,
+                        Map<String, Object> raw) {
+            this(prismPackVersion, id, title, description, createdAt, createdBy, dataframe, moleculesPath,
+                    endpointsPath, null, null, tableViewPath, visualizationsPath, attachmentsPath, scoresPath,
+                    propertyProfilesPath, predictionsPath, provenancePath, raw);
+        }
+    }
+
+    public record EndpointResultsRef(String path, String rowKeyColumn, Map<String, Object> raw) {
+        public EndpointResultsRef { raw = copyMapAllowingNulls(raw); }
     }
 
     public record DataframeRef(
@@ -228,6 +279,39 @@ public record PrismPack(
         }
     }
 
+    public record EndpointResultSet(String rowKeyColumn, List<EndpointResultRecord> results, Map<String, Object> raw) {
+        public EndpointResultSet {
+            results = results == null ? List.of() : List.copyOf(results);
+            raw = copyMapAllowingNulls(raw);
+        }
+    }
+
+    public record EndpointResultRecord(String rowKey, String endpointId, EndpointResult result, Map<String, Object> raw) {
+        public EndpointResultRecord {
+            if (rowKey == null || rowKey.isBlank()) throw new IllegalArgumentException("rowKey must not be blank");
+            if (endpointId == null || endpointId.isBlank()) throw new IllegalArgumentException("endpointId must not be blank");
+            if (result == null) throw new IllegalArgumentException("result must not be null");
+            raw = copyMapAllowingNulls(raw);
+        }
+    }
+
+    public record RowSetMetadata(List<RowSet> rowSets, Map<String, Object> raw) {
+        public RowSetMetadata {
+            rowSets = rowSets == null ? List.of() : List.copyOf(rowSets);
+            raw = copyMapAllowingNulls(raw);
+        }
+    }
+
+    public record RowSet(String id, String name, String description, List<String> rowIds,
+                         Map<String, Object> provenance, Map<String, Object> raw) {
+        public RowSet {
+            if (id == null || id.isBlank()) throw new IllegalArgumentException("row set id must not be blank");
+            rowIds = rowIds == null ? List.of() : List.copyOf(rowIds);
+            provenance = copyMapAllowingNulls(provenance);
+            raw = copyMapAllowingNulls(raw);
+        }
+    }
+
     public record ScoreMetadata(List<EndpointScoreDefinition> scores, Map<String, Object> raw) {
         public ScoreMetadata {
             scores = scores == null ? List.of() : List.copyOf(scores);
@@ -250,10 +334,16 @@ public record PrismPack(
             String direction,
             String assay,
             String protocol,
+            EndpointDefinition definition,
             Map<String, Object> raw
     ) {
         public Endpoint {
             raw = copyMapAllowingNulls(raw);
+        }
+
+        public Endpoint(String id, String column, String displayName, String unit, String direction,
+                        String assay, String protocol, Map<String, Object> raw) {
+            this(id, column, displayName, unit, direction, assay, protocol, null, raw);
         }
     }
 

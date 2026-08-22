@@ -25,7 +25,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 /**
- * Reader for PrismPack v0.1 and v0.2 directory and ZIP packages.
+ * Reader for PrismPack v0.1 through v0.3 directory and ZIP packages.
  */
 public final class PrismPackReader {
     private static final String MANIFEST_PATH = "prism-pack.json";
@@ -59,6 +59,12 @@ public final class PrismPackReader {
         PrismPack.EndpointMetadata endpoints = manifest.endpointsPath() == null
                 ? null
                 : parseEndpoints(readJsonObject(source, manifest.endpointsPath(), false));
+        PrismPack.EndpointResultSet endpointResults = manifest.endpointResults() == null
+                ? null
+                : parseEndpointResults(source.readRequired(manifest.endpointResults().path()), manifest.endpointResults());
+        PrismPack.RowSetMetadata rowSets = manifest.rowSetsPath() == null
+                ? null
+                : parseRowSets(readJsonObject(source, manifest.rowSetsPath(), false));
         PrismPack.TableView tableView = manifest.tableViewPath() == null
                 ? null
                 : parseTableView(readJsonObject(source, manifest.tableViewPath(), false));
@@ -83,7 +89,8 @@ public final class PrismPackReader {
 
         validateReferences(dataframe, molecules, endpoints, tableView, visualizations, attachments,
                 scores, propertyProfiles, predictions, warnings);
-        return new PrismPack(manifest, dataframe, schema, molecules, endpoints, tableView, visualizations,
+        validateSnapshotSemantics(dataframe, endpoints, endpointResults, rowSets);
+        return new PrismPack(manifest, dataframe, schema, molecules, endpoints, endpointResults, rowSets, tableView, visualizations,
                 attachments, scores, propertyProfiles, predictions, provenance, warnings);
     }
 
@@ -95,6 +102,9 @@ public final class PrismPackReader {
                 string(dataframe.get("schema")),
                 string(dataframe.get("rowType")),
                 dataframe);
+        Map<String, Object> endpointResults = object(json.get("endpointResults"));
+        PrismPack.EndpointResultsRef endpointResultsRef = endpointResults.isEmpty() ? null : new PrismPack.EndpointResultsRef(
+                string(endpointResults.get("path")), string(endpointResults.get("rowKeyColumn")), endpointResults);
         return new PrismPack.Manifest(
                 string(json.get("prismPackVersion")),
                 string(json.get("id")),
@@ -105,6 +115,8 @@ public final class PrismPackReader {
                 dataframeRef,
                 string(json.get("molecules")),
                 string(json.get("endpoints")),
+                endpointResultsRef,
+                string(json.get("rowSets")),
                 string(json.get("tableView")),
                 string(json.get("visualizations")),
                 string(json.get("attachments")),
@@ -229,9 +241,75 @@ public final class PrismPackReader {
                     string(endpoint.get("direction")),
                     string(endpoint.get("assay")),
                     string(endpoint.get("protocol")),
+                    object(endpoint.get("definition")).isEmpty() ? null : EndpointDefinitionCodec.decode(object(endpoint.get("definition"))),
                     endpoint));
         }
         return new PrismPack.EndpointMetadata(endpoints, json);
+    }
+
+    private static PrismPack.EndpointResultSet parseEndpointResults(String jsonl, PrismPack.EndpointResultsRef ref) {
+        ArrayList<PrismPack.EndpointResultRecord> results = new ArrayList<>();
+        String normalized = jsonl.replace("\r\n", "\n").replace('\r', '\n');
+        int lineNumber = 0;
+        for (String line : normalized.split("\n")) {
+            lineNumber++;
+            if (line.isBlank()) continue;
+            try {
+                Object parsed = PrismPackJson.parse(line);
+                if (!(parsed instanceof Map<?, ?> raw)) throw new IllegalArgumentException("entry must be an object");
+                Map<String, Object> item = object(raw);
+                results.add(new PrismPack.EndpointResultRecord(
+                        string(item.get("rowKey")), string(item.get("endpointId")),
+                        EndpointResultCodec.decode(object(item.get("result"))), item));
+            } catch (RuntimeException error) {
+                throw new PrismPackException(ref.path() + " line " + lineNumber + ": " + error.getMessage(), error);
+            }
+        }
+        return new PrismPack.EndpointResultSet(ref.rowKeyColumn(), results, ref.raw());
+    }
+
+    private static PrismPack.RowSetMetadata parseRowSets(Map<String, Object> json) {
+        if (json.isEmpty()) return null;
+        ArrayList<PrismPack.RowSet> rowSets = new ArrayList<>();
+        for (Map<String, Object> item : objectList(json.get("rowSets"))) {
+            rowSets.add(new PrismPack.RowSet(string(item.get("id")), string(item.get("name")),
+                    string(item.get("description")), stringList(item.get("rowIds")),
+                    object(item.get("provenance")), item));
+        }
+        return new PrismPack.RowSetMetadata(rowSets, json);
+    }
+
+    private static void validateSnapshotSemantics(PrismPack.DataFrame dataframe,
+                                                   PrismPack.EndpointMetadata endpoints,
+                                                   PrismPack.EndpointResultSet endpointResults,
+                                                   PrismPack.RowSetMetadata rowSets) {
+        Set<String> endpointIds = new HashSet<>();
+        if (endpoints != null) endpoints.endpoints().forEach(endpoint -> endpointIds.add(endpoint.id()));
+        Set<String> rowIds = new HashSet<>();
+        String rowKeyColumn = endpointResults == null ? null : endpointResults.rowKeyColumn();
+        if (rowKeyColumn != null) {
+            int index = dataframe.columnIndex(rowKeyColumn);
+            if (index < 0) throw new PrismPackException("endpointResults.rowKeyColumn does not exist: " + rowKeyColumn);
+            for (List<String> row : dataframe.rows()) {
+                if (!rowIds.add(row.get(index))) throw new PrismPackException("duplicate dataframe row key: " + row.get(index));
+            }
+        }
+        if (endpointResults != null) {
+            Set<String> keys = new HashSet<>();
+            for (PrismPack.EndpointResultRecord result : endpointResults.results()) {
+                if (!rowIds.contains(result.rowKey())) throw new PrismPackException("endpoint result references unknown row: " + result.rowKey());
+                if (!endpointIds.contains(result.endpointId())) throw new PrismPackException("endpoint result references unknown endpoint: " + result.endpointId());
+                if (!keys.add(result.rowKey() + "\u0000" + result.endpointId())) throw new PrismPackException("duplicate endpoint result: " + result.rowKey() + "/" + result.endpointId());
+            }
+        }
+        if (rowSets != null) {
+            Set<String> ids = new HashSet<>();
+            for (PrismPack.RowSet rowSet : rowSets.rowSets()) {
+                if (!ids.add(rowSet.id())) throw new PrismPackException("duplicate row set id: " + rowSet.id());
+                if (!rowIds.isEmpty()) for (String rowId : rowSet.rowIds()) if (!rowIds.contains(rowId))
+                    throw new PrismPackException("row set '" + rowSet.id() + "' references unknown row: " + rowId);
+            }
+        }
     }
 
     private static PrismPack.TableView parseTableView(Map<String, Object> json) {

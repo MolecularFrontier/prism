@@ -7,6 +7,8 @@ import tech.molecules.structurized.prism.prediction.PredictionCapability;
 import tech.molecules.structurized.prism.prediction.PredictionCapabilityCatalog;
 import tech.molecules.structurized.prism.score.EndpointScoreDefinition;
 import tech.molecules.structurized.prism.score.PropertyProfileDefinition;
+import tech.molecules.structurized.prism.engine.snapshot.PrismPackSnapshotDataset;
+import tech.molecules.structurized.prism.engine.snapshot.PrismSnapshotDataset;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -75,13 +77,24 @@ public final class PrismSession {
     }
 
     public static PrismSession from(PrismPack pack) {
-        PrismTable table = InMemoryPrismTable.from(pack);
-        Collection<EndpointScoreDefinition> scores = pack.scores() == null ? List.of() : pack.scores().scores();
-        Collection<PropertyProfileDefinition> profiles = pack.propertyProfiles() == null
+        return from(PrismPackSnapshotDataset.from(pack), pack);
+    }
+
+    public static PrismSession from(PrismSnapshotDataset snapshot) {
+        return from(snapshot, null);
+    }
+
+    private static PrismSession from(PrismSnapshotDataset snapshot, PrismPack pack) {
+        PrismTable table = snapshot.table();
+        Collection<EndpointScoreDefinition> scores = snapshot.scoreDefinitions();
+        Collection<PropertyProfileDefinition> profiles = pack == null || pack.propertyProfiles() == null
                 ? List.of() : pack.propertyProfiles().profiles();
-        Collection<PredictionCapability> predictionCapabilities = pack.predictions() == null
+        Collection<PredictionCapability> predictionCapabilities = pack == null || pack.predictions() == null
                 ? List.of() : pack.predictions().capabilities();
-        return new PrismSession(table, PrismViewState.fromPack(pack, table), scores, profiles, predictionCapabilities);
+        PrismSession session = new PrismSession(table, pack == null ? PrismViewState.defaultFor(table) : PrismViewState.fromPack(pack, table),
+                scores, profiles, predictionCapabilities);
+        snapshot.rowSets().forEach(session::addRowSet);
+        return session;
     }
 
     public static PrismSession from(PrismTable table) {

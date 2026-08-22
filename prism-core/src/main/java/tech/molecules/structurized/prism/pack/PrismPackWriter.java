@@ -21,7 +21,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
- * Writer for PrismPack v0.1 and v0.2 directory and ZIP packages.
+ * Writer for PrismPack v0.1 through v0.3 directory and ZIP packages.
  */
 public final class PrismPackWriter {
     public static final String MANIFEST_PATH = "prism-pack.json";
@@ -29,6 +29,8 @@ public final class PrismPackWriter {
     public static final String SCHEMA_PATH = "schema/dataframe.schema.json";
     public static final String MOLECULES_PATH = "semantics/molecules.json";
     public static final String ENDPOINTS_PATH = "semantics/endpoints.json";
+    public static final String ENDPOINT_RESULTS_PATH = "semantics/endpoint-results.jsonl";
+    public static final String ROW_SETS_PATH = "semantics/row-sets.json";
     public static final String TABLE_VIEW_PATH = "views/table-view.json";
     public static final String VISUALIZATIONS_PATH = "views/visualizations.json";
     public static final String ATTACHMENTS_PATH = "attachments/attachments.json";
@@ -61,6 +63,8 @@ public final class PrismPackWriter {
         if (pack.endpoints() != null) {
             writeFile(directory, endpointsPath(pack), PrismPackJson.stringify(endpointsMap(pack.endpoints())));
         }
+        if (pack.endpointResults() != null) writeFile(directory, endpointResultsPath(pack), endpointResultsJsonl(pack.endpointResults()));
+        if (pack.rowSets() != null) writeFile(directory, rowSetsPath(pack), PrismPackJson.stringify(rowSetsMap(pack.rowSets())));
         if (pack.tableView() != null) {
             writeFile(directory, tableViewPath(pack), PrismPackJson.stringify(tableViewMap(pack.tableView())));
         }
@@ -101,6 +105,8 @@ public final class PrismPackWriter {
             if (pack.endpoints() != null) {
                 writeEntry(out, endpointsPath(pack), PrismPackJson.stringify(endpointsMap(pack.endpoints())));
             }
+            if (pack.endpointResults() != null) writeEntry(out, endpointResultsPath(pack), endpointResultsJsonl(pack.endpointResults()));
+            if (pack.rowSets() != null) writeEntry(out, rowSetsPath(pack), PrismPackJson.stringify(rowSetsMap(pack.rowSets())));
             if (pack.tableView() != null) {
                 writeEntry(out, tableViewPath(pack), PrismPackJson.stringify(tableViewMap(pack.tableView())));
             }
@@ -152,6 +158,13 @@ public final class PrismPackWriter {
     private static String endpointsPath(PrismPack pack) {
         return valueOrDefault(pack.manifest().endpointsPath(), ENDPOINTS_PATH);
     }
+
+    private static String endpointResultsPath(PrismPack pack) {
+        return pack.manifest().endpointResults() == null ? ENDPOINT_RESULTS_PATH
+                : valueOrDefault(pack.manifest().endpointResults().path(), ENDPOINT_RESULTS_PATH);
+    }
+
+    private static String rowSetsPath(PrismPack pack) { return valueOrDefault(pack.manifest().rowSetsPath(), ROW_SETS_PATH); }
 
     private static String tableViewPath(PrismPack pack) {
         return valueOrDefault(pack.manifest().tableViewPath(), TABLE_VIEW_PATH);
@@ -225,6 +238,14 @@ public final class PrismPackWriter {
         if (pack.endpoints() != null) {
             map.put("endpoints", endpointsPath(pack));
         }
+        if (pack.endpointResults() != null) {
+            LinkedHashMap<String, Object> ref = pack.manifest().endpointResults() == null
+                    ? new LinkedHashMap<>() : copy(pack.manifest().endpointResults().raw());
+            ref.put("path", endpointResultsPath(pack));
+            putIfNotNull(ref, "rowKeyColumn", pack.endpointResults().rowKeyColumn());
+            map.put("endpointResults", ref);
+        }
+        if (pack.rowSets() != null) map.put("rowSets", rowSetsPath(pack));
         if (pack.tableView() != null) {
             map.put("tableView", tableViewPath(pack));
         }
@@ -303,6 +324,29 @@ public final class PrismPackWriter {
         putIfNotNull(map, "direction", endpoint.direction());
         putIfNotNull(map, "assay", endpoint.assay());
         putIfNotNull(map, "protocol", endpoint.protocol());
+        if (endpoint.definition() != null) map.put("definition", EndpointDefinitionCodec.encode(endpoint.definition()));
+        return map;
+    }
+
+    private static String endpointResultsJsonl(PrismPack.EndpointResultSet metadata) {
+        StringBuilder builder = new StringBuilder();
+        for (PrismPack.EndpointResultRecord record : metadata.results()) {
+            LinkedHashMap<String, Object> map = copy(record.raw());
+            map.put("rowKey", record.rowKey()); map.put("endpointId", record.endpointId());
+            map.put("result", EndpointResultCodec.encode(record.result()));
+            builder.append(PrismPackJson.stringifyCompact(map)).append('\n');
+        }
+        return builder.toString();
+    }
+
+    private static Map<String, Object> rowSetsMap(PrismPack.RowSetMetadata metadata) {
+        LinkedHashMap<String, Object> map = copy(metadata.raw());
+        map.put("rowSets", metadata.rowSets().stream().map(rowSet -> {
+            LinkedHashMap<String, Object> item = copy(rowSet.raw());
+            item.put("id", rowSet.id()); putIfNotNull(item, "name", rowSet.name()); putIfNotNull(item, "description", rowSet.description());
+            item.put("rowIds", rowSet.rowIds()); if (!rowSet.provenance().isEmpty()) item.put("provenance", rowSet.provenance());
+            return item;
+        }).toList());
         return map;
     }
 
