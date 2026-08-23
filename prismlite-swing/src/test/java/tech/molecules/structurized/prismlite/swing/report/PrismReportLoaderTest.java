@@ -30,6 +30,19 @@ class PrismReportLoaderTest {
     }
 
     @Test
+    void loadsTheRunnableExampleIncludingCompoundCards() throws Exception {
+        PrismSession session = exampleSession();
+
+        var view = PrismReportLoader.load(Path.of("..", "examples", "example-report.prism.md"),
+                Path.of("example.prismpack"), session);
+        PrismReportViewSpec report = assertInstanceOf(PrismReportViewSpec.class, view.specification());
+
+        assertEquals(5, report.document().blocks().stream()
+                .filter(tech.molecules.structurized.prism.report.EmbeddedPrismViewReportBlock.class::isInstance)
+                .count());
+    }
+
+    @Test
     void rejectsInvalidReportWithoutChangingSession(@TempDir Path tempDir) throws Exception {
         PrismSession session = exampleSession();
         Path report = tempDir.resolve("invalid.prism.md");

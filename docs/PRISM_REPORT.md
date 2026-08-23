@@ -58,6 +58,38 @@ Every block requires `type`. The following conventions apply to the built-in vie
 `columns` must be non-empty. `format` is a Java decimal pattern and is valid only for numeric
 columns. `maxRows` is bounded by the compound-table safety limit.
 
+## `compound-cards`
+
+~~~json
+{
+  "type": "compound-cards",
+  "id": "lead-comparison",
+  "title": "Lead progression",
+  "rowSet": "report.lead-comparison",
+  "structureColumn": "smiles",
+  "titleColumn": "compound_id",
+  "referenceRow": "CMPD-014",
+  "properties": [
+    {
+      "column": "pIC50",
+      "label": "Activity",
+      "format": "0.00",
+      "showDelta": true,
+      "colorColumn": "score__activity"
+    },
+    {"column": "clogP", "label": "cLogP", "format": "0.0", "showDelta": true}
+  ],
+  "linkSelection": true,
+  "maxCards": 6
+}
+~~~
+
+Cards compare a deliberately small set of compounds. `referenceRow` is an optional stable Prism
+row ID contained in `rowSet`; it is displayed first and supplies numeric deltas. `colorColumn`
+accepts an optional numeric score column and uses the standard Prism score palette. Between one
+and eight properties and at most eight cards are allowed. Selection is bidirectional when
+`linkSelection` is true.
+
 ## `structure-grid`
 
 ~~~json
@@ -193,6 +225,7 @@ a report-specific chemistry implementation.
 The built-in provider registry contains:
 
 - `compound-table`
+- `compound-cards`
 - `structure-grid`
 - `scatter`
 - `column-summary`

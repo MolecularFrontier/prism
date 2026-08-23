@@ -18,6 +18,7 @@ public final class PrismSwingViewRendererRegistry {
         registry.register(new StructureGridViewRenderer());
         registry.register(new ScatterPlotViewRenderer());
         registry.register(new CompoundTableViewRenderer());
+        registry.register(new CompoundCardsViewRenderer());
         registry.register(new ColumnSummaryViewRenderer());
         registry.register(new Sar1DViewRenderer());
         registry.register(new Sar2DViewRenderer());

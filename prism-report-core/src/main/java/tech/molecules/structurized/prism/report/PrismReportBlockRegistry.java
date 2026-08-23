@@ -33,6 +33,10 @@ public final class PrismReportBlockRegistry {
         return Optional.ofNullable(providers.get(type));
     }
 
+    public List<String> blockTypes() {
+        return List.copyOf(providers.keySet());
+    }
+
     PrismReportBlock parse(ObjectMapper mapper, String source, int ordinal, int sourceLine,
                            List<PrismReportDiagnostic> diagnostics) {
         JsonNode json;

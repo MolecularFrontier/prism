@@ -8,6 +8,8 @@ import tech.molecules.structurized.prism.engine.PrismSession;
 import tech.molecules.structurized.prism.engine.PrismViewSpec;
 import tech.molecules.structurized.prism.engine.ScatterPlotViewSpec;
 import tech.molecules.structurized.prism.engine.SortDirection;
+import tech.molecules.structurized.prism.engine.ocl.CompoundCardPropertySpec;
+import tech.molecules.structurized.prism.engine.ocl.CompoundCardsViewSpec;
 import tech.molecules.structurized.prism.engine.ocl.CompoundTableColumnSpec;
 import tech.molecules.structurized.prism.engine.ocl.CompoundTableViewSpec;
 import tech.molecules.structurized.prism.engine.ocl.StructureGridViewSpec;
@@ -25,6 +27,7 @@ final class BuiltInPrismReportBlockProviders {
 
     static void registerDefaults(PrismReportBlockRegistry registry) {
         registry.register(new CompoundTableProvider());
+        registry.register(new CompoundCardsProvider());
         registry.register(new StructureGridProvider());
         registry.register(new ScatterProvider());
         registry.register(new ColumnSummaryProvider());
@@ -140,6 +143,125 @@ final class BuiltInPrismReportBlockProviders {
                         "Row set '" + spec.rowSetId() + "' has " + size + " rows; the block will show "
                                 + spec.maxRows() + ".", block));
             } catch (IllegalArgumentException ignored) {
+            }
+        }
+    }
+
+    private static final class CompoundCardsProvider extends ViewProvider {
+        private static final Set<String> FIELDS = Set.of(
+                "type", "id", "title", "rowSet", "structureColumn", "titleColumn", "referenceRow",
+                "properties", "linkSelection", "maxCards");
+        private static final Set<String> PROPERTY_FIELDS = Set.of(
+                "column", "label", "format", "showDelta", "colorColumn");
+
+        @Override public String type() { return "compound-cards"; }
+
+        @Override
+        public PrismReportBlock parse(JsonNode json, PrismReportParseContext context) {
+            context.rejectUnknownFields(json, FIELDS);
+            String rowSet = context.requiredText(json, "rowSet");
+            String structure = context.requiredText(json, "structureColumn");
+            String titleColumn = context.requiredText(json, "titleColumn");
+            ArrayList<CompoundCardPropertySpec> properties = new ArrayList<>();
+            JsonNode array = json.get("properties");
+            if (array == null || !array.isArray() || array.isEmpty()) {
+                context.error("MISSING_PROPERTIES", "compound-cards requires a non-empty 'properties' array.");
+            } else if (array.size() > CompoundCardsViewSpec.HARD_MAX_PROPERTIES) {
+                context.error("TOO_MANY_PROPERTIES", "compound-cards supports at most "
+                        + CompoundCardsViewSpec.HARD_MAX_PROPERTIES + " properties.");
+            } else {
+                for (int index = 0; index < array.size(); index++) {
+                    JsonNode item = array.get(index);
+                    if (!item.isObject()) {
+                        context.error("INVALID_PROPERTY", "properties[" + index + "] must be an object.");
+                        continue;
+                    }
+                    context.rejectUnknownFields(item, PROPERTY_FIELDS);
+                    String column = context.requiredText(item, "column");
+                    if (column != null) properties.add(new CompoundCardPropertySpec(column,
+                            context.optionalText(item, "label"), context.optionalText(item, "format"),
+                            context.optionalBoolean(item, "showDelta", false),
+                            context.optionalText(item, "colorColumn")));
+                }
+            }
+            int maxCards = context.optionalInt(json, "maxCards", CompoundCardsViewSpec.DEFAULT_MAX_CARDS);
+            if (maxCards < 1 || maxCards > CompoundCardsViewSpec.HARD_MAX_CARDS) {
+                context.error("INVALID_MAX_CARDS", "maxCards must be between 1 and "
+                        + CompoundCardsViewSpec.HARD_MAX_CARDS + ".");
+                maxCards = Math.max(1, Math.min(maxCards, CompoundCardsViewSpec.HARD_MAX_CARDS));
+            }
+            if (rowSet == null || structure == null || titleColumn == null || properties.isEmpty()
+                    || properties.size() > CompoundCardsViewSpec.HARD_MAX_PROPERTIES) return null;
+            CompoundCardsViewSpec spec = new CompoundCardsViewSpec(context.blockId(),
+                    context.optionalText(json, "title"), rowSet, structure, titleColumn,
+                    context.optionalText(json, "referenceRow"), properties,
+                    context.optionalBoolean(json, "linkSelection", true), maxCards);
+            return new PrismViewReportBlock(context.blockId(), type(), spec, context.sourceLine());
+        }
+
+        @Override
+        protected void validateSpecific(EmbeddedPrismViewReportBlock block, PrismSession session,
+                                        List<PrismReportDiagnostic> diagnostics) {
+            CompoundCardsViewSpec spec = (CompoundCardsViewSpec) block.specification();
+            PrismColumn structure = column(session, spec.structureColumnId());
+            if (structure != null && structure.type() != PrismColumnType.MOLECULE) {
+                diagnostics.add(error("INVALID_STRUCTURE_COLUMN",
+                        "Column '" + structure.id() + "' is not a molecule column.", block));
+            }
+            PrismColumn title = column(session, spec.titleColumnId());
+            if (title != null && title.type() == PrismColumnType.MOLECULE) {
+                diagnostics.add(error("INVALID_TITLE_COLUMN",
+                        "Title column '" + title.id() + "' must not be a molecule column.", block));
+            }
+            HashSet<String> seen = new HashSet<>();
+            for (CompoundCardPropertySpec property : spec.properties()) {
+                if (!seen.add(property.columnId())) diagnostics.add(error("DUPLICATE_PROPERTY",
+                        "Property column '" + property.columnId() + "' is listed more than once.", block));
+                PrismColumn value = column(session, property.columnId());
+                if (property.format() != null) validateFormat(value, property.format(), block, diagnostics);
+                if (property.showDelta() && value != null && !numeric(value)) {
+                    diagnostics.add(error("DELTA_ON_NON_NUMERIC_COLUMN",
+                            "Deltas require a numeric property column; '" + value.id() + "' is not numeric.", block));
+                }
+                if (property.colorColumnId() != null) {
+                    PrismColumn color = column(session, property.colorColumnId());
+                    if (color != null && !numeric(color)) diagnostics.add(error("INVALID_COLOR_COLUMN",
+                            "Color column '" + color.id() + "' must be numeric.", block));
+                }
+            }
+            try {
+                var rowSet = session.rowSet(spec.rowSetId());
+                int size = rowSet.rowIds().size();
+                if (size > spec.maxCards()) diagnostics.add(warning("CARD_LIMIT_APPLIED",
+                        "Row set '" + spec.rowSetId() + "' has " + size + " rows; the block will show "
+                                + spec.maxCards() + ".", block));
+                if (spec.referenceRowId() != null) {
+                    if (session.physicalRowForRowId(spec.referenceRowId()).isEmpty()) {
+                        diagnostics.add(error("UNKNOWN_REFERENCE_ROW",
+                                "Unknown reference row: " + spec.referenceRowId() + ".", block));
+                    } else if (!rowSet.rowIds().contains(spec.referenceRowId())) {
+                        diagnostics.add(error("REFERENCE_OUTSIDE_ROW_SET", "Reference row '"
+                                + spec.referenceRowId() + "' is not contained in row set '"
+                                + spec.rowSetId() + "'.", block));
+                    }
+                }
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+
+        private static void validateFormat(PrismColumn column, String pattern,
+                                           EmbeddedPrismViewReportBlock block,
+                                           List<PrismReportDiagnostic> diagnostics) {
+            if (column != null && !numeric(column)) {
+                diagnostics.add(error("FORMAT_ON_NON_NUMERIC_COLUMN",
+                        "A numeric format cannot be applied to column '" + column.id() + "'.", block));
+                return;
+            }
+            try {
+                new DecimalFormat(pattern);
+            } catch (IllegalArgumentException exception) {
+                diagnostics.add(error("INVALID_NUMBER_FORMAT",
+                        "Invalid numeric format '" + pattern + "'.", block));
             }
         }
     }

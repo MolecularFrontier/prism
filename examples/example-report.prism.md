@@ -38,6 +38,45 @@ bidirectional: selecting compounds in a report block or another PrismLite view u
 }
 ~~~
 
+## Focused lead comparison
+
+Comparison cards place the reference first and calculate numeric differences without copying any
+values into the report. Clicking a card selects that compound everywhere in PrismLite.
+
+~~~prism
+{
+  "type": "compound-cards",
+  "id": "lead-comparison",
+  "title": "Lead progression",
+  "rowSet": "all",
+  "structureColumn": "smiles",
+  "titleColumn": "compound_id",
+  "referenceRow": "CMPD-002",
+  "properties": [
+    {
+      "column": "pIC50",
+      "label": "Activity",
+      "format": "0.00",
+      "showDelta": true
+    },
+    {
+      "column": "clogP",
+      "label": "cLogP",
+      "format": "0.0",
+      "showDelta": true
+    },
+    {
+      "column": "HLM_CLint",
+      "label": "HLM CLint",
+      "format": "0",
+      "showDelta": true
+    }
+  ],
+  "linkSelection": true,
+  "maxCards": 6
+}
+~~~
+
 ## Dataset summary
 
 The same summary calculation used by Prism views can be embedded for a named row set.
