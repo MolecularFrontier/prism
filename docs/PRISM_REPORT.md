@@ -106,6 +106,83 @@ Numeric cards show count, missing count, range, median, mean, standard deviation
 histogram. Categorical cards show count, missing count, distinct count, and leading frequencies.
 Molecule columns are intentionally rejected.
 
+## `sar-1d`
+
+~~~json
+{
+  "type": "sar-1d",
+  "id": "r1-sar",
+  "rowSet": "sar.series_a.matched",
+  "substituentColumn": "sar.series_a.R1",
+  "values": [
+    {
+      "column": "pIC50",
+      "label": "Potency",
+      "format": "0.00",
+      "aggregation": "best",
+      "colorColumn": "pIC50.score"
+    },
+    {
+      "column": "clogP",
+      "format": "0.0",
+      "aggregation": "median",
+      "colorColumn": "clogP.score"
+    }
+  ],
+  "maxGroups": 50,
+  "linkSelection": true
+}
+~~~
+
+A 1D SAR block groups compounds by one materialized substituent column. It supports one to four
+numeric values. `aggregation` is `best`, `mean`, `median`, `min`, or `max`; `best`
+requires endpoint direction metadata. An optional numeric `colorColumn` colors the corresponding
+value band on the normalized red-yellow-green score scale.
+
+## `sar-2d`
+
+~~~json
+{
+  "type": "sar-2d",
+  "id": "r1-r2-sar",
+  "rowSet": "sar.series_a.matched",
+  "rowSubstituent": "sar.series_a.R1",
+  "columnSubstituent": "sar.series_a.R2",
+  "values": [
+    {"column": "pIC50", "format": "0.00", "aggregation": "best", "colorColumn": "pIC50.score"},
+    {"column": "clogP", "format": "0.0", "aggregation": "median", "colorColumn": "clogP.score"}
+  ],
+  "maxRowGroups": 24,
+  "maxColumnGroups": 24,
+  "linkSelection": true
+}
+~~~
+
+The matrix is sparse: only observed R-group combinations produce cells. Cells and axis headers
+retain their contributing Prism row IDs, so clicking a cell, row, or column publishes selection to
+the whole PrismLite workspace; selection made elsewhere is highlighted back in the SAR view.
+
+When the projected columns came from the same scaffold analysis, all other materialized R
+dimensions are inferred as context columns. A cell or row is marked as mixed context when those
+unprojected dimensions vary. `contextColumns` may be supplied explicitly when required.
+Unmatched, ambiguous, and multi-attachment values remain explicit in the materialized data but are
+excluded from projected groups and reported by validation diagnostics.
+
+## Agent scaffold-to-report workflow
+
+1. Run `analyze_prism_scaffold` against a managed Prism row set. Atom-map labels become stable
+   dimension labels; unlabeled observed vectors become `R1`, `R2`, and so on.
+2. Inspect 1D/n-dimensional buckets with `get_prism_scaffold_projection`.
+3. Call `materialize_prism_scaffold_analysis` with an `output_prefix`. This atomically creates
+   one sparse `sar_substituent` column per selected/observed vector plus
+   `<output_prefix>.matched`.
+4. Write `sar-1d` and `sar-2d` blocks that reference those returned IDs. Optional score columns
+   can be created first with `define_prism_endpoint_score`.
+5. Export a new snapshot if the runtime columns, row set, scores, and report should be portable.
+
+Materialization rejects a scaffold analysis when its source row membership or structures changed.
+An exact rerun is idempotent; an existing prefix with different semantics is rejected.
+
 ## Extending the block registry
 
 The parser and validator dispatch through `PrismReportBlockRegistry`. A new block supplies one
@@ -119,6 +196,8 @@ The built-in provider registry contains:
 - `structure-grid`
 - `scatter`
 - `column-summary`
+- `sar-1d`
+- `sar-2d`
 
 ## Simple agent-defined scores
 

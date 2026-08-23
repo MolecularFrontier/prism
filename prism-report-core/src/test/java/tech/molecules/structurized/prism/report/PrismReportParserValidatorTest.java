@@ -5,6 +5,8 @@ import tech.molecules.structurized.prism.engine.ColumnSummaryViewSpec;
 import tech.molecules.structurized.prism.engine.PrismRowSet;
 import tech.molecules.structurized.prism.engine.PrismSession;
 import tech.molecules.structurized.prism.engine.ScatterPlotViewSpec;
+import tech.molecules.structurized.prism.engine.ocl.Sar1DViewSpec;
+import tech.molecules.structurized.prism.engine.ocl.Sar2DViewSpec;
 import tech.molecules.structurized.prism.engine.ocl.StructureGridViewSpec;
 
 import java.nio.file.Path;
@@ -85,6 +87,57 @@ class PrismReportParserValidatorTest {
         PrismReportViewSpec view = new PrismReportViewSpec("report", "Report", report);
         assertTrue(view.referencedColumnIds().containsAll(java.util.Set.of("smiles", "pIC50", "clogP", "series")));
         assertEquals(java.util.Set.of("all"), view.referencedRowSetIds());
+    }
+
+    @Test
+    void parsesSarBlocksAsReusableViewSpecifications() {
+        PrismReportDocument report = new PrismReportParser().parse("""
+                ---
+                prismReportVersion: 1
+                dataset: current
+                title: SAR projections
+                ---
+                ~~~prism
+                {
+                  "type": "sar-1d",
+                  "id": "r1-sar",
+                  "rowSet": "sar.series.matched",
+                  "substituentColumn": "sar.series.R1",
+                  "values": [
+                    {"column": "pIC50", "format": "0.00", "aggregation": "best", "colorColumn": "pIC50.score"}
+                  ]
+                }
+                ~~~
+                ~~~prism
+                {
+                  "type": "sar-2d",
+                  "id": "r1-r2-sar",
+                  "rowSet": "sar.series.matched",
+                  "rowSubstituent": "sar.series.R1",
+                  "columnSubstituent": "sar.series.R2",
+                  "contextColumns": ["sar.series.R3"],
+                  "values": [
+                    {"column": "pIC50", "label": "Potency", "aggregation": "median"},
+                    {"column": "logD", "aggregation": "mean", "colorColumn": "logD.score"}
+                  ]
+                }
+                ~~~
+                """);
+
+        assertFalse(report.hasErrors());
+        PrismViewReportBlock oneDimensional = assertInstanceOf(PrismViewReportBlock.class, report.blocks().get(0));
+        PrismViewReportBlock twoDimensional = assertInstanceOf(PrismViewReportBlock.class, report.blocks().get(1));
+        Sar1DViewSpec oneDimensionalSpec = assertInstanceOf(Sar1DViewSpec.class, oneDimensional.specification());
+        Sar2DViewSpec twoDimensionalSpec = assertInstanceOf(Sar2DViewSpec.class, twoDimensional.specification());
+        assertEquals("sar.series.R1", oneDimensionalSpec.substituentColumnId());
+        assertEquals("pIC50.score", oneDimensionalSpec.values().getFirst().colorColumnId());
+        assertEquals(java.util.List.of("sar.series.R3"), twoDimensionalSpec.contextColumnIds());
+        assertEquals(2, twoDimensionalSpec.values().size());
+        PrismReportViewSpec view = new PrismReportViewSpec("sar-report", "SAR report", report);
+        assertEquals(java.util.Set.of("sar.series.matched"), view.referencedRowSetIds());
+        assertTrue(view.referencedColumnIds().containsAll(java.util.Set.of(
+                "sar.series.R1", "sar.series.R2", "sar.series.R3",
+                "pIC50", "pIC50.score", "logD", "logD.score")));
     }
 
     @Test

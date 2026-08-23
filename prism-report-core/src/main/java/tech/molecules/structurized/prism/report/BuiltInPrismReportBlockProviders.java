@@ -28,6 +28,7 @@ final class BuiltInPrismReportBlockProviders {
         registry.register(new StructureGridProvider());
         registry.register(new ScatterProvider());
         registry.register(new ColumnSummaryProvider());
+        SarPrismReportBlockProviders.register(registry);
     }
 
     private abstract static class ViewProvider implements PrismReportBlockProvider {
