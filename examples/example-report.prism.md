@@ -129,5 +129,6 @@ dragging selects a rectangular region. The block can also be opened as a full Pr
 
 An agent-created endpoint score is a normal numeric runtime column. After defining one through
 Structurized MCP, a report can reference its returned column ID in any compatible block, for
-example as a compound-table column, scatter axis, or scatter color column. Exporting the session
+example as a compound-table or structure-grid `colorColumn`, a displayed column, a scatter axis,
+or a scatter color column. Exporting the session
 as a new PrismPack makes that score definition, column, and the current row sets portable.

@@ -7,8 +7,11 @@ import tech.molecules.structurized.prism.engine.PrismSession;
 import tech.molecules.structurized.prism.engine.ocl.CompoundTableColumnSpec;
 import tech.molecules.structurized.prism.engine.ocl.CompoundTableViewSpec;
 import tech.molecules.structurized.prismlite.swing.workspace.PrismLiteWorkspaceModel;
+import tech.molecules.structurized.prismlite.swing.workspace.profile.ScoreDisplayService;
 
+import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
+import java.awt.Component;
 import java.nio.file.Path;
 import java.util.BitSet;
 import java.util.LinkedHashSet;
@@ -40,6 +43,38 @@ class CompoundTablePanelTest {
         SwingUtilities.invokeAndWait(() -> session.viewState().selectionModel().replace(external));
         assertEquals(1, panel.table().getSelectedRowCount());
         assertEquals(2, panel.table().convertRowIndexToModel(panel.table().getSelectedRow()));
+    }
+
+    @Test
+    void colorsDisplayedRawValueFromConfiguredScoreColumn() throws Exception {
+        PrismSession session = exampleSession();
+        AtomicReference<CompoundTablePanel> panelRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> panelRef.set(new CompoundTablePanel(
+                new CompoundTableViewSpec(
+                        "colored-table", "Colored Table", "all", "smiles",
+                        List.of(new CompoundTableColumnSpec("pIC50", "pIC50", "0.00", "pIC50")),
+                        true, 200),
+                new PrismLiteWorkspaceModel(session))));
+        CompoundTablePanel panel = panelRef.get();
+        int modelRow = -1;
+        for (int row = 0; row < panel.physicalRows().size(); row++) {
+            if (!session.table().column("pIC50").isMissing(panel.physicalRows().get(row))) {
+                modelRow = row;
+                break;
+            }
+        }
+        assertTrue(modelRow >= 0);
+        int scoredModelRow = modelRow;
+        int viewRow = panel.table().convertRowIndexToView(scoredModelRow);
+        AtomicReference<Component> renderedRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> renderedRef.set(panel.table().prepareRenderer(
+                panel.table().getCellRenderer(viewRow, 1), viewRow, 1)));
+
+        double score = session.table().column("pIC50")
+                .doubleValueAt(panel.physicalRows().get(scoredModelRow));
+        Component rendered = renderedRef.get();
+        assertEquals(ScoreDisplayService.softScoreColor(score), rendered.getBackground());
+        assertTrue(((JComponent) rendered).getToolTipText().startsWith("Desirability score:"));
     }
 
     private static CompoundTableViewSpec spec() {

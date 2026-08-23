@@ -31,6 +31,7 @@ class PrismReportParserValidatorTest {
         assertEquals("key-compounds", table.blockId());
         assertEquals("all", table.specification().rowSetId());
         assertEquals("pIC50", table.specification().columns().get(1).columnId());
+        assertEquals("clogP", table.specification().columns().get(1).colorColumnId());
         assertInstanceOf(MarkdownReportBlock.class, report.blocks().get(2));
     }
 
@@ -48,7 +49,10 @@ class PrismReportParserValidatorTest {
                   "id": "hits",
                   "rowSet": "all",
                   "structureColumn": "smiles",
-                  "valueColumns": ["pIC50", "clogP"],
+                  "valueColumns": [
+                    {"column": "pIC50", "label": "Potency", "format": "0.00", "colorColumn": "clogP"},
+                    "clogP"
+                  ],
                   "sortBy": "pIC50",
                   "sortDirection": "descending",
                   "maxCompounds": 12,
@@ -80,7 +84,11 @@ class PrismReportParserValidatorTest {
         PrismViewReportBlock grid = assertInstanceOf(PrismViewReportBlock.class, report.blocks().get(0));
         PrismViewReportBlock scatter = assertInstanceOf(PrismViewReportBlock.class, report.blocks().get(1));
         PrismViewReportBlock summary = assertInstanceOf(PrismViewReportBlock.class, report.blocks().get(2));
-        assertInstanceOf(StructureGridViewSpec.class, grid.specification());
+        StructureGridViewSpec gridSpec = assertInstanceOf(StructureGridViewSpec.class, grid.specification());
+        assertEquals(java.util.List.of("pIC50", "clogP"), gridSpec.endpointColumnIds());
+        assertEquals("Potency", gridSpec.valueSpecifications().getFirst().label());
+        assertEquals("0.00", gridSpec.valueSpecifications().getFirst().format());
+        assertEquals("clogP", gridSpec.valueSpecifications().getFirst().colorColumnId());
         assertInstanceOf(ScatterPlotViewSpec.class, scatter.specification());
         assertInstanceOf(ColumnSummaryViewSpec.class, summary.specification());
         assertTrue(new PrismReportValidator().validate(report, exampleSession()).isEmpty());
@@ -218,7 +226,7 @@ class PrismReportParserValidatorTest {
                   "structureColumn": "smiles",
                   "columns": [
                     {"column": "compound_id", "label": "Compound"},
-                    {"column": "%s", "format": "0.00"}
+                    {"column": "%s", "format": "0.00", "colorColumn": "clogP"}
                   ],
                   "linkSelection": true,
                   "maxRows": 200

@@ -9,6 +9,7 @@ import tech.molecules.structurized.prism.engine.ocl.CompoundTableViewSpec;
 import tech.molecules.structurized.prismlite.swing.workspace.PrismLiteWorkspaceModel;
 import tech.molecules.structurized.prismlite.swing.workspace.chem.MoleculeRenderCache;
 import tech.molecules.structurized.prismlite.swing.workspace.table.PhysicalRowMoleculeCellRenderer;
+import tech.molecules.structurized.prismlite.swing.workspace.profile.ScoreDisplayService;
 
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
@@ -206,6 +207,7 @@ public final class CompoundTablePanel extends JPanel {
 
     private static final class ValueRenderer extends DefaultTableCellRenderer {
         private final PrismColumn column;
+        private final PrismColumn colorColumn;
         private final DecimalFormat format;
         private final CompoundTableModel model;
 
@@ -215,6 +217,10 @@ public final class CompoundTablePanel extends JPanel {
                 CompoundTableModel model
         ) {
             this.column = session.table().column(specification.columnId());
+            String semanticType = column.schema().semanticType();
+            this.colorColumn = specification.colorColumnId() != null
+                    ? session.table().column(specification.colorColumnId())
+                    : isScoreSemanticType(semanticType) ? column : null;
             this.format = specification.format() == null ? null : new DecimalFormat(
                     specification.format(), java.text.DecimalFormatSymbols.getInstance(Locale.ROOT));
             this.model = model;
@@ -235,11 +241,31 @@ public final class CompoundTablePanel extends JPanel {
         public java.awt.Component getTableCellRendererComponent(
                 JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int columnIndex) {
             super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, columnIndex);
+            int modelRow = table.convertRowIndexToModel(row);
+            int physicalRow = model.physicalRowAt(modelRow);
             if (value != null && format == null) {
-                int modelRow = table.convertRowIndexToModel(row);
-                setText(column.formattedValueAt(model.physicalRowAt(modelRow)));
+                setText(column.formattedValueAt(physicalRow));
+            }
+            Double score = scoreAt(colorColumn, physicalRow);
+            if (score == null) {
+                setToolTipText(null);
+                if (!isSelected) setBackground(table.getBackground());
+            } else {
+                setToolTipText("Desirability score: " + ScoreDisplayService.format(score));
+                if (!isSelected) setBackground(ScoreDisplayService.softScoreColor(score));
             }
             return this;
+        }
+
+        private static boolean isScoreSemanticType(String semanticType) {
+            return "endpoint_score".equals(semanticType) || "mpo_score".equals(semanticType);
+        }
+
+        private static Double scoreAt(PrismColumn colorColumn, int physicalRow) {
+            if (colorColumn == null || colorColumn.isMissing(physicalRow)) return null;
+            Object value = colorColumn.valueAt(physicalRow);
+            if (!(value instanceof Number number) || !Double.isFinite(number.doubleValue())) return null;
+            return number.doubleValue();
         }
     }
 }

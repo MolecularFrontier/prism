@@ -47,7 +47,10 @@ public record CompoundTableViewSpec(
     public Set<String> referencedColumnIds() {
         LinkedHashSet<String> result = new LinkedHashSet<>();
         result.add(structureColumnId);
-        columns.forEach(column -> result.add(column.columnId()));
+        columns.forEach(column -> {
+            result.add(column.columnId());
+            if (column.colorColumnId() != null) result.add(column.colorColumnId());
+        });
         return Set.copyOf(result);
     }
 

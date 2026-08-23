@@ -24,7 +24,7 @@ import java.util.Set;
 public final class PrismReportParser {
     private static final Set<String> BLOCK_FIELDS = Set.of(
             "type", "id", "rowSet", "structureColumn", "columns", "linkSelection", "maxRows");
-    private static final Set<String> COLUMN_FIELDS = Set.of("column", "label", "format");
+    private static final Set<String> COLUMN_FIELDS = Set.of("column", "label", "format", "colorColumn");
 
     private final ObjectMapper objectMapper;
     private final PrismReportBlockRegistry blockRegistry;
@@ -202,7 +202,8 @@ public final class PrismReportParser {
                         blockId, sourceLine + 1, 1));
                 continue;
             }
-            result.add(new CompoundTableColumnSpec(column, text(item, "label"), text(item, "format")));
+            result.add(new CompoundTableColumnSpec(column, text(item, "label"), text(item, "format"),
+                    text(item, "colorColumn")));
         }
         return List.copyOf(result);
     }

@@ -59,6 +59,7 @@ public record PrismReportSchema(
                 field("columns[].column", "string", true, "Displayed Prism column ID."),
                 field("columns[].label", "string", false, "Optional display label."),
                 field("columns[].format", "string", false, "Optional DecimalFormat pattern for numeric values."),
+                field("columns[].colorColumn", "string", false, "Optional numeric score column used to color the displayed raw value."),
                 field("linkSelection", "boolean", false, "Defaults to true."),
                 field("maxRows", "integer", false, "Defaults to 200; range 1..2000.")),
                 Map.of("type", "compound-table", "id", "key-compounds", "rowSet", "all",
@@ -96,13 +97,19 @@ public record PrismReportSchema(
                 common("id"), common("title"),
                 field("rowSet", "string", true, "Prism row-set ID."),
                 field("structureColumn", "string", true, "Molecule column ID."),
-                field("valueColumns", "array<string>", false, "Displayed Prism column IDs."),
+                field("valueColumns", "array<string|object>", false, "Displayed column IDs or value descriptors."),
+                field("valueColumns[].column", "string", false, "Displayed Prism column ID when using an object descriptor."),
+                field("valueColumns[].label", "string", false, "Optional display label."),
+                field("valueColumns[].format", "string", false, "Optional DecimalFormat pattern for numeric values."),
+                field("valueColumns[].colorColumn", "string", false, "Optional numeric score column used to color the displayed raw value."),
                 field("sortBy", "string", false, "Optional Prism column ID."),
                 field("sortDirection", "string", false, "ascending or descending; defaults to ascending."),
                 field("maxCompounds", "integer", false, "Defaults to 24; must be at least 1."),
                 field("gridColumns", "integer", false, "Defaults to 4; range 1..8.")),
                 Map.of("type", "structure-grid", "id", "lead-grid", "rowSet", "all",
-                        "structureColumn", "structure", "valueColumns", List.of("compound_id"),
+                        "structureColumn", "structure", "valueColumns", List.of("compound_id", Map.of(
+                                "column", "pIC50", "format", "0.00",
+                                "colorColumn", "score__activity")),
                         "maxCompounds", 12, "gridColumns", 4));
     }
 

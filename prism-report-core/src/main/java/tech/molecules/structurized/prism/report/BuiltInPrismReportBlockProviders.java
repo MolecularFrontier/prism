@@ -12,6 +12,7 @@ import tech.molecules.structurized.prism.engine.ocl.CompoundCardPropertySpec;
 import tech.molecules.structurized.prism.engine.ocl.CompoundCardsViewSpec;
 import tech.molecules.structurized.prism.engine.ocl.CompoundTableColumnSpec;
 import tech.molecules.structurized.prism.engine.ocl.CompoundTableViewSpec;
+import tech.molecules.structurized.prism.engine.ocl.StructureGridValueSpec;
 import tech.molecules.structurized.prism.engine.ocl.StructureGridViewSpec;
 
 import java.text.DecimalFormat;
@@ -70,7 +71,7 @@ final class BuiltInPrismReportBlockProviders {
     private static final class CompoundTableProvider extends ViewProvider {
         private static final Set<String> FIELDS = Set.of(
                 "type", "id", "title", "rowSet", "structureColumn", "columns", "linkSelection", "maxRows");
-        private static final Set<String> COLUMN_FIELDS = Set.of("column", "label", "format");
+        private static final Set<String> COLUMN_FIELDS = Set.of("column", "label", "format", "colorColumn");
 
         @Override public String type() { return "compound-table"; }
 
@@ -93,7 +94,8 @@ final class BuiltInPrismReportBlockProviders {
                     context.rejectUnknownFields(item, COLUMN_FIELDS);
                     String column = context.requiredText(item, "column");
                     if (column != null) columns.add(new CompoundTableColumnSpec(
-                            column, context.optionalText(item, "label"), context.optionalText(item, "format")));
+                            column, context.optionalText(item, "label"), context.optionalText(item, "format"),
+                            context.optionalText(item, "colorColumn")));
                 }
             }
             int maxRows = context.optionalInt(json, "maxRows", CompoundTableViewSpec.DEFAULT_MAX_ROWS);
@@ -135,6 +137,11 @@ final class BuiltInPrismReportBlockProviders {
                                     "Invalid numeric format '" + item.format() + "'.", block));
                         }
                     }
+                }
+                if (item.colorColumnId() != null) {
+                    PrismColumn color = column(session, item.colorColumnId());
+                    if (color != null && !numeric(color)) diagnostics.add(error("INVALID_COLOR_COLUMN",
+                            "Color column '" + color.id() + "' must be numeric.", block));
                 }
             }
             try {
@@ -269,6 +276,8 @@ final class BuiltInPrismReportBlockProviders {
     private static final class StructureGridProvider extends ViewProvider {
         private static final Set<String> FIELDS = Set.of("type", "id", "title", "rowSet", "structureColumn",
                 "valueColumns", "sortBy", "sortDirection", "maxCompounds", "gridColumns");
+        private static final Set<String> VALUE_FIELDS = Set.of(
+                "column", "label", "format", "colorColumn");
 
         @Override public String type() { return "structure-grid"; }
 
@@ -277,8 +286,29 @@ final class BuiltInPrismReportBlockProviders {
             context.rejectUnknownFields(json, FIELDS);
             String rowSet = context.requiredText(json, "rowSet");
             String structure = context.requiredText(json, "structureColumn");
-            List<String> values = json.has("valueColumns")
-                    ? context.requiredStringArray(json, "valueColumns") : List.of();
+            ArrayList<StructureGridValueSpec> values = new ArrayList<>();
+            JsonNode valueColumns = json.get("valueColumns");
+            if (valueColumns != null && !valueColumns.isArray()) {
+                context.error("INVALID_VALUE_COLUMNS", "valueColumns must be an array.");
+            } else if (valueColumns != null) {
+                for (int index = 0; index < valueColumns.size(); index++) {
+                    JsonNode item = valueColumns.get(index);
+                    if (item.isTextual() && !item.textValue().isBlank()) {
+                        values.add(new StructureGridValueSpec(item.textValue()));
+                    } else if (item.isObject()) {
+                        context.rejectUnknownFields(item, VALUE_FIELDS);
+                        String column = context.requiredText(item, "column");
+                        if (column != null) values.add(new StructureGridValueSpec(
+                                column, context.optionalText(item, "label"),
+                                context.optionalText(item, "format"),
+                                context.optionalText(item, "colorColumn")));
+                    } else {
+                        context.error("INVALID_VALUE_COLUMN",
+                                "valueColumns[" + index + "] must be a column ID or an object.");
+                    }
+                }
+            }
+            List<String> valueIds = values.stream().map(StructureGridValueSpec::columnId).toList();
             String directionText = context.optionalText(json, "sortDirection");
             SortDirection direction = SortDirection.ASCENDING;
             if (directionText != null) {
@@ -300,8 +330,8 @@ final class BuiltInPrismReportBlockProviders {
             }
             if (rowSet == null || structure == null) return null;
             StructureGridViewSpec spec = new StructureGridViewSpec(context.blockId(),
-                    context.optionalText(json, "title"), rowSet, structure, values,
-                    context.optionalText(json, "sortBy"), direction, maxCompounds, gridColumns);
+                    context.optionalText(json, "title"), rowSet, structure, valueIds,
+                    context.optionalText(json, "sortBy"), direction, maxCompounds, gridColumns, values);
             return new PrismViewReportBlock(context.blockId(), type(), spec, context.sourceLine());
         }
 
@@ -313,6 +343,25 @@ final class BuiltInPrismReportBlockProviders {
             if (structure != null && structure.type() != PrismColumnType.MOLECULE) {
                 diagnostics.add(error("INVALID_STRUCTURE_COLUMN",
                         "Column '" + structure.id() + "' is not a molecule column.", block));
+            }
+            for (StructureGridValueSpec valueSpec : spec.valueSpecifications()) {
+                PrismColumn value = column(session, valueSpec.columnId());
+                if (valueSpec.format() != null) {
+                    if (value != null && !numeric(value)) {
+                        diagnostics.add(error("FORMAT_ON_NON_NUMERIC_COLUMN",
+                                "A numeric format cannot be applied to column '" + value.id() + "'.", block));
+                    } else {
+                        try {
+                            new DecimalFormat(valueSpec.format());
+                        } catch (IllegalArgumentException exception) {
+                            diagnostics.add(error("INVALID_NUMBER_FORMAT",
+                                    "Invalid numeric format '" + valueSpec.format() + "'.", block));
+                        }
+                    }
+                }
+                PrismColumn color = valueSpec.colorColumnId() == null ? null : column(session, valueSpec.colorColumnId());
+                if (color != null && !numeric(color)) diagnostics.add(error("INVALID_COLOR_COLUMN",
+                        "Color column '" + color.id() + "' must be numeric.", block));
             }
         }
     }

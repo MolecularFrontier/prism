@@ -1,13 +1,18 @@
 package tech.molecules.structurized.prism.engine.ocl;
 
-public record CompoundTableColumnSpec(String columnId, String label, String format, String colorColumnId) {
-    public CompoundTableColumnSpec(String columnId, String label, String format) {
-        this(columnId, label, format, null);
+public record StructureGridValueSpec(
+        String columnId,
+        String label,
+        String format,
+        String colorColumnId
+) {
+    public StructureGridValueSpec(String columnId) {
+        this(columnId, null, null, null);
     }
 
-    public CompoundTableColumnSpec {
+    public StructureGridValueSpec {
         if (columnId == null || columnId.isBlank()) {
-            throw new IllegalArgumentException("column id must not be blank");
+            throw new IllegalArgumentException("structure-grid value column id must not be blank");
         }
         columnId = columnId.trim();
         label = label == null || label.isBlank() ? null : label.trim();

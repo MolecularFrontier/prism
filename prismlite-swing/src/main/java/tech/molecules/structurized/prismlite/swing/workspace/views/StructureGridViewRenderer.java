@@ -8,11 +8,13 @@ import tech.molecules.structurized.prism.engine.RowSelectionSubscription;
 import tech.molecules.structurized.prism.engine.PrismSession;
 import tech.molecules.structurized.prism.engine.PrismViewRecord;
 import tech.molecules.structurized.prism.engine.SortDirection;
+import tech.molecules.structurized.prism.engine.ocl.StructureGridValueSpec;
 import tech.molecules.structurized.prism.engine.ocl.StructureGridViewSpec;
 import tech.molecules.structurized.prismlite.swing.workspace.PrismLiteWorkspaceController;
 import tech.molecules.structurized.prismlite.swing.workspace.PrismLiteWorkspaceModel;
 import tech.molecules.structurized.prismlite.swing.workspace.chem.MoleculeRenderCache;
 import tech.molecules.structurized.prismlite.swing.workspace.chem.MoleculeViewPanel;
+import tech.molecules.structurized.prismlite.swing.workspace.profile.ScoreDisplayService;
 
 import javax.swing.BorderFactory;
 import javax.swing.JTextField;
@@ -132,16 +134,23 @@ public final class StructureGridViewRenderer implements PrismSwingViewRenderer {
         apply.addActionListener(event -> {
             String nextRowSetId = stringValue(rowSet.getSelectedItem());
             String nextSortColumnId = stringValue(sortColumn.getSelectedItem());
+            List<String> nextEndpointIds = endpoints.getSelectedValuesList();
+            Map<String, StructureGridValueSpec> currentValues = new LinkedHashMap<>();
+            spec.valueSpecifications().forEach(value -> currentValues.put(value.columnId(), value));
+            List<StructureGridValueSpec> nextValues = nextEndpointIds.stream()
+                    .map(column -> currentValues.getOrDefault(column, new StructureGridValueSpec(column)))
+                    .toList();
             StructureGridViewSpec updatedSpec = new StructureGridViewSpec(
                     spec.viewId(),
                     title.getText(),
                     nextRowSetId,
                     spec.structureColumnId(),
-                    endpoints.getSelectedValuesList(),
+                    nextEndpointIds,
                     nextSortColumnId,
                     (SortDirection) sortDirection.getSelectedItem(),
                     parseInt(maxCompounds.getText(), spec.maxCompounds()),
-                    parseInt(columns.getText(), spec.columns())
+                    parseInt(columns.getText(), spec.columns()),
+                    nextValues
             );
             Map<String, Object> provenance = new LinkedHashMap<>(view.provenance());
             provenance.put("updatedAt", Instant.now().toString());
@@ -249,11 +258,8 @@ public final class StructureGridViewRenderer implements PrismSwingViewRenderer {
         JPanel values = new JPanel();
         values.setOpaque(false);
         values.setLayout(new BoxLayout(values, BoxLayout.Y_AXIS));
-        for (String endpointColumnId : spec.endpointColumnIds()) {
-            PrismColumn endpoint = session.table().column(endpointColumnId);
-            String label = endpoint.schema().displayName();
-            String value = endpoint.isMissing(physicalRow) ? "" : endpoint.formattedValueAt(physicalRow);
-            values.add(new JLabel(label + ": " + value));
+        for (StructureGridValueSpec valueSpec : spec.valueSpecifications()) {
+            values.add(valueLabel(session, valueSpec, physicalRow));
         }
         card.add(values, BorderLayout.SOUTH);
 
@@ -271,6 +277,50 @@ public final class StructureGridViewRenderer implements PrismSwingViewRenderer {
             }
         });
         return card;
+    }
+
+    private static JLabel valueLabel(PrismSession session, StructureGridValueSpec specification, int physicalRow) {
+        PrismColumn valueColumn = session.table().column(specification.columnId());
+        String labelText = specification.label() == null
+                ? valueColumn.schema().displayName() : specification.label();
+        String valueText = formattedValue(valueColumn, specification.format(), physicalRow);
+        JLabel label = new JLabel(labelText + ": " + valueText);
+        PrismColumn colorColumn = colorColumn(session, valueColumn, specification.colorColumnId());
+        Double score = scoreAt(colorColumn, physicalRow);
+        if (score != null) {
+            label.setOpaque(true);
+            label.setBackground(ScoreDisplayService.softScoreColor(score));
+            label.setBorder(BorderFactory.createEmptyBorder(1, 3, 1, 3));
+            label.setToolTipText("Desirability score: " + ScoreDisplayService.format(score));
+        }
+        return label;
+    }
+
+    private static String formattedValue(PrismColumn column, String format, int physicalRow) {
+        if (column.isMissing(physicalRow)) return "";
+        Object value = column.valueAt(physicalRow);
+        if (format != null && value instanceof Number number) {
+            return new java.text.DecimalFormat(format,
+                    java.text.DecimalFormatSymbols.getInstance(java.util.Locale.ROOT)).format(number);
+        }
+        return column.formattedValueAt(physicalRow);
+    }
+
+    private static PrismColumn colorColumn(PrismSession session, PrismColumn valueColumn, String colorColumnId) {
+        if (colorColumnId != null) return session.table().column(colorColumnId);
+        String semanticType = valueColumn.schema().semanticType();
+        return isScoreSemanticType(semanticType) ? valueColumn : null;
+    }
+
+    private static boolean isScoreSemanticType(String semanticType) {
+        return "endpoint_score".equals(semanticType) || "mpo_score".equals(semanticType);
+    }
+
+    private static Double scoreAt(PrismColumn colorColumn, int physicalRow) {
+        if (colorColumn == null || colorColumn.isMissing(physicalRow)) return null;
+        Object value = colorColumn.valueAt(physicalRow);
+        if (!(value instanceof Number number) || !Double.isFinite(number.doubleValue())) return null;
+        return number.doubleValue();
     }
 
     private static void updateSelectionBorder(JPanel card, boolean selected) {

@@ -17,7 +17,8 @@ public record StructureGridViewSpec(
         String sortColumnId,
         SortDirection sortDirection,
         int maxCompounds,
-        int columns
+        int columns,
+        List<StructureGridValueSpec> valueSpecifications
 ) implements PrismViewSpec {
     public static final String VIEW_TYPE = "chemistry.structure-grid";
 
@@ -32,15 +33,43 @@ public record StructureGridViewSpec(
         title = title == null || title.isBlank() ? "Structure Grid" : title.trim();
         rowSetId = rowSetId == null || rowSetId.isBlank() ? null : rowSetId.trim();
         structureColumnId = structureColumnId.trim();
-        endpointColumnIds = endpointColumnIds == null ? List.of() : endpointColumnIds.stream()
+        List<String> normalizedEndpointIds = endpointColumnIds == null ? List.of() : endpointColumnIds.stream()
                 .filter(column -> column != null && !column.isBlank())
                 .map(String::trim)
                 .distinct()
                 .toList();
+        endpointColumnIds = normalizedEndpointIds;
+        valueSpecifications = valueSpecifications == null ? List.of() : valueSpecifications.stream()
+                .filter(java.util.Objects::nonNull)
+                .filter(value -> normalizedEndpointIds.contains(value.columnId()))
+                .collect(java.util.stream.Collectors.collectingAndThen(
+                        java.util.stream.Collectors.toMap(StructureGridValueSpec::columnId, value -> value,
+                                (first, ignored) -> first, java.util.LinkedHashMap::new),
+                        values -> normalizedEndpointIds.stream()
+                                .map(column -> values.getOrDefault(column, new StructureGridValueSpec(column)))
+                                .toList()));
+        if (valueSpecifications.isEmpty() && !normalizedEndpointIds.isEmpty()) {
+            valueSpecifications = normalizedEndpointIds.stream().map(StructureGridValueSpec::new).toList();
+        }
         sortColumnId = sortColumnId == null || sortColumnId.isBlank() ? null : sortColumnId.trim();
         sortDirection = sortDirection == null ? SortDirection.ASCENDING : sortDirection;
         maxCompounds = maxCompounds < 1 ? 24 : maxCompounds;
         columns = Math.max(1, Math.min(columns < 1 ? 4 : columns, 8));
+    }
+
+    public StructureGridViewSpec(
+            String viewId,
+            String title,
+            String rowSetId,
+            String structureColumnId,
+            List<String> endpointColumnIds,
+            String sortColumnId,
+            SortDirection sortDirection,
+            int maxCompounds,
+            int columns
+    ) {
+        this(viewId, title, rowSetId, structureColumnId, endpointColumnIds, sortColumnId,
+                sortDirection, maxCompounds, columns, List.of());
     }
 
     @Override
@@ -57,7 +86,10 @@ public record StructureGridViewSpec(
     public Set<String> referencedColumnIds() {
         LinkedHashSet<String> ids = new LinkedHashSet<>();
         ids.add(structureColumnId);
-        ids.addAll(endpointColumnIds);
+        for (StructureGridValueSpec value : valueSpecifications) {
+            ids.add(value.columnId());
+            if (value.colorColumnId() != null) ids.add(value.colorColumnId());
+        }
         if (sortColumnId != null) {
             ids.add(sortColumnId);
         }
@@ -67,6 +99,6 @@ public record StructureGridViewSpec(
     @Override
     public PrismViewSpec copyWithIdentity(String id, String newTitle) {
         return new StructureGridViewSpec(id, newTitle, rowSetId, structureColumnId, endpointColumnIds,
-                sortColumnId, sortDirection, maxCompounds, columns);
+                sortColumnId, sortDirection, maxCompounds, columns, valueSpecifications);
     }
 }

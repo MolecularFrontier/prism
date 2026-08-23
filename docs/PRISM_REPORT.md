@@ -48,7 +48,8 @@ Every block requires `type`. The following conventions apply to the built-in vie
   "structureColumn": "smiles",
   "columns": [
     {"column": "compound_id", "label": "Compound"},
-    {"column": "pIC50", "label": "pIC50", "format": "0.00"}
+    {"column": "pIC50", "label": "pIC50", "format": "0.00",
+     "colorColumn": "score__activity"}
   ],
   "linkSelection": true,
   "maxRows": 200
@@ -56,7 +57,9 @@ Every block requires `type`. The following conventions apply to the built-in vie
 ~~~
 
 `columns` must be non-empty. `format` is a Java decimal pattern and is valid only for numeric
-columns. `maxRows` is bounded by the compound-table safety limit.
+columns. An optional numeric `colorColumn` colors the displayed raw value with the standard
+Prism score palette; the score column does not need to be displayed separately. `maxRows` is
+bounded by the compound-table safety limit.
 
 ## `compound-cards`
 
@@ -97,7 +100,11 @@ and eight properties and at most eight cards are allowed. Selection is bidirecti
   "type": "structure-grid",
   "rowSet": "all",
   "structureColumn": "smiles",
-  "valueColumns": ["compound_id", "pIC50"],
+  "valueColumns": [
+    "compound_id",
+    {"column": "pIC50", "label": "pIC50", "format": "0.00",
+     "colorColumn": "score__activity"}
+  ],
   "sortBy": "pIC50",
   "sortDirection": "descending",
   "maxCompounds": 24,
@@ -105,7 +112,9 @@ and eight properties and at most eight cards are allowed. Selection is bidirecti
 }
 ~~~
 
-`sortDirection` is `ascending` or `descending`; `gridColumns` is between 1 and 8.
+`valueColumns` accepts the original column-ID strings and structured descriptors. A descriptor
+can set `label`, numeric `format`, and a numeric `colorColumn` that colors the displayed raw
+value. `sortDirection` is `ascending` or `descending`; `gridColumns` is between 1 and 8.
 
 ## `scatter`
 

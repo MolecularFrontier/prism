@@ -7,12 +7,16 @@ import org.knowm.xchart.XYChart;
 import tech.molecules.structurized.prism.engine.PrismColumn;
 import tech.molecules.structurized.prism.engine.CreateScatterPlotViewOperation;
 import tech.molecules.structurized.prism.engine.PrismSession;
+import tech.molecules.structurized.prism.engine.PrismViewRecord;
 import tech.molecules.structurized.prism.engine.TextPatternMode;
 import tech.molecules.structurized.prism.engine.TextPatternFilter;
 import tech.molecules.structurized.prism.engine.PrismRowSet;
 import tech.molecules.structurized.prism.engine.ocl.OclCreateStructureGridViewOperation;
+import tech.molecules.structurized.prism.engine.ocl.StructureGridValueSpec;
+import tech.molecules.structurized.prism.engine.ocl.StructureGridViewSpec;
 import tech.molecules.structurized.prismlite.swing.workspace.chem.MoleculeRenderUtil;
 import tech.molecules.structurized.prismlite.swing.workspace.inspector.RowInspectorPanel;
+import tech.molecules.structurized.prismlite.swing.workspace.profile.ScoreDisplayService;
 import tech.molecules.structurized.prismlite.swing.workspace.table.MoleculeCellRenderer;
 import tech.molecules.structurized.prismlite.swing.workspace.table.MoleculeColumnCellRendererProvider;
 import tech.molecules.structurized.prismlite.swing.workspace.views.StructureGridViewRenderer;
@@ -239,6 +243,37 @@ class RendererAndRowInspectorTest {
         );
 
         assertEquals(1, structureGridCardCount(component));
+    }
+
+    @Test
+    void structureGridColorsDisplayedRawValueFromConfiguredScoreColumn() throws Exception {
+        PrismSession session = PrismSession.open(Path.of("..", "examples", "example.prismpack"));
+        PrismColumn scoreColumn = session.table().column("pIC50");
+        int physicalRow = -1;
+        for (int row = 0; row < session.totalRowCount(); row++) {
+            if (!scoreColumn.isMissing(row)) {
+                physicalRow = row;
+                break;
+            }
+        }
+        assertTrue(physicalRow >= 0);
+        int scoredPhysicalRow = physicalRow;
+        session.addRowSet(new PrismRowSet("scored", "Scored", "", Set.of(
+                session.rowIdForPhysicalRow(scoredPhysicalRow)), Map.of()));
+        StructureGridViewSpec spec = new StructureGridViewSpec(
+                "grid:colored", "Colored Grid", "scored", "smiles", java.util.List.of("pIC50"),
+                null, null, 1, 1, java.util.List.of(
+                        new StructureGridValueSpec("pIC50", "Potency", "0.00", "pIC50")));
+
+        JComponent component = new StructureGridViewRenderer().createComponent(
+                PrismViewRecord.of(spec), new PrismLiteWorkspaceModel(session), null, () -> { });
+
+        JLabel valueLabel = label(component, "Potency:");
+        assertNotNull(valueLabel);
+        assertTrue(valueLabel.isOpaque());
+        assertEquals(ScoreDisplayService.softScoreColor(scoreColumn.doubleValueAt(scoredPhysicalRow)),
+                valueLabel.getBackground());
+        assertTrue(valueLabel.getToolTipText().startsWith("Desirability score:"));
     }
 
     @Test
@@ -522,6 +557,21 @@ class RendererAndRowInspectorTest {
         );
     }
 
+
+    private static JLabel label(Component root, String prefix) {
+        if (root instanceof JLabel label && label.getText() != null && label.getText().startsWith(prefix)) {
+            return label;
+        }
+        if (root instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                JLabel match = label(child, prefix);
+                if (match != null) {
+                    return match;
+                }
+            }
+        }
+        return null;
+    }
 
     private static JButton button(Component root, String text) {
         if (root instanceof JButton button && text.equals(button.getText())) {
