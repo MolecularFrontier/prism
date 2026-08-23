@@ -1,5 +1,7 @@
 package tech.molecules.structurized.prism.engine;
 
+import tech.molecules.structurized.prism.score.EndpointScoreDefinition;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -17,6 +19,7 @@ public final class PrismOperationResult {
     private final List<PrismRowGraph> addedGraphs;
     private final List<PrismViewRecord> addedViews;
     private final List<PrismViewRecord> updatedViews;
+    private final List<EndpointScoreDefinition> addedScoreDefinitions;
     private final List<String> warnings;
     private final Map<String, Object> output;
     private final Map<String, Object> provenance;
@@ -30,6 +33,7 @@ public final class PrismOperationResult {
         this.addedGraphs = List.copyOf(builder.addedGraphs);
         this.addedViews = List.copyOf(builder.addedViews);
         this.updatedViews = List.copyOf(builder.updatedViews);
+        this.addedScoreDefinitions = List.copyOf(builder.addedScoreDefinitions);
         this.warnings = List.copyOf(builder.warnings);
         this.output = builder.output.isEmpty()
                 ? Map.of()
@@ -67,6 +71,10 @@ public final class PrismOperationResult {
         return addedViews;
     }
 
+    public List<EndpointScoreDefinition> addedScoreDefinitions() {
+        return addedScoreDefinitions;
+    }
+
     public List<PrismViewRecord> updatedViews() {
         return updatedViews;
     }
@@ -96,6 +104,7 @@ public final class PrismOperationResult {
         private final ArrayList<PrismRowGraph> addedGraphs = new ArrayList<>();
         private final ArrayList<PrismViewRecord> addedViews = new ArrayList<>();
         private final ArrayList<PrismViewRecord> updatedViews = new ArrayList<>();
+        private final ArrayList<EndpointScoreDefinition> addedScoreDefinitions = new ArrayList<>();
         private final ArrayList<String> warnings = new ArrayList<>();
         private final LinkedHashMap<String, Object> output = new LinkedHashMap<>();
         private final LinkedHashMap<String, Object> provenance = new LinkedHashMap<>();
@@ -139,6 +148,11 @@ public final class PrismOperationResult {
 
         public Builder updateView(PrismViewRecord view) {
             updatedViews.add(view);
+            return this;
+        }
+
+        public Builder addScoreDefinition(EndpointScoreDefinition definition) {
+            addedScoreDefinitions.add(definition);
             return this;
         }
 

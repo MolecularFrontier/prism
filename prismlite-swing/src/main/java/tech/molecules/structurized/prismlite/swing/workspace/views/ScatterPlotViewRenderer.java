@@ -11,6 +11,7 @@ import tech.molecules.structurized.prism.engine.PrismColumnType;
 import tech.molecules.structurized.prism.engine.PrismRowSet;
 import tech.molecules.structurized.prism.engine.PrismSession;
 import tech.molecules.structurized.prism.engine.PrismViewRecord;
+import tech.molecules.structurized.prism.engine.RowSelectionSubscription;
 import tech.molecules.structurized.prism.engine.ScatterPlotViewSpec;
 import tech.molecules.structurized.prismlite.swing.workspace.PrismLiteWorkspaceController;
 import tech.molecules.structurized.prismlite.swing.workspace.PrismLiteWorkspaceModel;
@@ -374,6 +375,7 @@ public final class ScatterPlotViewRenderer implements PrismSwingViewRenderer {
         private final ArrayList<Point> lasso = new ArrayList<>();
         private Point dragStart;
         private boolean dragging;
+        private RowSelectionSubscription selectionSubscription;
 
         private InteractiveScatterPlotPanel(
                 XYChart chart,
@@ -401,6 +403,23 @@ public final class ScatterPlotViewRenderer implements PrismSwingViewRenderer {
         }
 
         @Override
+        public void addNotify() {
+            super.addNotify();
+            if (selectionSubscription == null) {
+                selectionSubscription = session.viewState().selectionModel().subscribe(ignored -> repaint());
+            }
+        }
+
+        @Override
+        public void removeNotify() {
+            if (selectionSubscription != null) {
+                selectionSubscription.close();
+                selectionSubscription = null;
+            }
+            super.removeNotify();
+        }
+
+        @Override
         public String getToolTipText(MouseEvent event) {
             PointRow point = nearestPoint(event.getPoint());
             if (point == null) {
@@ -421,11 +440,18 @@ public final class ScatterPlotViewRenderer implements PrismSwingViewRenderer {
         @Override
         protected void paintComponent(Graphics graphics) {
             super.paintComponent(graphics);
-            if (lasso.size() < 2) {
-                return;
-            }
             Graphics2D g2 = (Graphics2D) graphics.create();
             try {
+                BitSet selectedRows = session.viewState().selectionModel().selectedRows();
+                g2.setColor(new Color(18, 74, 145));
+                g2.setStroke(new BasicStroke(2.0f));
+                for (PointRow point : points) {
+                    if (selectedRows.get(point.physicalRow())) {
+                        Point screen = screenPoint(point);
+                        g2.drawOval(screen.x - 6, screen.y - 6, 12, 12);
+                    }
+                }
+                if (lasso.size() < 2) return;
                 Polygon polygon = polygon(lasso);
                 g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.12f));
                 g2.setColor(new Color(51, 102, 204));
@@ -474,10 +500,13 @@ public final class ScatterPlotViewRenderer implements PrismSwingViewRenderer {
             BitSet selectedRows = additive
                     ? session.viewState().selectionModel().selectedRows()
                     : new BitSet(session.totalRowCount());
-            selectedRows.set(point.physicalRow());
+            if (additive) {
+                selectedRows.flip(point.physicalRow());
+            } else {
+                selectedRows.set(point.physicalRow());
+            }
             session.viewState().selectionModel().replace(selectedRows);
             model.setFocusedPhysicalRow(point.physicalRow());
-            refresh.run();
         }
 
         private void selectLasso(int modifiersEx) {
@@ -503,7 +532,6 @@ public final class ScatterPlotViewRenderer implements PrismSwingViewRenderer {
             }
             session.viewState().selectionModel().replace(selectedRows);
             model.setFocusedPhysicalRow(selected.getFirst().physicalRow());
-            refresh.run();
         }
 
         private static boolean additiveSelection(int modifiersEx) {

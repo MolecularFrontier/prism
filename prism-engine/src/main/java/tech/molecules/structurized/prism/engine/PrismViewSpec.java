@@ -12,4 +12,8 @@ public interface PrismViewSpec {
     Set<String> referencedRowSetIds();
 
     Set<String> referencedColumnIds();
+
+    default PrismViewSpec copyWithIdentity(String viewId, String title) {
+        throw new UnsupportedOperationException("view type does not support identity copying: " + viewType());
+    }
 }

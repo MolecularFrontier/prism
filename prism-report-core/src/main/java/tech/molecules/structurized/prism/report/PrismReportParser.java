@@ -27,6 +27,7 @@ public final class PrismReportParser {
     private static final Set<String> COLUMN_FIELDS = Set.of("column", "label", "format");
 
     private final ObjectMapper objectMapper;
+    private final PrismReportBlockRegistry blockRegistry;
     private final Parser parser;
     private final MarkdownRenderer markdownRenderer;
 
@@ -35,7 +36,12 @@ public final class PrismReportParser {
     }
 
     public PrismReportParser(ObjectMapper objectMapper) {
+        this(objectMapper, PrismReportBlockRegistry.defaults());
+    }
+
+    public PrismReportParser(ObjectMapper objectMapper, PrismReportBlockRegistry blockRegistry) {
         this.objectMapper = objectMapper;
+        this.blockRegistry = blockRegistry;
         List<Extension> extensions = List.of(YamlFrontMatterExtension.create());
         this.parser = Parser.builder()
                 .extensions(extensions)
@@ -63,7 +69,8 @@ public final class PrismReportParser {
                 flushProse(prose, proseLine, blocks);
                 prose = new Document();
                 prismOrdinal++;
-                CompoundTableReportBlock block = parsePrismBlock(fence, prismOrdinal, line, diagnostics);
+                PrismReportBlock block = blockRegistry.parse(
+                        objectMapper, fence.getLiteral(), prismOrdinal, line, diagnostics);
                 if (block != null) blocks.add(block);
                 proseLine = line + (int) Math.max(1L, fence.getLiteral().lines().count() + 2L);
                 child.unlink();

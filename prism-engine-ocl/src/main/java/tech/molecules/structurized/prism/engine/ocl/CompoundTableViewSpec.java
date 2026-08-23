@@ -50,4 +50,10 @@ public record CompoundTableViewSpec(
         columns.forEach(column -> result.add(column.columnId()));
         return Set.copyOf(result);
     }
+
+    @Override
+    public PrismViewSpec copyWithIdentity(String id, String newTitle) {
+        return new CompoundTableViewSpec(id, newTitle, rowSetId, structureColumnId, columns,
+                linkSelection, maxRows);
+    }
 }

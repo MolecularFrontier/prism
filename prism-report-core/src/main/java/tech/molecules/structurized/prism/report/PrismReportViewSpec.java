@@ -28,8 +28,8 @@ public record PrismReportViewSpec(
     public Set<String> referencedRowSetIds() {
         LinkedHashSet<String> result = new LinkedHashSet<>();
         for (PrismReportBlock block : document.blocks()) {
-            if (block instanceof CompoundTableReportBlock table) {
-                result.addAll(table.specification().referencedRowSetIds());
+            if (block instanceof EmbeddedPrismViewReportBlock embedded) {
+                result.addAll(embedded.specification().referencedRowSetIds());
             }
         }
         return Set.copyOf(result);
@@ -39,10 +39,15 @@ public record PrismReportViewSpec(
     public Set<String> referencedColumnIds() {
         LinkedHashSet<String> result = new LinkedHashSet<>();
         for (PrismReportBlock block : document.blocks()) {
-            if (block instanceof CompoundTableReportBlock table) {
-                result.addAll(table.specification().referencedColumnIds());
+            if (block instanceof EmbeddedPrismViewReportBlock embedded) {
+                result.addAll(embedded.specification().referencedColumnIds());
             }
         }
         return Set.copyOf(result);
+    }
+
+    @Override
+    public PrismViewSpec copyWithIdentity(String id, String newTitle) {
+        return new PrismReportViewSpec(id, newTitle, document);
     }
 }

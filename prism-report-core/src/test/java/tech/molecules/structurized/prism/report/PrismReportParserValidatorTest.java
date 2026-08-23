@@ -1,8 +1,11 @@
 package tech.molecules.structurized.prism.report;
 
 import org.junit.jupiter.api.Test;
+import tech.molecules.structurized.prism.engine.ColumnSummaryViewSpec;
 import tech.molecules.structurized.prism.engine.PrismRowSet;
 import tech.molecules.structurized.prism.engine.PrismSession;
+import tech.molecules.structurized.prism.engine.ScatterPlotViewSpec;
+import tech.molecules.structurized.prism.engine.ocl.StructureGridViewSpec;
 
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
@@ -27,6 +30,61 @@ class PrismReportParserValidatorTest {
         assertEquals("all", table.specification().rowSetId());
         assertEquals("pIC50", table.specification().columns().get(1).columnId());
         assertInstanceOf(MarkdownReportBlock.class, report.blocks().get(2));
+    }
+
+    @Test
+    void parsesAndValidatesAllReusableEmbeddedViewTypes() throws Exception {
+        PrismReportDocument report = new PrismReportParser().parse("""
+                ---
+                prismReportVersion: 1
+                dataset: current
+                title: Reusable views
+                ---
+                ~~~prism
+                {
+                  "type": "structure-grid",
+                  "id": "hits",
+                  "rowSet": "all",
+                  "structureColumn": "smiles",
+                  "valueColumns": ["pIC50", "clogP"],
+                  "sortBy": "pIC50",
+                  "sortDirection": "descending",
+                  "maxCompounds": 12,
+                  "gridColumns": 3
+                }
+                ~~~
+                ~~~prism
+                {
+                  "type": "scatter",
+                  "id": "potency-property",
+                  "rowSet": "all",
+                  "xColumn": "clogP",
+                  "yColumn": "pIC50",
+                  "colorColumn": "series"
+                }
+                ~~~
+                ~~~prism
+                {
+                  "type": "column-summary",
+                  "id": "overview",
+                  "rowSet": "all",
+                  "columns": ["pIC50", "clogP", "series"]
+                }
+                ~~~
+                """);
+
+        assertFalse(report.hasErrors());
+        assertEquals(3, report.blocks().size());
+        PrismViewReportBlock grid = assertInstanceOf(PrismViewReportBlock.class, report.blocks().get(0));
+        PrismViewReportBlock scatter = assertInstanceOf(PrismViewReportBlock.class, report.blocks().get(1));
+        PrismViewReportBlock summary = assertInstanceOf(PrismViewReportBlock.class, report.blocks().get(2));
+        assertInstanceOf(StructureGridViewSpec.class, grid.specification());
+        assertInstanceOf(ScatterPlotViewSpec.class, scatter.specification());
+        assertInstanceOf(ColumnSummaryViewSpec.class, summary.specification());
+        assertTrue(new PrismReportValidator().validate(report, exampleSession()).isEmpty());
+        PrismReportViewSpec view = new PrismReportViewSpec("report", "Report", report);
+        assertTrue(view.referencedColumnIds().containsAll(java.util.Set.of("smiles", "pIC50", "clogP", "series")));
+        assertEquals(java.util.Set.of("all"), view.referencedRowSetIds());
     }
 
     @Test

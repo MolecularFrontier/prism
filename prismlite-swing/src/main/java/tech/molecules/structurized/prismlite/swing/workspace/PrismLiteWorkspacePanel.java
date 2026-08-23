@@ -117,6 +117,11 @@ public final class PrismLiteWorkspacePanel extends JPanel {
                 this::refreshStructureWorkspace,
                 this::refreshChrome));
         controller.attachTable(table);
+        controller.attachViewOpener(view -> {
+            model.session().addView(view);
+            refreshStructureWorkspace();
+            javax.swing.SwingUtilities.invokeLater(() -> focusView(view.id()));
+        });
         subscribeToSelection();
 
         navigator = new ColumnNavigatorPanel(model, controller);

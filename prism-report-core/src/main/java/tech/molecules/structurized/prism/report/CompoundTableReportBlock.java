@@ -6,5 +6,8 @@ public record CompoundTableReportBlock(
         String blockId,
         CompoundTableViewSpec specification,
         int sourceLine
-) implements PrismReportBlock {
+) implements EmbeddedPrismViewReportBlock {
+    @Override public String blockType() {
+        return "compound-table";
+    }
 }

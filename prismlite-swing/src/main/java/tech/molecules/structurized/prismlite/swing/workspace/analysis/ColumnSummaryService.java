@@ -1,5 +1,7 @@
 package tech.molecules.structurized.prismlite.swing.workspace.analysis;
 
+import tech.molecules.structurized.prism.engine.ColumnSummaries;
+import tech.molecules.structurized.prism.engine.ColumnSummary;
 import tech.molecules.structurized.prism.engine.PrismTable;
 
 import java.util.Objects;

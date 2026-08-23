@@ -1,4 +1,4 @@
-package tech.molecules.structurized.prismlite.swing.workspace.analysis;
+package tech.molecules.structurized.prism.engine;
 
 public record HistogramBin(double minimum, double maximum, long count) {
 }

@@ -59,7 +59,7 @@ public final class PrismSession {
         this.operationRegistry = new PrismOperationRegistry();
         this.table = new RuntimePrismTable(baseTable, computedValues, materializedColumns, groupingRegistry);
         this.viewState = Objects.requireNonNull(viewState, "viewState");
-        this.scoreDefinitions = indexScores(scores);
+        this.scoreDefinitions = new LinkedHashMap<>(indexScores(scores));
         this.propertyProfiles = indexProfiles(profiles);
         this.predictionCapabilities = new InMemoryPredictionCapabilityCatalog(
                 predictionCapabilities == null ? List.of() : List.copyOf(predictionCapabilities));
@@ -300,6 +300,12 @@ public final class PrismSession {
         publishChange(PrismSessionChangeType.VIEWS);
     }
 
+    public PrismOperationResult defineEndpointScore(EndpointScoreDefinition definition, String outputColumnId) {
+        PrismOperationResult result = EndpointScoreMaterializer.define(snapshot(), definition, outputColumnId);
+        applyOperationResult(result);
+        return result;
+    }
+
     public void addMaterializedColumn(MaterializedColumnData column, boolean visible) {
         applyOperationResult(PrismOperationResult.builder().addColumn(column).build(), visible);
     }
@@ -338,6 +344,16 @@ public final class PrismSession {
                 result.addedViews(),
                 result.updatedViews()
         );
+        HashSet<String> addedScoreIds = new HashSet<>();
+        for (EndpointScoreDefinition definition : result.addedScoreDefinitions()) {
+            EndpointScoreDefinition existing = scoreDefinitions.get(definition.id());
+            if (!addedScoreIds.add(definition.id())) {
+                throw new PrismOperationException("DUPLICATE_SCORE", "operation result contains duplicate score definition '" + definition.id() + "'");
+            }
+            if (existing != null && !existing.fingerprint().equals(definition.fingerprint())) {
+                throw new PrismOperationException("SCORE_EXISTS", "score definition already exists with different semantics: " + definition.id());
+            }
+        }
 
         for (PrismRowSet rowSet : result.addedRowSets()) {
             rowSets.put(rowSet.id(), rowSet);
@@ -371,6 +387,9 @@ public final class PrismSession {
                 }
             }
             viewState.setVisibleColumns(visible);
+        }
+        for (EndpointScoreDefinition definition : result.addedScoreDefinitions()) {
+            scoreDefinitions.putIfAbsent(definition.id(), definition);
         }
         recompute();
         publishChange(operationResultChangeType(columns, result));
@@ -734,7 +753,7 @@ public final class PrismSession {
     private PrismSessionChangeType operationResultChangeType(List<MaterializedColumnData> columns,
                                                               PrismOperationResult result) {
         if (!columns.isEmpty() || !result.addedRowSets().isEmpty()
-                || !result.addedGroupings().isEmpty() || !result.addedGraphs().isEmpty()) {
+                || !result.addedGroupings().isEmpty() || !result.addedGraphs().isEmpty() || !result.addedScoreDefinitions().isEmpty()) {
             return PrismSessionChangeType.STRUCTURE;
         }
         return PrismSessionChangeType.VIEWS;

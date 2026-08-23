@@ -1,4 +1,4 @@
-package tech.molecules.structurized.prismlite.swing.workspace.analysis;
+package tech.molecules.structurized.prism.engine;
 
 import java.util.List;
 
@@ -12,4 +12,7 @@ public record NumericColumnSummary(
         double standardDeviation,
         List<HistogramBin> histogram
 ) implements ColumnSummary {
+    public NumericColumnSummary {
+        histogram = histogram == null ? List.of() : List.copyOf(histogram);
+    }
 }

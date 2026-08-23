@@ -1,6 +1,10 @@
 package tech.molecules.structurized.prismlite.swing.workspace.inspector;
 
 import com.actelion.research.chem.StereoMolecule;
+import tech.molecules.structurized.prism.engine.CategoricalColumnSummary;
+import tech.molecules.structurized.prism.engine.CategoryFrequency;
+import tech.molecules.structurized.prism.engine.ColumnSummary;
+import tech.molecules.structurized.prism.engine.NumericColumnSummary;
 import tech.molecules.structurized.prism.engine.CategoryIncludeFilter;
 import tech.molecules.structurized.prism.engine.MissingValueFilter;
 import tech.molecules.structurized.prism.engine.MissingValueMode;
@@ -16,12 +20,8 @@ import tech.molecules.structurized.prism.engine.ocl.OclStereoMode;
 import tech.molecules.structurized.prism.engine.ocl.OclSubstructureFilter;
 import tech.molecules.structurized.prismlite.swing.workspace.PrismLiteWorkspaceController;
 import tech.molecules.structurized.prismlite.swing.workspace.PrismLiteWorkspaceModel;
-import tech.molecules.structurized.prismlite.swing.workspace.analysis.CategoricalColumnSummary;
-import tech.molecules.structurized.prismlite.swing.workspace.analysis.CategoryFrequency;
-import tech.molecules.structurized.prismlite.swing.workspace.analysis.ColumnSummary;
 import tech.molecules.structurized.prismlite.swing.workspace.analysis.ColumnSummaryService;
 import tech.molecules.structurized.prismlite.swing.workspace.analysis.HistogramStrip;
-import tech.molecules.structurized.prismlite.swing.workspace.analysis.NumericColumnSummary;
 import tech.molecules.structurized.prismlite.swing.workspace.chem.MoleculeRenderUtil;
 import tech.molecules.structurized.prismlite.swing.workspace.chem.MoleculeViewPanel;
 import tech.molecules.structurized.prismlite.swing.workspace.chem.StructureCoordinateResolver;

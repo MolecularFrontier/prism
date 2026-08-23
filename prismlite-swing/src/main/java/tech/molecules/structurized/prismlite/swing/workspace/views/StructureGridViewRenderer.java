@@ -4,6 +4,7 @@ import com.actelion.research.chem.StereoMolecule;
 import tech.molecules.structurized.prism.engine.PrismColumn;
 import tech.molecules.structurized.prism.engine.PrismColumnType;
 import tech.molecules.structurized.prism.engine.PrismRowSet;
+import tech.molecules.structurized.prism.engine.RowSelectionSubscription;
 import tech.molecules.structurized.prism.engine.PrismSession;
 import tech.molecules.structurized.prism.engine.PrismViewRecord;
 import tech.molecules.structurized.prism.engine.SortDirection;
@@ -34,6 +35,7 @@ import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.InputEvent;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Map;
@@ -75,10 +77,10 @@ public final class StructureGridViewRenderer implements PrismSwingViewRenderer {
         }
 
         MoleculeRenderCache cache = new MoleculeRenderCache(session.table());
-        JPanel grid = new JPanel(new GridLayout(0, spec.columns(), 8, 8));
+        SelectionAwareGridPanel grid = new SelectionAwareGridPanel(session, spec.columns());
         grid.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         for (Integer physicalRow : physicalRows) {
-            grid.add(card(session, model, structureColumn, spec, cache, physicalRow, refresh));
+            grid.addCard(physicalRow, card(session, model, structureColumn, spec, cache, physicalRow));
         }
         JScrollPane scroll = new JScrollPane(grid);
         scroll.getVerticalScrollBar().setUnitIncrement(18);
@@ -227,17 +229,13 @@ public final class StructureGridViewRenderer implements PrismSwingViewRenderer {
             PrismColumn structureColumn,
             StructureGridViewSpec spec,
             MoleculeRenderCache cache,
-            int physicalRow,
-            Runnable refresh
+            int physicalRow
     ) {
         JPanel card = new JPanel(new BorderLayout(4, 4));
         card.setBackground(Color.WHITE);
         card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         boolean selected = session.viewState().selectionModel().isSelected(physicalRow);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(selected ? new Color(51, 102, 204) : new Color(210, 214, 220), selected ? 2 : 1),
-                BorderFactory.createEmptyBorder(6, 6, 6, 6)
-        ));
+        updateSelectionBorder(card, selected);
 
         JLabel title = new JLabel(session.rowIdForPhysicalRow(physicalRow));
         card.add(title, BorderLayout.NORTH);
@@ -262,14 +260,66 @@ public final class StructureGridViewRenderer implements PrismSwingViewRenderer {
         card.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent event) {
-                BitSet selectedRows = new BitSet(session.totalRowCount());
-                selectedRows.set(physicalRow);
+                boolean additive = (event.getModifiersEx()
+                        & (InputEvent.SHIFT_DOWN_MASK | InputEvent.CTRL_DOWN_MASK | InputEvent.META_DOWN_MASK)) != 0;
+                BitSet selectedRows = additive
+                        ? session.viewState().selectionModel().selectedRows()
+                        : new BitSet(session.totalRowCount());
+                selectedRows.set(physicalRow, !additive || !selectedRows.get(physicalRow));
                 session.viewState().selectionModel().replace(selectedRows);
                 model.setFocusedPhysicalRow(physicalRow);
-                refresh.run();
             }
         });
         return card;
+    }
+
+    private static void updateSelectionBorder(JPanel card, boolean selected) {
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(
+                        selected ? new Color(51, 102, 204) : new Color(210, 214, 220),
+                        selected ? 2 : 1),
+                BorderFactory.createEmptyBorder(6, 6, 6, 6)));
+    }
+
+    private static final class SelectionAwareGridPanel extends JPanel {
+        private final PrismSession session;
+        private final Map<Integer, JPanel> cards = new LinkedHashMap<>();
+        private RowSelectionSubscription subscription;
+
+        private SelectionAwareGridPanel(PrismSession session, int columns) {
+            super(new GridLayout(0, columns, 8, 8));
+            this.session = session;
+        }
+
+        private void addCard(int physicalRow, JPanel card) {
+            cards.put(physicalRow, card);
+            add(card);
+        }
+
+        @Override
+        public void addNotify() {
+            super.addNotify();
+            if (subscription == null) {
+                subscription = session.viewState().selectionModel().subscribe(this::selectionChanged);
+            }
+            selectionChanged(session.viewState().selectionModel().selectedRows());
+        }
+
+        @Override
+        public void removeNotify() {
+            if (subscription != null) {
+                subscription.close();
+                subscription = null;
+            }
+            super.removeNotify();
+        }
+
+        private void selectionChanged(BitSet selected) {
+            Runnable update = () -> cards.forEach((row, card) ->
+                    updateSelectionBorder(card, selected.get(row)));
+            if (javax.swing.SwingUtilities.isEventDispatchThread()) update.run();
+            else javax.swing.SwingUtilities.invokeLater(update);
+        }
     }
 
     private static void addConfigRow(JPanel panel, int row, String label, JComponent component) {

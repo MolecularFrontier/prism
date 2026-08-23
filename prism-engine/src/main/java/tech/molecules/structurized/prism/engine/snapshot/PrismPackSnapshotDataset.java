@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public final class PrismPackSnapshotDataset implements PrismSnapshotDataset {
+public final class PrismPackSnapshotDataset implements PrismPackBackedSnapshotDataset {
     private final PrismPack pack;
     private final PrismTable table;
     private final RowIdIndex rowIdIndex;
@@ -54,6 +54,7 @@ public final class PrismPackSnapshotDataset implements PrismSnapshotDataset {
     }
 
     @Override public PrismTable table() { return table; }
+    @Override public PrismPack sourcePack() { return pack; }
     @Override public List<PrismSnapshotEndpoint> endpoints() { return endpoints; }
     @Override public List<PrismRowSet> rowSets() { return rowSets; }
     @Override public List<EndpointScoreDefinition> scoreDefinitions() { return pack.scores() == null ? List.of() : pack.scores().scores(); }

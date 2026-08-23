@@ -63,4 +63,10 @@ public record StructureGridViewSpec(
         }
         return Set.copyOf(new ArrayList<>(ids));
     }
+
+    @Override
+    public PrismViewSpec copyWithIdentity(String id, String newTitle) {
+        return new StructureGridViewSpec(id, newTitle, rowSetId, structureColumnId, endpointColumnIds,
+                sortColumnId, sortDirection, maxCompounds, columns);
+    }
 }

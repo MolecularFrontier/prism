@@ -8,8 +8,8 @@ createdAt: 2026-08-22T10:00:00Z
 
 # Example SAR overview
 
-This report demonstrates a live compound table bound to the current Prism dataset.
-Selecting compounds here also selects them in the main PrismLite table.
+This report demonstrates reusable Prism views bound to the current dataset. Selection is
+bidirectional: selecting compounds in a report block or another PrismLite view updates both.
 
 ~~~prism
 {
@@ -37,3 +37,58 @@ Selecting compounds here also selects them in the main PrismLite table.
   "maxRows": 200
 }
 ~~~
+
+## Dataset summary
+
+The same summary calculation used by Prism views can be embedded for a named row set.
+
+~~~prism
+{
+  "type": "column-summary",
+  "id": "property-overview",
+  "title": "Property overview",
+  "rowSet": "all",
+  "columns": ["pIC50", "clogP", "HLM_CLint", "series"]
+}
+~~~
+
+## Potency versus lipophilicity
+
+The scatter plot participates in the shared row selection. Modifier-click toggles a point;
+dragging selects a rectangular region. The block can also be opened as a full PrismLite view.
+
+~~~prism
+{
+  "type": "scatter",
+  "id": "potency-vs-clogp",
+  "title": "pIC50 versus cLogP",
+  "rowSet": "all",
+  "xColumn": "clogP",
+  "yColumn": "pIC50",
+  "colorColumn": "series"
+}
+~~~
+
+## Structure overview
+
+~~~prism
+{
+  "type": "structure-grid",
+  "id": "structure-overview",
+  "title": "Structures ranked by potency",
+  "rowSet": "all",
+  "structureColumn": "smiles",
+  "valueColumns": ["compound_id", "pIC50", "clogP"],
+  "sortBy": "pIC50",
+  "sortDirection": "descending",
+  "maxCompounds": 24,
+  "gridColumns": 4
+}
+~~~
+
+## Agent-defined scores
+
+An agent-created endpoint score is a normal numeric runtime column. After defining one through
+Structurized MCP, a report can reference its returned column ID in any compatible block, for
+example as a compound-table column, scatter axis, or scatter color column. Exporting the session
+as a new PrismPack makes that score definition, column, and the current row sets portable.

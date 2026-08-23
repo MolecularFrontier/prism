@@ -4,8 +4,7 @@ import org.commonmark.node.Node;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
 import tech.molecules.structurized.prism.engine.PrismViewRecord;
-import tech.molecules.structurized.prism.engine.ocl.CompoundTableViewSpec;
-import tech.molecules.structurized.prism.report.CompoundTableReportBlock;
+import tech.molecules.structurized.prism.report.EmbeddedPrismViewReportBlock;
 import tech.molecules.structurized.prism.report.MarkdownReportBlock;
 import tech.molecules.structurized.prism.report.PrismReportBlock;
 import tech.molecules.structurized.prism.report.PrismReportSeverity;
@@ -34,6 +33,15 @@ import java.util.Map;
 public final class PrismReportViewRenderer implements PrismSwingViewRenderer {
     private final Parser markdownParser = Parser.builder().build();
     private final HtmlRenderer htmlRenderer = HtmlRenderer.builder().escapeHtml(true).sanitizeUrls(true).build();
+    private final PrismSwingViewRendererRegistry embeddedRenderers;
+
+    public PrismReportViewRenderer() {
+        this(PrismSwingViewRendererRegistry.embeddedDefaults());
+    }
+
+    public PrismReportViewRenderer(PrismSwingViewRendererRegistry embeddedRenderers) {
+        this.embeddedRenderers = embeddedRenderers;
+    }
 
     @Override
     public String viewType() {
@@ -59,8 +67,8 @@ public final class PrismReportViewRenderer implements PrismSwingViewRenderer {
             JComponent component;
             if (block instanceof MarkdownReportBlock markdown) {
                 component = markdown(markdown.markdown());
-            } else if (block instanceof CompoundTableReportBlock table) {
-                component = compoundTable(view, table, model, refresh);
+            } else if (block instanceof EmbeddedPrismViewReportBlock embedded) {
+                component = embeddedView(view, embedded, model, controller, refresh);
             } else {
                 component = message("Unsupported report block.");
             }
@@ -114,10 +122,11 @@ public final class PrismReportViewRenderer implements PrismSwingViewRenderer {
         return pane;
     }
 
-    private JComponent compoundTable(
+    private JComponent embeddedView(
             PrismViewRecord reportView,
-            CompoundTableReportBlock block,
+            EmbeddedPrismViewReportBlock block,
             PrismLiteWorkspaceModel model,
+            PrismLiteWorkspaceController controller,
             Runnable refresh
     ) {
         JPanel wrapper = new JPanel(new BorderLayout(0, 4));
@@ -130,29 +139,35 @@ public final class PrismReportViewRenderer implements PrismSwingViewRenderer {
         toolbar.add(Box.createHorizontalGlue());
         JButton open = new JButton("Open as full view");
         open.addActionListener(event -> {
-            CompoundTableViewSpec embedded = block.specification();
             String viewId = uniqueViewId(model, reportView.id() + ":" + block.blockId());
-            CompoundTableViewSpec full = new CompoundTableViewSpec(
-                    viewId,
-                    block.blockId(),
-                    embedded.rowSetId(),
-                    embedded.structureColumnId(),
-                    embedded.columns(),
-                    embedded.linkSelection(),
-                    embedded.maxRows()
-            );
+            var full = block.specification().copyWithIdentity(viewId, block.specification().title());
             Map<String, Object> provenance = new LinkedHashMap<>(reportView.provenance());
             provenance.put("sourceReportViewId", reportView.id());
             provenance.put("sourceReportBlockId", block.blockId());
             provenance.put("openedAt", Instant.now().toString());
-            model.session().addView(new PrismViewRecord(
-                    full.viewId(), full.viewType(), full.title(), full, Instant.now(), provenance));
-            refresh.run();
+            PrismViewRecord opened = new PrismViewRecord(
+                    full.viewId(), full.viewType(), full.title(), full, Instant.now(), provenance);
+            if (controller == null) {
+                model.session().addView(opened);
+                refresh.run();
+            } else {
+                controller.addAndFocusView(opened);
+            }
         });
         toolbar.add(open);
         wrapper.add(toolbar, BorderLayout.NORTH);
-        wrapper.add(new CompoundTablePanel(block.specification(), model), BorderLayout.CENTER);
-        wrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 500));
+        PrismSwingViewRenderer renderer = embeddedRenderers.find(block.specification().viewType()).orElse(null);
+        if (renderer == null) {
+            wrapper.add(message("No Swing renderer is registered for " + block.specification().viewType() + "."),
+                    BorderLayout.CENTER);
+        } else {
+            PrismViewRecord embedded = new PrismViewRecord(
+                    block.specification().viewId(), block.specification().viewType(),
+                    block.specification().title(), block.specification(),
+                    reportView.createdAt(), reportView.provenance());
+            wrapper.add(renderer.createComponent(embedded, model, controller, refresh), BorderLayout.CENTER);
+        }
+        wrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 520));
         return wrapper;
     }
 

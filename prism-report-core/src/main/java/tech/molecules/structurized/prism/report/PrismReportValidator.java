@@ -14,13 +14,27 @@ import java.util.List;
 import java.util.Set;
 
 public final class PrismReportValidator {
+    private final PrismReportBlockRegistry blockRegistry;
+
+    public PrismReportValidator() {
+        this(PrismReportBlockRegistry.defaults());
+    }
+
+    public PrismReportValidator(PrismReportBlockRegistry blockRegistry) {
+        this.blockRegistry = blockRegistry;
+    }
+
     public List<PrismReportDiagnostic> validate(PrismReportDocument document, PrismSession session) {
         ArrayList<PrismReportDiagnostic> result = new ArrayList<>(document.diagnostics());
         validateMetadata(document.metadata(), result);
         HashSet<String> blockIds = new HashSet<>();
         for (PrismReportBlock block : document.blocks()) {
-            if (block instanceof CompoundTableReportBlock table) {
-                validateTable(table, session, blockIds, result);
+            if (block instanceof EmbeddedPrismViewReportBlock embedded) {
+                if (!blockIds.add(embedded.blockId())) {
+                    result.add(error("DUPLICATE_BLOCK_ID", "Duplicate block id '" + embedded.blockId() + "'.",
+                            embedded.blockId(), embedded.sourceLine()));
+                }
+                blockRegistry.validate(block, session, result);
             }
         }
         return List.copyOf(result);

@@ -8,11 +8,17 @@ public final class PrismSwingViewRendererRegistry {
     private final Map<String, PrismSwingViewRenderer> renderers = new LinkedHashMap<>();
 
     public static PrismSwingViewRendererRegistry defaults() {
+        PrismSwingViewRendererRegistry registry = embeddedDefaults();
+        registry.register(new PrismReportViewRenderer(registry));
+        return registry;
+    }
+
+    public static PrismSwingViewRendererRegistry embeddedDefaults() {
         PrismSwingViewRendererRegistry registry = new PrismSwingViewRendererRegistry();
         registry.register(new StructureGridViewRenderer());
         registry.register(new ScatterPlotViewRenderer());
         registry.register(new CompoundTableViewRenderer());
-        registry.register(new PrismReportViewRenderer());
+        registry.register(new ColumnSummaryViewRenderer());
         return registry;
     }
 
