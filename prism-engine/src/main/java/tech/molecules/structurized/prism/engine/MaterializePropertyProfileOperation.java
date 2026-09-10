@@ -136,6 +136,8 @@ public final class MaterializePropertyProfileOperation implements PrismOperation
             fingerprint.append('|').append(component.endpointId()).append(':').append(component.scoreId())
                     .append(':').append(component.weight()).append(':').append(component.required())
                     .append(':').append(component.hardFailBelow())
+                    .append(':').append(component.hardFailValueAtOrBelow())
+                    .append(':').append(component.hardFailValueAtOrAbove())
                     .append(':').append(score == null ? "missing" : score.fingerprint());
         });
         return Integer.toHexString(fingerprint.toString().hashCode());

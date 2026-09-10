@@ -61,6 +61,8 @@ final class ScoreOperationOutput {
         value.put("weight", component.definition().weight());
         value.put("required", component.definition().required());
         value.put("hardFailBelow", component.definition().hardFailBelow());
+        value.put("hardFailValueAtOrBelow", component.definition().hardFailValueAtOrBelow());
+        value.put("hardFailValueAtOrAbove", component.definition().hardFailValueAtOrAbove());
         value.put("hardFail", component.hardFail());
         value.put("evaluation", score(component.score()));
         return value;

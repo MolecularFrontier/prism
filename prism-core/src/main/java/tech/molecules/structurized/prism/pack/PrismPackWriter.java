@@ -445,6 +445,8 @@ public final class PrismPackWriter {
         map.put("weight", component.weight());
         map.put("required", component.required());
         putIfNotNull(map, "hardFailBelow", component.hardFailBelow());
+        putIfNotNull(map, "hardFailValueAtOrBelow", component.hardFailValueAtOrBelow());
+        putIfNotNull(map, "hardFailValueAtOrAbove", component.hardFailValueAtOrAbove());
         return map;
     }
 

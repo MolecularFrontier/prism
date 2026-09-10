@@ -163,7 +163,10 @@ public final class PrismPackReader {
                     components.add(new MpoComponentDefinition(
                             string(component.get("endpointId")), string(component.get("scoreId")),
                             string(component.get("label")), number(component.getOrDefault("weight", 1.0)),
-                            bool(component.get("required"), false), nullableNumber(component.get("hardFailBelow"))));
+                            bool(component.get("required"), false),
+                            nullableNumber(component.get("hardFailBelow")),
+                            nullableNumber(component.get("hardFailValueAtOrBelow")),
+                            nullableNumber(component.get("hardFailValueAtOrAbove"))));
                 }
                 Map<String, Object> aggregation = object(mpo.get("aggregation"));
                 mpos.add(new MpoDefinition(string(mpo.get("id")), string(mpo.get("displayName")), components,

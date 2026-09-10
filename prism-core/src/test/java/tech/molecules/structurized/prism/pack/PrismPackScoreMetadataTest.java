@@ -33,6 +33,9 @@ class PrismPackScoreMetadataTest {
         assertEquals("potency_score", loaded.scores().scores().getFirst().id());
         assertEquals("lead_profile", loaded.propertyProfiles().profiles().getFirst().id());
         assertEquals("lead_mpo", loaded.propertyProfiles().profiles().getFirst().mpos().getFirst().id());
+        MpoComponentDefinition component = loaded.propertyProfiles().profiles().getFirst().mpos().getFirst().components().getFirst();
+        assertEquals(4.0, component.hardFailValueAtOrBelow());
+        assertEquals(10.0, component.hardFailValueAtOrAbove());
         assertTrue(loaded.warnings().isEmpty());
     }
 
@@ -41,7 +44,7 @@ class PrismPackScoreMetadataTest {
                 "potency_score", "pIC50", "Potency", null, "line_segment_v1", "linear", true,
                 List.of(new ScorePoint(5.0, 0.0), new ScorePoint(9.0, 1.0)), Map.of("source", "external_system"));
         MpoDefinition mpo = new MpoDefinition("lead_mpo", "Lead MPO", List.of(
-                new MpoComponentDefinition("pIC50", "potency_score", "Potency", 1.0, true, 0.25)),
+                new MpoComponentDefinition("pIC50", "potency_score", "Potency", 1.0, true, 0.25, 4.0, 10.0)),
                 MpoAggregationDefinition.defaults());
         PropertyProfileDefinition profile = new PropertyProfileDefinition(
                 "lead_profile", "Lead profile", "Portable property profile",
