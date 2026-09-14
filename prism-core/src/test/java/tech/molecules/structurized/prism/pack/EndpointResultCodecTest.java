@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class EndpointResultCodecTest {
     @Test
@@ -23,13 +24,25 @@ class EndpointResultCodecTest {
                 .rawValues(List.of(22.0, 24.0)).rawValueIds(List.of("r1", "r2")).n(2)
                 .firstMeasurement("2026-01-01").lastMeasurement("2026-01-03")
                 .details(Map.of("workflow", Map.of("type", "assay"), "quality", 0.9))
-                .datapoints(List.of(PrismNumericDatapoint.builder().value(22.0).unprocessedValue("22")
+                .datapoints(List.of(PrismNumericDatapoint.builder().value(22.0).modifier("<").unprocessedValue("<22")
                         .date("2026-01-01").batch("B1").sourceId("r1").metadata(Map.of("plate", 7.0)).build()))
                 .build();
 
         EndpointResult decoded = EndpointResultCodec.decodeJson(EndpointResultCodec.encodeJson(source));
 
         assertEquals(source, decoded);
+    }
+
+    @Test
+    void decodesLegacyDatapointWithoutModifier() {
+        EndpointResult decoded = EndpointResultCodec.decodeJson("""
+                {"type":"NUMERIC","state":"VALUE","mean":7.1,
+                 "datapoints":[{"value":7.1,"unprocessedValue":">7.1"}]}
+                """);
+
+        NumericResult numeric = (NumericResult) decoded;
+        assertNull(numeric.getDatapoints().getFirst().getModifier());
+        assertEquals(">7.1", numeric.getDatapoints().getFirst().getUnprocessedValue());
     }
 
     @Test

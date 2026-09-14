@@ -111,7 +111,8 @@ public final class EndpointResultCodec {
         return datapoints.stream().map(point -> {
             LinkedHashMap<String, Object> map = new LinkedHashMap<>();
             put(map, "date", point.getDate()); put(map, "batch", point.getBatch()); put(map, "sourceId", point.getSourceId());
-            put(map, "value", point.getValue()); put(map, "unprocessedValue", point.getUnprocessedValue());
+            put(map, "value", point.getValue()); put(map, "modifier", point.getModifier());
+            put(map, "unprocessedValue", point.getUnprocessedValue());
             if (!point.getMetadata().isEmpty()) map.put("metadata", point.getMetadata());
             return Map.copyOf(map);
         }).toList();
@@ -129,6 +130,7 @@ public final class EndpointResultCodec {
                     .batch(string(map.get("batch"), "batch"))
                     .sourceId(string(map.get("sourceId"), "sourceId"))
                     .value(doubleValue(map.get("value"), "value"))
+                    .modifier(string(map.get("modifier"), "modifier"))
                     .unprocessedValue(string(map.get("unprocessedValue"), "unprocessedValue"))
                     .metadata(mapValue(map.get("metadata"), "metadata"))
                     .build());
