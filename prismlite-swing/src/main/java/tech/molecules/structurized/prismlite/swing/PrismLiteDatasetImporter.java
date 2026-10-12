@@ -234,7 +234,7 @@ public final class PrismLiteDatasetImporter {
 
     private static String type(EndpointDataType datatype) {
         return switch (datatype) {
-            case NUMERIC, OPTIONAL_NUMERIC -> "numeric";
+            case NUMERIC, OPTIONAL_NUMERIC -> "number";
             case BOOLEAN -> "boolean";
             case CATEGORICAL -> "text";
             case TEXT -> "text";

@@ -1,6 +1,10 @@
 package tech.molecules.structurized.prismlite.swing.workspace.analysis;
 
 import org.junit.jupiter.api.Test;
+import tech.molecules.structurized.prism.engine.CategoricalColumnSummary;
+import tech.molecules.structurized.prism.engine.ColumnSummaries;
+import tech.molecules.structurized.prism.engine.ColumnSummary;
+import tech.molecules.structurized.prism.engine.NumericColumnSummary;
 import tech.molecules.structurized.prism.engine.PrismSession;
 
 import java.nio.file.Path;

@@ -7,6 +7,8 @@ import tech.molecules.structurized.prism.prediction.PredictionCapability;
 import tech.molecules.structurized.prism.prediction.PredictionCapabilityCatalog;
 import tech.molecules.structurized.prism.score.EndpointScoreDefinition;
 import tech.molecules.structurized.prism.score.PropertyProfileDefinition;
+import tech.molecules.structurized.prism.engine.snapshot.PrismPackSnapshotDataset;
+import tech.molecules.structurized.prism.engine.snapshot.PrismSnapshotDataset;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -57,7 +59,7 @@ public final class PrismSession {
         this.operationRegistry = new PrismOperationRegistry();
         this.table = new RuntimePrismTable(baseTable, computedValues, materializedColumns, groupingRegistry);
         this.viewState = Objects.requireNonNull(viewState, "viewState");
-        this.scoreDefinitions = indexScores(scores);
+        this.scoreDefinitions = new LinkedHashMap<>(indexScores(scores));
         this.propertyProfiles = indexProfiles(profiles);
         this.predictionCapabilities = new InMemoryPredictionCapabilityCatalog(
                 predictionCapabilities == null ? List.of() : List.copyOf(predictionCapabilities));
@@ -75,13 +77,24 @@ public final class PrismSession {
     }
 
     public static PrismSession from(PrismPack pack) {
-        PrismTable table = InMemoryPrismTable.from(pack);
-        Collection<EndpointScoreDefinition> scores = pack.scores() == null ? List.of() : pack.scores().scores();
-        Collection<PropertyProfileDefinition> profiles = pack.propertyProfiles() == null
+        return from(PrismPackSnapshotDataset.from(pack), pack);
+    }
+
+    public static PrismSession from(PrismSnapshotDataset snapshot) {
+        return from(snapshot, null);
+    }
+
+    private static PrismSession from(PrismSnapshotDataset snapshot, PrismPack pack) {
+        PrismTable table = snapshot.table();
+        Collection<EndpointScoreDefinition> scores = snapshot.scoreDefinitions();
+        Collection<PropertyProfileDefinition> profiles = pack == null || pack.propertyProfiles() == null
                 ? List.of() : pack.propertyProfiles().profiles();
-        Collection<PredictionCapability> predictionCapabilities = pack.predictions() == null
+        Collection<PredictionCapability> predictionCapabilities = pack == null || pack.predictions() == null
                 ? List.of() : pack.predictions().capabilities();
-        return new PrismSession(table, PrismViewState.fromPack(pack, table), scores, profiles, predictionCapabilities);
+        PrismSession session = new PrismSession(table, pack == null ? PrismViewState.defaultFor(table) : PrismViewState.fromPack(pack, table),
+                scores, profiles, predictionCapabilities);
+        snapshot.rowSets().forEach(session::addRowSet);
+        return session;
     }
 
     public static PrismSession from(PrismTable table) {
@@ -287,6 +300,12 @@ public final class PrismSession {
         publishChange(PrismSessionChangeType.VIEWS);
     }
 
+    public PrismOperationResult defineEndpointScore(EndpointScoreDefinition definition, String outputColumnId) {
+        PrismOperationResult result = EndpointScoreMaterializer.define(snapshot(), definition, outputColumnId);
+        applyOperationResult(result);
+        return result;
+    }
+
     public void addMaterializedColumn(MaterializedColumnData column, boolean visible) {
         applyOperationResult(PrismOperationResult.builder().addColumn(column).build(), visible);
     }
@@ -325,6 +344,16 @@ public final class PrismSession {
                 result.addedViews(),
                 result.updatedViews()
         );
+        HashSet<String> addedScoreIds = new HashSet<>();
+        for (EndpointScoreDefinition definition : result.addedScoreDefinitions()) {
+            EndpointScoreDefinition existing = scoreDefinitions.get(definition.id());
+            if (!addedScoreIds.add(definition.id())) {
+                throw new PrismOperationException("DUPLICATE_SCORE", "operation result contains duplicate score definition '" + definition.id() + "'");
+            }
+            if (existing != null && !existing.fingerprint().equals(definition.fingerprint())) {
+                throw new PrismOperationException("SCORE_EXISTS", "score definition already exists with different semantics: " + definition.id());
+            }
+        }
 
         for (PrismRowSet rowSet : result.addedRowSets()) {
             rowSets.put(rowSet.id(), rowSet);
@@ -358,6 +387,9 @@ public final class PrismSession {
                 }
             }
             viewState.setVisibleColumns(visible);
+        }
+        for (EndpointScoreDefinition definition : result.addedScoreDefinitions()) {
+            scoreDefinitions.putIfAbsent(definition.id(), definition);
         }
         recompute();
         publishChange(operationResultChangeType(columns, result));
@@ -721,7 +753,7 @@ public final class PrismSession {
     private PrismSessionChangeType operationResultChangeType(List<MaterializedColumnData> columns,
                                                               PrismOperationResult result) {
         if (!columns.isEmpty() || !result.addedRowSets().isEmpty()
-                || !result.addedGroupings().isEmpty() || !result.addedGraphs().isEmpty()) {
+                || !result.addedGroupings().isEmpty() || !result.addedGraphs().isEmpty() || !result.addedScoreDefinitions().isEmpty()) {
             return PrismSessionChangeType.STRUCTURE;
         }
         return PrismSessionChangeType.VIEWS;

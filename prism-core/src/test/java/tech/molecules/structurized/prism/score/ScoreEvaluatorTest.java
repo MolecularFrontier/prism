@@ -63,6 +63,19 @@ class ScoreEvaluatorTest {
         assertEquals(MpoStatus.INSUFFICIENT_DATA, empty.status());
     }
 
+    @Test
+    void evaluatesInclusiveRawValueKillerBounds() {
+        EndpointScoreDefinition potency = score("potency", "pIC50", EndpointScoreDefinition.LINEAR,
+                List.of(new ScorePoint(5.0, 0.0), new ScorePoint(9.0, 1.0)));
+        MpoDefinition mpo = new MpoDefinition("bounded", "Bounded", List.of(
+                new MpoComponentDefinition("pIC50", "potency", "Potency", 1.0, false,
+                        null, 5.0, 10.0)), MpoAggregationDefinition.defaults());
+
+        assertEquals(MpoStatus.FAIL, ScoreEvaluator.evaluate(mpo, Map.of("pIC50", 5.0), Map.of("potency", potency)).status());
+        assertEquals(MpoStatus.PASS, ScoreEvaluator.evaluate(mpo, Map.of("pIC50", 7.0), Map.of("potency", potency)).status());
+        assertEquals(MpoStatus.FAIL, ScoreEvaluator.evaluate(mpo, Map.of("pIC50", 10.0), Map.of("potency", potency)).status());
+    }
+
     private static EndpointScoreDefinition score(String id, String endpointId, String scale, List<ScorePoint> points) {
         return new EndpointScoreDefinition(id, endpointId, id, null, "line_segment_v1", scale, true, points, Map.of());
     }

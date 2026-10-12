@@ -19,6 +19,36 @@ final class PrismPackJson {
         return builder.toString();
     }
 
+    static String stringifyCompact(Object value) {
+        StringBuilder builder = new StringBuilder();
+        writeCompactValue(builder, value);
+        return builder.toString();
+    }
+
+    private static void writeCompactValue(StringBuilder builder, Object value) {
+        if (value == null) builder.append("null");
+        else if (value instanceof String string) writeString(builder, string);
+        else if (value instanceof Number || value instanceof Boolean) builder.append(value);
+        else if (value instanceof Map<?, ?> map) {
+            builder.append('{');
+            boolean first = true;
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                if (entry.getKey() == null) continue;
+                if (!first) builder.append(',');
+                first = false;
+                writeString(builder, String.valueOf(entry.getKey())); builder.append(':');
+                writeCompactValue(builder, entry.getValue());
+            }
+            builder.append('}');
+        } else if (value instanceof Iterable<?> iterable) {
+            builder.append('['); boolean first = true;
+            for (Object item : iterable) {
+                if (!first) builder.append(','); first = false; writeCompactValue(builder, item);
+            }
+            builder.append(']');
+        } else writeString(builder, String.valueOf(value));
+    }
+
     private static void writeValue(StringBuilder builder, Object value, int indent) {
         if (value == null) {
             builder.append("null");

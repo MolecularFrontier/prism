@@ -473,7 +473,8 @@ An MPO combines endpoint desirabilities rather than raw endpoint values. Each
 
 * label and non-negative weight;
 * whether the component is required;
-* optional hard-fail threshold in score space.
+* optional hard-fail threshold in score space;
+* optional inclusive lower and upper hard-fail bounds in raw endpoint-value space.
 
 MPO v1 calculates a weighted mean over available components. Missing values are
 ignored in the arithmetic, while coverage is the available weight divided by
@@ -484,7 +485,8 @@ total weight. Evaluation also records component counts and returns one status:
 * `WARNING`: coverage is below the configured warning threshold.
 * `PASS`: none of the above applies.
 
-Required-missing status takes precedence over hard fail, and hard fail takes
+Raw-value hard-fail bounds are evaluated whenever a finite endpoint value is
+available, independently of the desirability curve. Required-missing status takes precedence over hard fail, and hard fail takes
 precedence over low-coverage warning. The complete component evaluations remain
 available for explanation and audit.
 

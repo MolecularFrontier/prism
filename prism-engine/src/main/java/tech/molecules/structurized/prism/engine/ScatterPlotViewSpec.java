@@ -56,4 +56,10 @@ public record ScatterPlotViewSpec(
         }
         return Set.copyOf(new ArrayList<>(ids));
     }
+
+    @Override
+    public PrismViewSpec copyWithIdentity(String id, String newTitle) {
+        return new ScatterPlotViewSpec(id, newTitle, rowSetId, xColumnId, yColumnId, colorColumnId,
+                xMin, xMax, yMin, yMax);
+    }
 }

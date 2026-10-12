@@ -6,6 +6,7 @@ import tech.molecules.structurized.prism.provider.SubjectRecord;
 import tech.molecules.structurized.prism.provider.SubjectSet;
 import tech.molecules.structurized.prism.provider.inmemory.InMemoryPrismDataset;
 import tech.molecules.structurized.prism.query.EndpointValueRecord;
+import tech.molecules.structurized.prism.pack.EndpointResultCodec;
 import tech.molecules.structurized.prism.result.AbstractEndpointResult;
 import tech.molecules.structurized.prism.result.BooleanResult;
 import tech.molecules.structurized.prism.result.CategoricalResult;
@@ -219,7 +220,7 @@ public final class PrismTsvDatasetWriter {
     }
 
     private static String valuesTsv(List<EndpointValueRecord> values) {
-        StringBuilder out = new StringBuilder("subject_id\tendpoint_id\tstate\tmean\tlower\tupper\traw_values\tvalue\ttext\tn\traw_value_ids\tfirst_measurement\tlast_measurement\tdetails\n");
+        StringBuilder out = new StringBuilder("subject_id\tendpoint_id\tstate\tmean\tlower\tupper\traw_values\tvalue\ttext\tn\traw_value_ids\tfirst_measurement\tlast_measurement\tdetails\tresult_json\n");
         for (EndpointValueRecord value : values) {
             EndpointResult result = value.getResult();
             String state = "", mean = "", lower = "", upper = "", rawValues = "", scalar = "", text = "";
@@ -236,7 +237,7 @@ public final class PrismTsvDatasetWriter {
             AbstractEndpointResult shared = (AbstractEndpointResult) result;
             out.append(row(List.of(value.getSubjectId(), value.getEndpointId(), state, mean, lower, upper, rawValues,
                     scalar, text, nullable(shared.getN()), join(shared.getRawValueIds()), nullable(shared.getFirstMeasurement()),
-                    nullable(shared.getLastMeasurement()), details(shared.getDetails()))));
+                    nullable(shared.getLastMeasurement()), details(shared.getDetails()), EndpointResultCodec.encodeJson(result))));
         }
         return out.toString();
     }

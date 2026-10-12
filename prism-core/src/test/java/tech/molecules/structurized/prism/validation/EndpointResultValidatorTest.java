@@ -57,6 +57,7 @@ class EndpointResultValidatorTest {
                 .batch("batch-7")
                 .sourceId("raw-1")
                 .value(7.1)
+                .modifier(">")
                 .unprocessedValue(">7.1")
                 .putMetadata("sourceSystem", "osiris")
                 .build();

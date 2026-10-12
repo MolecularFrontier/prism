@@ -1,4 +1,4 @@
-PrismPack v0.2
+PrismPack v0.3
 ===============
 
 PrismPack is a lightweight package format for one analysis-ready dataframe plus
@@ -30,6 +30,8 @@ Optional files:
 
 - `semantics/molecules.json`
 - `semantics/endpoints.json`
+- `semantics/endpoint-results.jsonl`
+- `semantics/row-sets.json`
 - `semantics/scores.json`
 - `semantics/property-profiles.json`
 - `views/table-view.json`
@@ -44,7 +46,7 @@ Manifest
 
 ```json
 {
-  "prismPackVersion": "0.1",
+  "prismPackVersion": "0.3",
   "id": "example-sar-analysis",
   "title": "Example SAR Analysis",
   "description": "Prepared compound analysis package for DataWarrior inspection.",
@@ -58,6 +60,11 @@ Manifest
   },
   "molecules": "semantics/molecules.json",
   "endpoints": "semantics/endpoints.json",
+  "endpointResults": {
+    "path": "semantics/endpoint-results.jsonl",
+    "rowKeyColumn": "subject_id"
+  },
+  "rowSets": "semantics/row-sets.json",
   "scores": "semantics/scores.json",
   "propertyProfiles": "semantics/property-profiles.json",
   "tableView": "views/table-view.json",
@@ -67,10 +74,11 @@ Manifest
 }
 ```
 
-Only `prismPackVersion` and `dataframe.path` are required in v0.1. If
+Only `prismPackVersion` and `dataframe.path` are required. If
 `dataframe.schema` is absent, readers must use `schema/dataframe.schema.json`.
-PrismPack v0.2 adds only optional score and property-profile metadata; v0.1
-packages remain valid inputs.
+PrismPack v0.2 added optional score and property-profile metadata. v0.3 adds
+optional typed endpoint-result and row-set sidecars plus complete endpoint
+definitions. v0.1 and v0.2 packages remain valid inputs.
 
 Dataframe TSV
 -------------
@@ -136,6 +144,21 @@ Optional metadata
 - `direction`
 - `assay`
 - `protocol`
+- `definition`: the complete portable `EndpointDefinition`
+
+`semantics/endpoint-results.jsonl` is the canonical typed cell-detail sidecar
+introduced in v0.3. Each non-empty line contains `rowKey`, `endpointId`, and a
+`result` encoded by `EndpointResultCodec`. The result preserves its type and
+state as well as bounds, aggregate value, raw values and IDs, measurement
+counts and dates, datapoints, and details when those fields exist. The normal
+dataframe cell remains the compact analysis/display projection. Packs without
+this sidecar are valid but must advertise reduced endpoint-result fidelity.
+
+`semantics/row-sets.json` may define stable snapshot membership sets. Each row
+set has an `id`, optional name/description, `rowIds`, and optional provenance.
+Repository subject sets included in a snapshot are represented here as row
+sets with the same stable ID; their source type, scope, hierarchy, and parent
+metadata belong in provenance rather than in the analysis-facing API.
 
 `semantics/scores.json` may define portable endpoint desirability functions.
 The initial `line_segment_v1` score contains an endpoint reference, linear or

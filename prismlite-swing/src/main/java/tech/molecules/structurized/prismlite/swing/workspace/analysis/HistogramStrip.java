@@ -1,5 +1,7 @@
 package tech.molecules.structurized.prismlite.swing.workspace.analysis;
 
+import tech.molecules.structurized.prism.engine.HistogramBin;
+
 import javax.swing.JComponent;
 import java.awt.Color;
 import java.awt.Dimension;

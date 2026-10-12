@@ -11,9 +11,11 @@ import tech.molecules.structurized.prism.provider.SubjectRecord;
 import tech.molecules.structurized.prism.provider.SubjectSet;
 import tech.molecules.structurized.prism.provider.inmemory.InMemoryPrismDataset;
 import tech.molecules.structurized.prism.query.EndpointValueRecord;
+import tech.molecules.structurized.prism.pack.EndpointResultCodec;
 import tech.molecules.structurized.prism.result.AbstractEndpointResult;
 import tech.molecules.structurized.prism.result.BooleanResult;
 import tech.molecules.structurized.prism.result.CategoricalResult;
+import tech.molecules.structurized.prism.result.EndpointResult;
 import tech.molecules.structurized.prism.result.NumericResult;
 import tech.molecules.structurized.prism.result.NumericState;
 import tech.molecules.structurized.prism.result.OptionalNumericResult;
@@ -181,10 +183,11 @@ public final class PrismTsvDatasetLoader {
             throw row.error("unknown endpoint id '" + endpointId + "'");
         }
 
+        String resultJson = optional(row, "result_json");
         return EndpointValueRecord.builder()
                 .subjectId(subjectId)
                 .endpointId(endpointId)
-                .result(switch (definition.getDatatype()) {
+                .result(resultJson != null ? decodeResultJson(resultJson, definition, row) : switch (definition.getDatatype()) {
                     case NUMERIC -> parseNumericResult(row);
                     case OPTIONAL_NUMERIC -> parseOptionalNumericResult(row);
                     case BOOLEAN -> parseBooleanResult(row);
@@ -192,6 +195,18 @@ public final class PrismTsvDatasetLoader {
                     case TEXT -> parseTextResult(row);
                 })
                 .build();
+    }
+
+    private static EndpointResult decodeResultJson(String json, EndpointDefinition definition, Row row) {
+        try {
+            EndpointResult result = EndpointResultCodec.decodeJson(json);
+            if (result.getType() != definition.getDatatype()) {
+                throw row.error("result_json type " + result.getType() + " does not match endpoint datatype " + definition.getDatatype());
+            }
+            return result;
+        } catch (IllegalArgumentException error) {
+            throw row.error("invalid result_json: " + error.getMessage());
+        }
     }
 
     private static NumericResult parseNumericResult(Row row) {

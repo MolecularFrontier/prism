@@ -59,14 +59,21 @@ public final class ScoreEvaluator {
                     ? new EndpointScoreEvaluation(component.scoreId(), component.endpointId(), null, null,
                     "SCORE_NOT_FOUND", "Score definition is unavailable")
                     : evaluate(scoreDefinition, endpointValues.get(component.endpointId()));
-            boolean hardFail = score.available() && component.hardFailBelow() != null
+            Double endpointValue = endpointValues.get(component.endpointId());
+            boolean scoreHardFail = score.available() && component.hardFailBelow() != null
                     && score.score() < component.hardFailBelow();
+            boolean rawValueHardFail = endpointValue != null && Double.isFinite(endpointValue)
+                    && ((component.hardFailValueAtOrBelow() != null
+                            && endpointValue <= component.hardFailValueAtOrBelow())
+                        || (component.hardFailValueAtOrAbove() != null
+                            && endpointValue >= component.hardFailValueAtOrAbove()));
+            boolean hardFail = scoreHardFail || rawValueHardFail;
             components.add(new MpoComponentEvaluation(component, score, hardFail));
+            if (hardFail) hardFailCount++;
             if (score.available()) {
                 availableCount++;
                 availableWeight += component.weight();
                 weightedSum += score.score() * component.weight();
-                if (hardFail) hardFailCount++;
             } else {
                 missingCount++;
                 if (component.required()) requiredMissingCount++;

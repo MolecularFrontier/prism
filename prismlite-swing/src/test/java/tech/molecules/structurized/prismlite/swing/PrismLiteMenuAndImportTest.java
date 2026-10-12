@@ -2,6 +2,7 @@ package tech.molecules.structurized.prismlite.swing;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import tech.molecules.structurized.prism.engine.PrismColumnType;
 import tech.molecules.structurized.prism.engine.PrismSession;
 import tech.molecules.structurized.prism.io.PrismTsvDatasetLoader;
 import tech.molecules.structurized.prism.provider.inmemory.InMemoryPrismDataset;
@@ -28,7 +29,8 @@ class PrismLiteMenuAndImportTest {
 
             assertNotNull(menubar);
             assertEquals("File", menubar.getMenu(0).getText());
-            assertEquals("Import ChEMBL Publication...", menubar.getMenu(0).getItem(2).getText());
+            assertEquals("Open Prism Report...", menubar.getMenu(0).getItem(1).getText());
+            assertEquals("Import ChEMBL Publication...", menubar.getMenu(0).getItem(3).getText());
             assertEquals("View", menubar.getMenu(1).getText());
             assertEquals("Data", menubar.getMenu(2).getText());
             assertEquals("Help", menubar.getMenu(3).getText());
@@ -51,6 +53,7 @@ class PrismLiteMenuAndImportTest {
         assertEquals(1, session.totalRowCount());
         assertEquals("cmp-1", session.valueAtVisible(0, 0));
         assertEquals(7, session.visibleColumnCount());
+        assertEquals(PrismColumnType.NUMERIC, session.table().column("ic50").type());
         assertEquals("6.5", session.table().formattedValueAt(0, "ic50"));
         assertEquals(1, session.rowSets().size());
         assertEquals("project:Project A", session.rowSets().getFirst().id());

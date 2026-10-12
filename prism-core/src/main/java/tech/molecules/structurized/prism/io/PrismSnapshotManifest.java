@@ -11,11 +11,12 @@ public record PrismSnapshotManifest(
         PrismSnapshotDescriptor descriptor,
         List<PrismSnapshotFile> files
 ) {
-    public static final int CURRENT_SCHEMA_VERSION = 1;
+    public static final int CURRENT_SCHEMA_VERSION = 2;
+    public static final int MIN_SUPPORTED_SCHEMA_VERSION = 1;
     public static final String FORMAT = "prism-tsv-snapshot";
 
     public PrismSnapshotManifest {
-        if (schemaVersion != CURRENT_SCHEMA_VERSION) {
+        if (schemaVersion < MIN_SUPPORTED_SCHEMA_VERSION || schemaVersion > CURRENT_SCHEMA_VERSION) {
             throw new IllegalArgumentException("unsupported snapshot schemaVersion " + schemaVersion);
         }
         if (!FORMAT.equals(format)) throw new IllegalArgumentException("unsupported snapshot format " + format);
