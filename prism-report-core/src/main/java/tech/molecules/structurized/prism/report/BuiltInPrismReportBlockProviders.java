@@ -32,6 +32,7 @@ final class BuiltInPrismReportBlockProviders {
         registry.register(new StructureGridProvider());
         registry.register(new ScatterProvider());
         registry.register(new ColumnSummaryProvider());
+        StructureSketchReportBlockProvider.register(registry);
         SarPrismReportBlockProviders.register(registry);
     }
 
@@ -46,15 +47,21 @@ final class BuiltInPrismReportBlockProviders {
                     session.rowSet(rowSetId);
                 } catch (IllegalArgumentException exception) {
                     diagnostics.add(error("UNKNOWN_ROW_SET",
-                            unknownWithSuggestion("row set", rowSetId,
+                            PrismReportHints.unknown("row set", rowSetId,
                                     session.rowSets().stream().map(item -> item.id()).toList()), embedded));
                 }
             }
             for (String columnId : specification.referencedColumnIds()) {
                 if (session.table().findColumn(columnId).isEmpty()) {
                     diagnostics.add(error("UNKNOWN_COLUMN",
-                            unknownWithSuggestion("column", columnId,
+                            PrismReportHints.unknown("column", columnId,
                                     session.table().columns().stream().map(PrismColumn::id).toList()), embedded));
+                } else {
+                    // E3: a SAR column over unmatched rows renders as "unmatched" with no error.
+                    for (String rowSetId : specification.referencedRowSetIds()) {
+                        PrismReportHints.sarCoverage(session, columnId, rowSetId).ifPresent(message ->
+                                diagnostics.add(warning("SPARSE_SAR_COVERAGE", message, embedded)));
+                    }
                 }
             }
             validateSpecific(embedded, session, diagnostics);

@@ -95,7 +95,9 @@ public final class PrismReportParser {
                 first(data, "dataset"),
                 first(data, "title"),
                 first(data, "id"),
-                first(data, "createdAt")
+                first(data, "createdAt"),
+                first(data, "datasetId"),
+                first(data, "datasetSnapshotId")
         );
     }
 

@@ -18,7 +18,7 @@ public enum PrismColumnType {
         if ("chemical_structure".equals(semantic)) {
             return MOLECULE;
         }
-        if ("category".equals(semantic)) {
+        if ("category".equals(semantic) || isCategoricalAnalysisSemanticType(semantic)) {
             return CATEGORICAL;
         }
         return switch (normalize(type)) {
@@ -26,6 +26,19 @@ public enum PrismColumnType {
             case "integer" -> INTEGER;
             case "boolean" -> BOOLEAN;
             default -> TEXT;
+        };
+    }
+
+    /**
+     * Semantic types produced by analysis operations whose values are discrete group keys rather
+     * than free text. These must resolve to {@link #CATEGORICAL} so that round-tripped columns stay
+     * usable by consumers requiring a categorical column - notably the {@code sar-1d} and
+     * {@code sar-2d} report blocks, which reject a plain text substituent column.
+     */
+    private static boolean isCategoricalAnalysisSemanticType(String semantic) {
+        return switch (semantic) {
+            case "sar_substituent", "cluster_id", "clustering_facet", "prediction_status" -> true;
+            default -> false;
         };
     }
 
