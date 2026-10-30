@@ -19,7 +19,7 @@ import tech.molecules.structurized.prismlite.swing.chembl.ChemblPublicationImpor
 import tech.molecules.structurized.prismlite.swing.workspace.chem.StructureCoordinateResolver;
 import tech.molecules.structurized.prismlite.swing.workspace.PrismLiteWorkspacePanel;
 import tech.molecules.structurized.prismlite.swing.report.PrismReportLoader;
-import tech.molecules.structurized.prismlite.swing.report.PrismReportValidationException;
+import tech.molecules.structurized.prism.report.PrismReportValidationException;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -337,6 +337,23 @@ public final class PrismLiteFrame extends JFrame {
 
     public static void show(PrismSession session, Path sourcePath) {
         open(session, sourcePath);
+    }
+
+    /**
+     * Refreshes the workspace and focuses a view that was added to the session after this frame was
+     * created - for example a report registered from the command line at startup.
+     */
+    public void focusLoadedView(String viewId) {
+        if (viewId == null || viewId.isBlank()) return;
+        Runnable task = () -> {
+            workspace.refreshWorkspace();
+            workspace.focusView(viewId);
+        };
+        if (SwingUtilities.isEventDispatchThread()) {
+            task.run();
+        } else {
+            SwingUtilities.invokeLater(task);
+        }
     }
 
     public static PrismLiteFrame open(PrismSession session, Path sourcePath) {

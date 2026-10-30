@@ -38,12 +38,23 @@ final class SarPrismReportBlockProviders {
                 try {
                     session.rowSet(rowSetId);
                 } catch (IllegalArgumentException exception) {
-                    diagnostics.add(error("UNKNOWN_ROW_SET", "Unknown row set: " + rowSetId + ".", embedded));
+                    diagnostics.add(error("UNKNOWN_ROW_SET",
+                            PrismReportHints.unknown("row set", rowSetId,
+                                    session.rowSets().stream().map(item -> item.id()).toList()), embedded));
                 }
             }
             for (String columnId : embedded.specification().referencedColumnIds()) {
                 if (session.table().findColumn(columnId).isEmpty()) {
-                    diagnostics.add(error("UNKNOWN_COLUMN", "Unknown column: " + columnId + ".", embedded));
+                    diagnostics.add(error("UNKNOWN_COLUMN",
+                            PrismReportHints.unknown("column", columnId,
+                                    session.table().columns().stream()
+                                            .map(tech.molecules.structurized.prism.engine.PrismColumn::id)
+                                            .toList()), embedded));
+                } else {
+                    for (String rowSetId : embedded.specification().referencedRowSetIds()) {
+                        PrismReportHints.sarCoverage(session, columnId, rowSetId).ifPresent(message ->
+                                diagnostics.add(warning("SPARSE_SAR_COVERAGE", message, embedded)));
+                    }
                 }
             }
             validateSpecific(embedded, session, diagnostics);
@@ -99,8 +110,10 @@ final class SarPrismReportBlockProviders {
                         "SAR value column '" + column.id() + "' must be numeric.", block));
                 if (column != null && value.aggregation() == SarAggregation.BEST && !hasDirection(column)) {
                     diagnostics.add(error("MISSING_ENDPOINT_DIRECTION",
-                            "BEST aggregation requires higher/lower direction metadata on column '"
-                                    + column.id() + "'.", block));
+                            "Aggregation 'best' needs higher/lower direction metadata, which column '"
+                                    + column.id() + "' does not carry (PRISM snapshots do not record"
+                                    + " endpoint direction)."
+                                    + PrismReportHints.directionAdvice(column.id()), block));
                 }
                 if (value.format() != null) {
                     try {

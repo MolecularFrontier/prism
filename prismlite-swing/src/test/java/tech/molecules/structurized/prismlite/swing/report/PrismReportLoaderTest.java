@@ -1,5 +1,6 @@
 package tech.molecules.structurized.prismlite.swing.report;
 
+import tech.molecules.structurized.prism.report.PrismReportValidationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tech.molecules.structurized.prism.engine.PrismRowSet;

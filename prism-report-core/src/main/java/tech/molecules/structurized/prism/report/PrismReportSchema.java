@@ -23,7 +23,8 @@ public record PrismReportSchema(
                 field("title", "string", true, "Human-readable report title."),
                 field("id", "string", false, "Optional stable report identity."),
                 field("createdAt", "string", false, "Optional ISO-8601 instant.")),
-                List.of(compoundTable(), compoundCards(), structureGrid(), scatter(), columnSummary(), sar1d(), sar2d()),
+                List.of(compoundTable(), compoundCards(), structureGrid(), structureSketch(), scatter(),
+                        columnSummary(), sar1d(), sar2d()),
                 """
                         ---
                         prismReportVersion: 1
@@ -111,6 +112,24 @@ public record PrismReportSchema(
                                 "column", "pIC50", "format", "0.00",
                                 "colorColumn", "score__activity")),
                         "maxCompounds", 12, "gridColumns", 4));
+    }
+
+    private static PrismReportBlockSchema structureSketch() {
+        return block("structure-sketch",
+                "Grid of structures supplied inline as SMILES; needs no row set or column.", List.of(
+                common("id"), common("title"),
+                field("structures", "array<string|object>", true,
+                        "One or more SMILES strings or entry objects. At most 64."),
+                field("structures[].smiles", "string", true, "SMILES for the depicted structure."),
+                field("structures[].label", "string", false, "Optional label above the structure."),
+                field("structures[].caption", "string", false, "Optional caption below the structure."),
+                field("gridColumns", "integer", false, "Defaults to 4; range 1..8.")),
+                Map.of("type", "structure-sketch", "id", "proposed-analogues", "gridColumns", 3,
+                        "structures", List.of(
+                                Map.of("smiles", "FC(F)c1ccnc(n1)-c1ccccc1",
+                                        "label", "C4 = CHF2", "caption", "made and tested"),
+                                Map.of("smiles", "FC(F)(F)c1ccnc(n1)-c1ccccc1",
+                                        "label", "C4 = CF3", "caption", "proposed, not made"))));
     }
 
     private static PrismReportBlockSchema scatter() {

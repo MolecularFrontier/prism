@@ -25,8 +25,21 @@ public final class PrismReportValidator {
     }
 
     public List<PrismReportDiagnostic> validate(PrismReportDocument document, PrismSession session) {
+        return validate(document, session, null);
+    }
+
+    /**
+     * Validates a report, additionally comparing its declared dataset identity against the dataset
+     * actually being opened. A mismatch is a WARNING, never an error: snapshot identity is
+     * content-derived, so a routine data refresh changes it while the report stays valid. The hard
+     * gate remains reference resolution.
+     */
+    public List<PrismReportDiagnostic> validate(PrismReportDocument document,
+                                                PrismSession session,
+                                                PrismReportDatasetIdentity datasetIdentity) {
         ArrayList<PrismReportDiagnostic> result = new ArrayList<>(document.diagnostics());
         validateMetadata(document.metadata(), result);
+        validateDatasetIdentity(document.metadata(), datasetIdentity, result);
         HashSet<String> blockIds = new HashSet<>();
         for (PrismReportBlock block : document.blocks()) {
             if (block instanceof EmbeddedPrismViewReportBlock embedded) {
@@ -143,7 +156,7 @@ public final class PrismReportValidator {
     ) {
         return session.table().findColumn(columnId).orElseGet(() -> {
             diagnostics.add(error("UNKNOWN_COLUMN",
-                    unknownWithSuggestion("column", columnId,
+                    PrismReportHints.unknown("column", columnId,
                             session.table().columns().stream().map(PrismColumn::id).toList()),
                     block.blockId(), block.sourceLine()));
             return null;
@@ -180,7 +193,30 @@ public final class PrismReportValidator {
         return previous[right.length()];
     }
 
+    private static void validateDatasetIdentity(PrismReportMetadata metadata,
+                                                PrismReportDatasetIdentity actual,
+                                                List<PrismReportDiagnostic> diagnostics) {
+        if (actual == null || actual.isEmpty()) return;
+        if (metadata.datasetSnapshotId() != null && actual.snapshotId() != null
+                && !metadata.datasetSnapshotId().equals(actual.snapshotId())) {
+            diagnostics.add(warning("DATASET_SNAPSHOT_MISMATCH",
+                    "Report was authored against snapshot " + metadata.datasetSnapshotId()
+                            + " but is being opened against " + actual.snapshotId()
+                            + "; references still resolve but values may differ.", null, 1));
+        }
+        if (metadata.datasetId() != null && actual.datasetId() != null
+                && !metadata.datasetId().equals(actual.datasetId())) {
+            diagnostics.add(warning("DATASET_ID_MISMATCH",
+                    "Report declares datasetId '" + metadata.datasetId()
+                            + "' but is being opened against '" + actual.datasetId() + "'.", null, 1));
+        }
+    }
+
     private static PrismReportDiagnostic error(String code, String message, String blockId, int line) {
         return new PrismReportDiagnostic(PrismReportSeverity.ERROR, code, message, blockId, line, 1);
+    }
+
+    private static PrismReportDiagnostic warning(String code, String message, String blockId, int line) {
+        return new PrismReportDiagnostic(PrismReportSeverity.WARNING, code, message, blockId, line, 1);
     }
 }
