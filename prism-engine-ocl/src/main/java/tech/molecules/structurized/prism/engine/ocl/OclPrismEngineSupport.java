@@ -39,7 +39,9 @@ public final class OclPrismEngineSupport {
     }
 
     public static void registerStructureColumn(PrismSession session, String structureColumnId, CachePolicy cachePolicy) {
-        OclComputedValues.registerParsedMoleculeAndFfp512(session, structureColumnId, null, null, cachePolicy);
+        Object coordinates = session.baseTable().column(structureColumnId).schema().raw().get("coordinatesColumn");
+        String coordinateId = coordinates instanceof String value && !value.isBlank() ? value : null;
+        OclComputedValues.registerParsedMoleculeAndFfp512(session, structureColumnId, null, coordinateId, cachePolicy);
     }
 
     public static void registerStructureColumn(PrismSession session,
